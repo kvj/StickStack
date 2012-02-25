@@ -1,0 +1,31 @@
+.note_tag {
+    font-size: 1em;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+.note {
+    min-height: 15px;
+}
+
+.note_menu {
+    display: none !important;
+}
+
+.note-button {
+    font-size: 1.3em;
+    padding-left: 5px;
+}
+
+.day_hour_caption {
+    font-size: 0.9em;
+}
+
+.day_hour {
+    min-height: 30px;
+}
+
+.day_hour_notes {
+    padding-left: 35px;
+}
+

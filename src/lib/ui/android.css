@@ -1,0 +1,33 @@
+html {
+    font-size: 1.2em;
+    padding-top: 2px;
+}
+
+body {
+    background-color: #ffffff !important;
+}
+
+.button_text {
+    padding: 4px;
+}
+
+input[type=text], input[type=password] {
+    font-size: 1.1em;
+}
+
+.input_wrap {
+    height: 27px;
+}
+
+.icon {
+    vertical-align: text-top;
+}
+
+.popup_menu_item {
+    padding: 10px;
+}
+
+.button_text_32 {
+    padding-top: 17px;
+}
+

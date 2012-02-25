@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<application xmlns="http://ns.adobe.com/air/application/2.0" minimumPatchLevel="0"> 
+    <id>org.kvj.stick-stack</id>
+    <version>0.1</version>
+    <filename>StickStack</filename>
+    <name>
+        <text xml:lang="en">Stick Stack</text>
+    </name>
+    <installFolder>Stick Stack</installFolder>
+    <programMenuFolder>Stick Stack</programMenuFolder>
+    <allowBrowserInvocation>true</allowBrowserInvocation>
+    <icon>
+        <image128x128>notes/ico/icon_128.png</image128x128>
+    </icon>
+    <initialWindow>
+        <content>sstack.html?test</content>
+        <visible>true</visible>
+        <width>600</width>
+        <height>400</height>
+    </initialWindow>
+</application>
+

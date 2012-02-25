@@ -1,0 +1,21 @@
+{
+  "name": "Stick Stack",
+  "description": "Super tasks",
+  "version": "1",
+  "app": {
+    "launch": {
+      "local_path": "sstack_chrome.html"
+    }
+  },
+  "icons": {
+    "128": "img/icon_128.png",
+    "48": "img/icon_48.png",
+    "16": "img/icon_16.png"
+  },
+  "permissions": [
+    "unlimitedStorage",
+    "http://*/*",
+    "notifications"
+  ]
+}
+

@@ -1,0 +1,190 @@
+.note {
+    padding: 2px;
+    margin: 2px 0px 2px 0px;
+    border: 1px solid #aaaaaa;
+    background-color: #efd334;
+    cursor: pointer;
+    min-height: 5px;
+}
+
+.note_menu {
+    float: right;
+    display: none;
+}
+
+.note_text {
+    float: left;
+}
+
+.note_tags {
+    float: left;
+}
+
+.note_button {
+    margin: 2px;
+    color: #000000;
+    outline: none;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.button_white {
+    background-color: #ffffff;
+    border-color: #ffffff;
+}
+
+.note_tag {
+    margin: 1px;
+    padding: 0px 1px 0px 1px;
+    font-size: 0.75em;
+    border: 1px solid #777777;
+    background-color: #dddddd;
+}
+
+.note_tag_selected {
+    border-color: #222222;
+}
+
+.inline_sheet {
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.sheet_top {
+    background-color: #aaaaaa;
+    padding: 2px;
+}
+
+.sheet_close {
+    color: #222222;
+}
+
+.sheet_div {
+    padding-bottom: 2px;
+}
+
+.clear {
+    clear: both;
+}
+
+.day {
+    width: 14.3%;
+    text-align: center;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.navigation {
+    width: 100%;
+    text-align: center;
+}
+
+.leftArrow {
+    float: left;
+}
+
+.rightArrow {
+    float: right;
+}
+
+.arrow {
+    margin: 2px;
+    padding: 3px;
+    background-color: #dddddd;
+    overflow: hidden;
+    border: 1px solid #dddddd;
+    -webkit-border-radius: 4px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.icon_center {
+    margin: 0px;
+}
+
+.month {
+    text-align: center;
+    padding-top: 3px;
+}
+
+.day_name {
+    font-weight: bold;
+}
+
+.disabled {
+    opacity: 0.5;
+}
+
+.today {
+    font-weight: bold;
+}
+
+.weekend {
+    color: #ff0000;
+}
+
+.time_place {
+}
+
+.time_hour {
+    width: 40px;
+    margin: 3px;
+    float: left;
+    padding: 2px;
+    border: 1px solid #eeeeee;
+    text-align: center;
+}
+
+.time_in_hour {
+    display: none;
+}
+
+.time_is_hour {
+    cursor: pointer;
+}
+
+.day_hour {
+    position: relative;
+    background-color: rgba(240, 240, 240, 0.8);
+    min-height: 12px;
+    border-bottom: 1px dotted #222222;
+}
+
+.day_hour_caption {
+    position: absolute;
+    left: 2px;
+    top: 1px;
+    font-size: 0.7em;
+}
+
+.day_hour_notes {
+    padding-left: 25px;
+}
+
+.note_line_hide {
+    display: none;
+}
+
+.note_line_show {
+    display: block !important;
+}
+
+.now_line {
+    position: absolute;
+    background-color: #ffffff;
+    height: 2px;
+    width: 3px;
+}
+
+.sync_progress {
+    opacity: 0.7;
+}
+
+#sync_indicator {
+    position: absolute;
+    top: 0px;
+    height: 4px;
+    width: 100%;
+    z-index: 11;
+    background-color: #ff0000;
+}

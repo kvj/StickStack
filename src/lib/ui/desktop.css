@@ -1,0 +1,15 @@
+/**
+* Desktop CSS
+*/
+
+#main, #panel_manager {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.panel_column {
+    border: 1px solid #dddddd;
+    overflow: auto;
+}
+
