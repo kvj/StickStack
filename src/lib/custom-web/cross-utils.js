@@ -54,7 +54,11 @@ var log = function() {
     };
     if (CURRENT_PLATFORM == PLATFORM_WEB) {//Web - console
         if (window.console) {//Forward call
-            window.console.log.apply(window.console, arr);
+            if (CURRENT_PLATFORM_MOBILE) {
+                window.console.log.call(window.console, message);
+            } else {
+                window.console.log.apply(window.console, arr);
+            }
             return;
         };
     };

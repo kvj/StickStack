@@ -270,20 +270,22 @@ var DateTimeSheet = function(panel, datamanager) {//
         }, this)
     });
     this.timePlace = $('<div/>').addClass('time_place').appendTo(this.panel.element);
-    for (var i = this.startHour; i <= this.endHour; i++) {
-        for (var j = 0; j < 4; j++) {//15 mins
-            var hr = $('<div/>').addClass('time_hour draggable').appendTo(this.timePlace);
-            var tag = 't:'+(i*100+j*15);
-            hr.text(datamanager.formatTag(tag));
-            hr.bind('dragstart', {tag: tag}, function(e) {
-                dd.setDDTarget(e, tagDDType, e.data.tag);
-            });
-            if (j == 0) {//Click
-                hr.addClass('time_is_hour').bind('click', {hour: i, div: hr}, _.bind(function(e) {//Click on hour
-                    e.data.div.siblings('.hour_'+e.data.hour).toggleClass('time_in_hour');
-                }, this));
-            } else {//Hide
-                hr.addClass('hour_'+i).addClass('time_in_hour');
+    if (!CURRENT_PLATFORM_MOBILE) {
+        for (var i = this.startHour; i <= this.endHour; i++) {
+            for (var j = 0; j < 4; j++) {//15 mins
+                var hr = $('<div/>').addClass('time_hour draggable').appendTo(this.timePlace);
+                var tag = 't:'+(i*100+j*15);
+                hr.text(datamanager.formatTag(tag));
+                hr.bind('dragstart', {tag: tag}, function(e) {
+                    dd.setDDTarget(e, tagDDType, e.data.tag);
+                });
+                if (j == 0) {//Click
+                    hr.addClass('time_is_hour').bind('click', {hour: i, div: hr}, _.bind(function(e) {//Click on hour
+                        e.data.div.siblings('.hour_'+e.data.hour).toggleClass('time_in_hour');
+                    }, this));
+                } else {//Hide
+                    hr.addClass('hour_'+i).addClass('time_in_hour');
+                };
             };
         };
     };

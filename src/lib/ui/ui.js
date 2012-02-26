@@ -142,7 +142,7 @@ var _initUI = function() {//Creates root UI elements
     });
     var warningShown = false;
     if (CURRENT_PLATFORM_MOBILE) {//Add back handler
-        $(document).bind(window.BackButton? 'backKeyDown': 'backbutton', function() {//Back button
+        $(document).bind('backbutton', function() {//Back button
             if (__visiblePopupMenu) {//Have visible menu
                 if (__visiblePopupMenu.hide()) {//Was hidden menu
                     return false;
@@ -156,13 +156,11 @@ var _initUI = function() {//Creates root UI elements
                     warningShown = true;
                     _showInfo('Press again to exit');
                 } else {//Exit
-                    window.BackButton? device.exitApp(): app.exitApp();
+                    navigator.app.exitApp();
+                    return true;
                 };
             };
-        });
-        if (window.BackButton) {//
-            BackButton.override();
-        };
+        }, false);
     };
     $('<div id="info_dialog"/>').appendTo(document.body).hide();
     if (CURRENT_PLATFORM == PLATFORM_AIR && window.storage) {//Only for air
