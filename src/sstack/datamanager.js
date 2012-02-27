@@ -786,7 +786,7 @@ DataManager.prototype.loadTagConfig = function(handler) {//Selects from tags
         this.tagConfig = list;
         handler(list);
 
-    }, this), {order: 'weight desc'});
+    }, this), {order: ['weight', 'name']});
 };
 
 DataManager.prototype.updateTagConfig = function(config, handler) {//Insert
