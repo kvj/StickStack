@@ -1,3 +1,11 @@
+body {
+	background-color: #000000;
+}
+
+.panel_column {
+	border-color: #555555 !important;
+}
+
 .button_inner {
 	background-repeat: repeat-x;
 	background-image:  -webkit-gradient(linear, left top, left bottom, color-stop(0%, #efefef), color-stop(100%, #dddddd));

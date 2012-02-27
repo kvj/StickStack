@@ -3,16 +3,16 @@ html {
     padding-top: 2px;
 }
 
-body {
-    background-color: #ffffff !important;
-}
-
 .button_text {
     padding: 4px;
 }
 
 input[type=text], input[type=password] {
     font-size: 1.1em;
+}
+
+.button_outer {
+    min-height: 40px;
 }
 
 .input_wrap {

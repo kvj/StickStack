@@ -562,7 +562,8 @@ Buttons.prototype.addButton = function(button, before) {//Adds button
         //     };
         // }, e), e.data.button.delay);
         if (e.data.button.handler) {//We have handler
-            return e.data.button.handler(e, e.data.button, e);
+            e.data.button.handler(e, e.data.button, e);
+            return false;
         };
         //e.preventDefault();
         //e.stopPropagation();

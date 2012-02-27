@@ -93,11 +93,13 @@
     text-align: center;
     padding-top: 5px;
     padding-bottom: 5px;
+    color: #eeeeee;
 }
 
 .navigation {
     width: 100%;
     text-align: center;
+    color: #eeeeee;
 }
 
 .leftArrow {
@@ -152,8 +154,10 @@
     margin: 3px;
     float: left;
     padding: 2px;
-    border: 1px solid #eeeeee;
+    border: 1px solid #555555;
+    border-radius: 10px;
     text-align: center;
+    color: #eeeeee;
 }
 
 .time_in_hour {

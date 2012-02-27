@@ -15,7 +15,7 @@ public class StickStackActivity extends DroidGap {
 	public void onCreate(Bundle savedInstanceState) {
 		Log.i(TAG, "onCreate: " + savedInstanceState);
 		setRequestedOrientation(getResources().getConfiguration().orientation);
-		super.setIntegerProperty("backgroundColor", Color.WHITE);
+		super.setIntegerProperty("backgroundColor", Color.BLACK);
 		super.setBooleanProperty("keepRunning", true);
 		super.onCreate(savedInstanceState);
 		super.init();
