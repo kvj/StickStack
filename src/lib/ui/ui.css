@@ -1,12 +1,13 @@
 body {
     padding: 0px;
     margin: 0px;
-    font-family: Roboto, Droid Sans, Tahoma, Arial, sans-serif;
+    font-family: Ubuntu, Roboto, Droid Sans, Tahoma, Arial, sans-serif;
     font-size: 0.9em;
 }
 
 div {
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    font-family: Ubuntu, Roboto, Droid Sans, Tahoma, Arial, sans-serif;
 }
 
 .draggable {
@@ -25,7 +26,8 @@ div {
 
 .button_outer {
     float: left;
-    cursor: pointer;
+    min-height: 30px;
+    position: relative;
 }
 
 .button_disabled .button_inner {
@@ -34,12 +36,13 @@ div {
 }
 
 .button_inner {
-    margin: 2px;
     padding: 3px;
-    background-color: #dddddd;
+    left: 1px;
+    top: 1px;
+    right: 1px;
+    position: absolute;
     overflow: hidden;
-    border: 1px solid #dddddd;
-    -webkit-border-radius: 4px;
+    cursor: pointer;
 }
 
 .button_text {
@@ -144,7 +147,7 @@ textarea {
     background-color: #ffffff;
     -webkit-border-radius: 5px;
     z-index: 10;
-    -webkit-box-shadow: 3px 3px 2px #888;
+    -webkit-box-shadow: 2px 2px 2px #888;
 }
 
 .popup_menu_item {
@@ -170,10 +173,7 @@ textarea {
 }
 
 .panel_title {
-    padding: 2px;
     text-align: center;
-    font-weight: bold;
-    text-decoration: underline;
 }
 
 .area_wrap {
@@ -209,6 +209,10 @@ textarea {
 
 .button_text_32 {
     padding-top: 15px;
+}
+
+.button_outer_32 {
+    min-height: 100px;
 }
 
 .button_inner_32 {

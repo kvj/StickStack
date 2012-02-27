@@ -80,11 +80,22 @@ Sheet.prototype.editAreaDone = function(val) {//Creates new note
     };
 };
 
+Sheet.prototype.applyColor = function (div, color, gradient) {
+    if (!color) {
+        return false;
+    }
+    if (!gradient) {
+        div.css('background-color', 'rgb('+color[0]+', '+color[1]+', '+color[2]+')');
+    } else {
+        var step = 32;
+        div.addClass('has_gradient').css('background-image', '-webkit-gradient(linear, left top, left bottom, color-stop(0%, rgb('+(color[0]+step)+', '+(color[1]+step)+', '+(color[2]+step)+')), color-stop(20%, rgb('+(color[0]-step)+', '+(color[1]-step)+', '+(color[2]-step)+')), color-stop(100%, rgb('+(color[0]+step)+', '+(color[1]+step)+', '+(color[2]+step)+')))').css('border-color', 'rgb('+(color[0]-3*step)+', '+(color[1]-3*step)+', '+(color[2]-3*step)+')')
+    }
+    return true;
+}
+
 Sheet.prototype.showTag = function(note, t, parent, remove) {//
-    var tag = $('<span/>').addClass('note_tag draggable').attr('draggable', 'true').appendTo(parent);
-    if (t.color) {//Have color
-        tag.css('background-color', t.color);
-    };
+    var tag = $('<div/>').addClass('note_tag draggable').attr('draggable', 'true').appendTo(parent);
+    this.applyColor(tag, t.color, true);
     tag.text(t.caption);
     tag.bind('dblclick', {tag: t}, _.bind(function(e) {
         e.preventDefault();
@@ -277,9 +288,7 @@ Sheet.prototype.enableNoteDrop = function(div, handler) {//Called when note or t
 
 Sheet.prototype.showNote = function(note, parent) {//
     var div = $('<div/>').addClass('note draggable').appendTo(parent);
-    if (note.color) {//Have color
-        div.css('background-color', note.color);
-    };
+    this.applyColor(div, note.color, true);
     note.div = div;
     div.bind('dblclick', {note: note, div: div}, _.bind(function(e) {
         this.editNote(note, div);
@@ -294,6 +303,8 @@ Sheet.prototype.showNote = function(note, parent) {//
         this.areaPanel.hide();
         this.textPanel.hide();
         this.editing = false;
+        this.root.find('.note').removeClass('note_selected');
+        div.addClass('note_selected');
         if (this.selected == note && CURRENT_PLATFORM_MOBILE) {//Show menu
             var items = [{
                 caption: 'Edit note',
@@ -396,6 +407,12 @@ Sheet.prototype.showNote = function(note, parent) {//
         dd.setDDTarget(e, noteDDType, e.data.note.id);
     }, this));
     var tags = $('<div/>').addClass('note_tags').appendTo(div);
+    if (note.subnotes>1) {
+        $(_buildIcon('notes')).appendTo(tags).addClass('note_button note_tags_button').bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
+            this.proxy('openTag', null, ['n:'+note.id]);
+            return false;
+        }, this));
+    }
     var menu = $('<div/>').addClass('note_menu note_line_hide').appendTo(div);
     $(_buildIcon('tag')).addClass('note_button').appendTo(menu).bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
         this.startTextEdit(e.data.note.id, e.data.div, 'tag');
@@ -443,7 +460,7 @@ Sheet.prototype.showNote = function(note, parent) {//
         for (var k = 0; k < line.length; k++) {//Add words
             var word = line[k];
             if (word.type == 'text') {//Add word
-                $('<span/>').addClass('note_word').appendTo(line_div).text(''+word.text+' ');
+                $('<div/>').addClass('note_word').appendTo(line_div).text(word.text);
             } else if (word.type == 'checkbox') {
                 var cbox = $('<input type="checkbox"/>').addClass('note_checkbox').appendTo(line_div).attr('checked', word.checked);
                 cbox.bind('change', {note: note, box: word}, _.bind(function(e) {
@@ -454,16 +471,17 @@ Sheet.prototype.showNote = function(note, parent) {//
                         };
                     }, this), [e.data.note.id, new_text]);
                 }, this));
-                $('<span/>').addClass('note_word').appendTo(line_div).text(' ');
+                $('<div/>').addClass('note_word').appendTo(line_div).text(' ');
             } else if (word.type == 'tag') {//Add tag
                 this.showTag(note, word.tag, line_div);
-                $('<span/>').addClass('note_word').appendTo(line_div).text(' ');
+                $('<div/>').addClass('note_word').appendTo(line_div).text(' ');
             };
         };
+        $('<div style="clear: both;"/>').appendTo(line_div);
     };
     if (note.display == 'none') {//Hide lines
         text.find('.note_line').addClass('note_line_hide');
-        tags.addClass('note_line_hide');
+        // tags.addClass('note_line_hide');
     };
     if (note.display == 'notags') {//Hide lines
         tags.addClass('note_line_hide');
@@ -476,6 +494,7 @@ Sheet.prototype.showNote = function(note, parent) {//
         this.showTag(note, t, tags, true);
 
     };
+    $('<div style="clear: both;"/>').appendTo(tags);
     $('<div style="clear: both;"/>').appendTo(div);
 };
 

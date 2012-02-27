@@ -64,6 +64,7 @@ var TopManager = function() {//Manages top panel
     this.syncButton = this.topMenu.addButton({
         caption: _buildIcon('sync', 'icon32')+'<br/>Sync',
         classNameInner: 'button_inner_32',
+        classNameOuter: 'button_outer_32',
         classNameText: 'button_text_32',
         handler: _.bind(function() {//Show sheets
             this.sync();
@@ -72,6 +73,7 @@ var TopManager = function() {//Manages top panel
     this.sheetButton = this.topMenu.addButton({
         caption: _buildIcon('sheets', 'icon32')+'<br/>Sheets',
         classNameInner: 'button_inner_32',
+        classNameOuter: 'button_outer_32',
         classNameText: 'button_text_32',
         handler: _.bind(function() {//Show sheets
             new SheetsManager(this.panel, this.manager);
@@ -80,6 +82,7 @@ var TopManager = function() {//Manages top panel
     this.dateTimeButton = this.topMenu.addButton({
         caption: _buildIcon('calendar', 'icon32')+'<br/>Calendar',
         classNameInner: 'button_inner_32',
+        classNameOuter: 'button_outer_32',
         classNameText: 'button_text_32',
         handler: _.bind(function() {//Show sheets
             new DateTimeSheet(this.panel, this.manager);
@@ -89,6 +92,7 @@ var TopManager = function() {//Manages top panel
     this.configButton = this.topMenu.addButton({
         caption: _buildIcon('config', 'icon32')+'<br/>Config',
         classNameInner: 'button_inner_32',
+        classNameOuter: 'button_outer_32',
         classNameText: 'button_text_32',
         handler: _.bind(function() {//Show tags
             var items = [];

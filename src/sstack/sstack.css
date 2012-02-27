@@ -1,10 +1,14 @@
 .note {
     padding: 2px;
-    margin: 2px 0px 2px 0px;
+    margin: 2px 3px 2px 0px;
     border: 1px solid #aaaaaa;
     background-color: #efd334;
     cursor: pointer;
     min-height: 5px;
+}
+
+.note_selected {
+    -webkit-box-shadow: 1px 1px 1px #888888;
 }
 
 .note_menu {
@@ -18,6 +22,7 @@
 
 .note_tags {
     float: left;
+    min-height: 22px;
 }
 
 .note_button {
@@ -25,24 +30,40 @@
     color: #000000;
     outline: none;
     text-decoration: none;
-    font-weight: bold;
+    border-radius: 3px;
+}
+
+.note_tags_button {
+    float: left;
+}
+
+.note_button:hover {
+    -webkit-box-shadow: 0px 0px 2px #888;
+}
+
+.note_button:active {
+    background-color: #aaaaaa;
 }
 
 .button_white {
-    background-color: #ffffff;
-    border-color: #ffffff;
+    -webkit-box-shadow: 0px 0px 0px #888888;
 }
 
 .note_tag {
     margin: 1px;
-    padding: 0px 1px 0px 1px;
+    padding: 0px 2px 0px 2px;
     font-size: 0.75em;
-    border: 1px solid #777777;
+    text-align: center;
+    min-width: 20px;
+    border: 1px solid #aaaaaa;
     background-color: #dddddd;
+    border-radius: 10px;
+    float: left;
 }
 
 .note_tag_selected {
-    border-color: #222222;
+    -webkit-box-shadow: 0px 1px 1px #888888;
+    font-weight: bold;
 }
 
 .inline_sheet {
@@ -51,8 +72,8 @@
 }
 
 .sheet_top {
-    background-color: #aaaaaa;
     padding: 2px;
+    text-align: center;
 }
 
 .sheet_close {
@@ -145,9 +166,8 @@
 
 .day_hour {
     position: relative;
-    background-color: rgba(240, 240, 240, 0.8);
     min-height: 12px;
-    border-bottom: 1px dotted #222222;
+    border-bottom: 1px dotted #dddddd;
 }
 
 .day_hour_caption {
@@ -155,6 +175,7 @@
     left: 2px;
     top: 1px;
     font-size: 0.7em;
+    color: #aaaaaa;
 }
 
 .day_hour_notes {
@@ -187,4 +208,22 @@
     width: 100%;
     z-index: 11;
     background-color: #ff0000;
+}
+
+.sheet_root, .inline_sheet {
+    background-color: #eeffdd;
+    padding-bottom: 5px;
+}
+
+.note_word {
+    float: left;
+    padding-right: 3px;
+}
+
+.note_checkbox {
+    float: left;
+}
+
+.has_gradient {
+    background-repeat: repeat-x;
 }

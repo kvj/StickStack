@@ -549,18 +549,21 @@ var Buttons = function(config) {//Cool buttons
 Buttons.prototype.addButton = function(button, before) {//Adds button
     button.delay = this.config.delay || 100;
     button.element = $('<div/>').addClass('button_outer').insertBefore(before? before.element: this._clear);
-    button.innerElement = $('<div/>').addClass('button_inner').appendTo(button.element);
+    button.innerElement = $('<button/>').addClass('button_inner').appendTo(button.element);
     button.innerElement.bind((this.config.safe | button.safe)?  'click': CURRENT_EVENT_CLICK, {buttons: this, button: button}, function(e) {//Click on button
         if (e.data.button.disabled) {//Ignore click
             return false;
         };
-        e.data.button.element.addClass('button_pressed');
-        setTimeout(_.bind(function() {//Call handler
-            this.data.button.element.removeClass('button_pressed');
-            if (this.data.button.handler) {//We have handler
-                return this.data.button.handler(this, this.data.button, this);
-            };
-        }, e), e.data.button.delay);
+        // e.data.button.element.addClass('button_pressed');
+        // setTimeout(_.bind(function() {//Call handler
+        //     this.data.button.element.removeClass('button_pressed');
+        //     if (this.data.button.handler) {//We have handler
+        //         return this.data.button.handler(this, this.data.button, this);
+        //     };
+        // }, e), e.data.button.delay);
+        if (e.data.button.handler) {//We have handler
+            return e.data.button.handler(e, e.data.button, e);
+        };
         //e.preventDefault();
         //e.stopPropagation();
         return false;
@@ -573,6 +576,9 @@ Buttons.prototype.addButton = function(button, before) {//Adds button
     };
     if (button.classNameInner) {//Additional class
         button.innerElement.addClass(button.classNameInner);
+    };
+    if (button.classNameOuter) {//Additional class
+        button.element.addClass(button.classNameOuter);
     };
     if (button.classNameText) {//Additional class
         button.textElement.addClass(button.classNameText);

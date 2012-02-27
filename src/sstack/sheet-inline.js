@@ -16,7 +16,7 @@ $(function() {//
         });
     };
     main = $('<div/>').addClass('sheet_root').appendTo(document.body);
-    var _top = $('<div/>').addClass('sheet_top draggable').appendTo(main).attr('draggable', 'true');
+    var _top = $('<div/>').addClass('sheet_top panel_title draggable').appendTo(main).attr('draggable', 'true');
     _top.bind('dragstart', function(e) {
         e.preventDefault();
         window.nativeWindow.startMove();
@@ -57,6 +57,10 @@ $(function() {//
         return false;
     })).append($(_buildIcon('update')).bind('click', function(e) {
         controller.reload();
+        return false;
+    })).append($(_buildIcon('roll')).bind('click', function(e) {
+        sheet_div.toggle();
+        controller.updated();
         return false;
     })).append($(_buildIcon('close')).bind('click', function(e) {
         closeWindow();

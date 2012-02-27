@@ -15,7 +15,7 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
             } else {
                 handler(null, err);
             };
-        });
+        }, true);
         return true;
     };
     if (method == 'createNote') {
@@ -765,6 +765,20 @@ DataManager.prototype.noteToSheet = function(text, tags) {
     return tags;
 };
 
+DataManager.prototype.parseColor = function (color, def) {
+    if (!color) {
+        if (def) {
+            color = def;
+        } else {
+            return null;
+        }
+    }
+    if (color.length != 7) {
+        return null;
+    }
+    return [parseInt(color.substr(1, 2), 16), parseInt(color.substr(3, 2), 16), parseInt(color.substr(5, 2), 16)];
+};
+
 DataManager.prototype.loadTagConfig = function(handler) {//Selects from tags
     this.db.storage.select('tags', [], _.bind(function (err, data) {
         if(err) {
@@ -781,6 +795,8 @@ DataManager.prototype.loadTagConfig = function(handler) {//Selects from tags
             if (row.note_color == 'transparent' || row.note_color == '#00000000') {
                 row.note_color = null;
             };
+            row.note_color = this.parseColor(row.note_color, null);
+            row.tag_color = this.parseColor(row.tag_color, '#dddddd');
             list.push(row);
         };
         this.tagConfig = list;
@@ -953,14 +969,16 @@ DataManager.prototype.loadTags = function(list, handler) {//Loads tags to this
         handler(list);
         return;
     };
-    var gr = new AsyncGrouper(list.length, _.bind(function(gr) {//
+    var gr = new AsyncGrouper(list.length*2, _.bind(function(gr) {//
         for (var i = 0; i < list.length; i++) {
-            var tags = gr.results[i][0];
+            var tags = gr.results[i*2][0];
+            var subnotes = gr.results[i*2+1][0].length;
             if (!tags) {//Error
                 handler(null, gr.results[i][1]);
                 return;
             };
             list[i].tags = tags;
+            list[i].subnotes = subnotes;
             //Also create and sort tags to display
             var tag_display = [];
             for (var j = 0; j < tags.length; j++) {//Create text repr.
@@ -999,6 +1017,7 @@ DataManager.prototype.loadTags = function(list, handler) {//Loads tags to this
     }, this));
     for (var i = 0; i < list.length; i++) {//Load tags
         this.getTags(list[i].id, gr.ok);
+        this.selectNotes('n:'+list[i].id, gr.ok);
     };
 };
 
@@ -1037,7 +1056,7 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
     return result;
 };
 
-DataManager.prototype.selectNotes = function(tags, handler) {//Selects and sorts notes
+DataManager.prototype.selectNotes = function(tags, handler, parse) {//Selects and sorts notes
     var queries = [];
     var arr = (tags || '').split(' ');
     var values = [];
@@ -1074,11 +1093,14 @@ DataManager.prototype.selectNotes = function(tags, handler) {//Selects and sorts
             };
         }
     };
-    // log('Select', tags, values);
+    log('Select', tags, values);
     this.db.storage.select('notes', values, _.bind(function (err, data) {
         if (err) {
             return handler(null, err);
         };
+        if (!parse) {
+            return handler(data);
+        }
         var result = [];
         for (var j = 0; j < data.length; j++) {
             var note = _.clone(data[j]);
@@ -1087,45 +1109,5 @@ DataManager.prototype.selectNotes = function(tags, handler) {//Selects and sorts
         };
         handler(result);
     }, this));
-    // var gr = new AsyncGrouper(queries.length, _.bind(function(gr) {
-    //     var err = gr.findError();
-    //     if (err) {
-    //         handler(null, err);
-    //         return;
-    //     };
-    //     var ids = _.pluck(gr.results[0][0], 'id');
-    //     for (var i = 1; i < gr.results.length; i++) {//Intersect
-    //         var next = _.pluck(gr.results[i][0], 'id');
-    //         if (queries[i].exclude) {
-    //             for (var j = 0; j < next.length; j++) {//
-    //                 ids = _.without(ids, next[j]);
-    //             };
-    //         } else {
-    //             ids = _.intersect(ids, next);
-    //         };
-    //     };
-    //     var result = [];
-    //     var data = gr.results[0][0];
-    //     for (var i = 0; i < ids.length; i++) {//Add data from select
-    //         for (var j = 0; j < data.length; j++) {//id=
-    //             if (data[j].id == ids[i]) {
-    //                 var note = _.clone(data[j]);
-    //                 note.parsed = this.parseText(note.text);
-    //                 result.push(note);
-    //             };
-    //         };
-    //     };
-    //     handler(result);
-    // }, this));
-    // for (var i = 0; i < queries.length; i++) {
-    //     //log('select', tags, queries[i].where);
-    //     this.db.query({
-    //         type: 'select',
-    //         query: 'select distinct n.* from notes n, notes_tags nt where n.id=nt.note_id and ('+queries[i].where+') and n._sync_delete=0 and nt._sync_delete=0 order by n.id',
-    //         values: queries[i].values,
-    //         ok: gr.ok,
-    //         err: gr.err
-    //     });
-    // };
 };
 
