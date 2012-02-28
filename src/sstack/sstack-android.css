@@ -1,3 +1,7 @@
+body {
+    background-color: #000000;
+}
+
 .note_tag {
     font-size: 1em;
     padding-left: 4px;

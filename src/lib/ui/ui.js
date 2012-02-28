@@ -824,6 +824,7 @@ var AutoForm = function(element, config, formid, values) {//Creates and handles 
         if (!this.conf[id].label) {
             continue;
         };
+        var val = this.conf[id].value || values[id] || '';
         if (this.conf[id].type == 'checkbox') {//Checkbox
             var wr = $('<div/>').addClass('input_wrap').appendTo(this.element);
             var control = $('<input/>').attr('type', 'checkbox').addClass('form_control').attr('id', this.formid+id).appendTo(wr).attr('checked', (this.conf[id].value || values[id])? true: false);
@@ -841,6 +842,9 @@ var AutoForm = function(element, config, formid, values) {//Creates and handles 
                     control.val('');
                 };
                 if (this.conf[id].type == 'color' && control.mColorPicker) {//Special call mColorPicker
+                    if(_.isArray(val)) {
+                        control.val('#'+val[0].toString(16)+val[1].toString(16)+val[2].toString(16));
+                    }
                     control.attr('data-text', 'hidden').attr('data-hex', 'true').mColorPicker();
                 };
             };

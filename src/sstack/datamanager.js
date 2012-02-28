@@ -1002,6 +1002,7 @@ DataManager.prototype.loadTags = function(list, handler) {//Loads tags to this
                 };
                 return 0;
             }, this));
+            list[i].color = this.parseColor('#FFC48C');
             for (var j = list[i].tags_captions.length-1; j>=0; j--) {//Remove config, search for note_color
                 this.formatNote(list[i].tags_captions[j].id, list[i]);
                 if (list[i].tags_captions[j].config.note_color) {

@@ -104,20 +104,6 @@ var TopManager = function() {//Manages top panel
                         return true;
                     }, this),
                 });
-                items.push({
-                    caption: 'Reset DB',
-                    handler: _.bind(function() {//Show tags
-                        this.syncManager.reset(_.bind(function(manager, err) {
-                            if (!manager) {
-                                return _showError('Error reset DB: '+err);
-                            };
-                            this.startManager(_.bind(function() {
-                                this.sync();
-                            }, this));
-                        }, this));
-                        return true;
-                    }, this),
-                });
             };
             items.push({
                 caption: 'App config',
@@ -478,16 +464,22 @@ TagsManager.prototype.showList = function() {//
     this.list.clear();
     for (var i = 0; i < this.config.length; i++) {//Create buttons
         var caption = this.config[i].caption;
-        if (this.config[i].tag_color) {
-            caption = '<span style="background-color: '+this.config[i].tag_color+';">&nbsp;&nbsp;'+caption+'&nbsp;&nbsp;</span>';
-        };
-        this.list.addButton({
+        // if (this.config[i].tag_color) {
+        //     caption = '<span style="background-color: '+this.config[i].tag_color+';">&nbsp;&nbsp;'+caption+'&nbsp;&nbsp;</span>';
+        // };
+        var button = this.list.addButton({
             caption: caption,
+            classNameInner: 'button_white',
             config: this.config[i],
             handler: _.bind(function(btns, btn) {
                 new TagsEditor(btn.config, this.panel, this.manager);
             }, this),
         });
+        if (this.config[i].tag_color) {
+            applyColor(button.innerElement, this.config[i].tag_color, true);
+            // caption = '<span style="background-color: '+this.config[i].tag_color+';">&nbsp;&nbsp;'+caption+'&nbsp;&nbsp;</span>';
+        };
+
     };
 };
 

@@ -9,7 +9,8 @@ var detectPlatform = function() {//Detects on which platform application is runn
     };
     if (typeof(window) != 'undefined' && window.navigator && navigator.userAgent.indexOf('Android') != -1
             || navigator.userAgent.indexOf('iPhone') != -1
-            || navigator.userAgent.indexOf('iPad') != -1) {
+            || navigator.userAgent.indexOf('iPad') != -1
+            || window.location.toString().indexOf('?mobile') != -1) {
         CURRENT_PLATFORM_MOBILE = true;
         CURRENT_EVENT_CLICK = 'touchstart';
         CURRENT_EVENT_DOWN = 'touchstart';

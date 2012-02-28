@@ -80,7 +80,7 @@ Sheet.prototype.editAreaDone = function(val) {//Creates new note
     };
 };
 
-Sheet.prototype.applyColor = function (div, color, gradient) {
+var applyColor = function (div, color, gradient) {
     if (!color) {
         return false;
     }
@@ -95,7 +95,7 @@ Sheet.prototype.applyColor = function (div, color, gradient) {
 
 Sheet.prototype.showTag = function(note, t, parent, remove) {//
     var tag = $('<div/>').addClass('note_tag draggable').attr('draggable', 'true').appendTo(parent);
-    this.applyColor(tag, t.color, true);
+    applyColor(tag, t.color, true);
     tag.text(t.caption);
     tag.bind('dblclick', {tag: t}, _.bind(function(e) {
         e.preventDefault();
@@ -103,6 +103,9 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
         return false;
     }, this));
     tag.bind('click', {div: tag, tag: t}, _.bind(function(e) {//
+        if (this.selected != note) {
+            return true;
+        };
         //e.data.div.siblings('.note_tag').find('.note_button').hide();
         //e.data.div.find('.note_button').show();
         if (note.selectedTag == t && CURRENT_PLATFORM_MOBILE) {//Show menu
@@ -288,7 +291,7 @@ Sheet.prototype.enableNoteDrop = function(div, handler) {//Called when note or t
 
 Sheet.prototype.showNote = function(note, parent) {//
     var div = $('<div/>').addClass('note draggable').appendTo(parent);
-    this.applyColor(div, note.color, true);
+    applyColor(div, note.color, true);
     note.div = div;
     div.bind('dblclick', {note: note, div: div}, _.bind(function(e) {
         this.editNote(note, div);
@@ -604,7 +607,8 @@ Sheet.prototype.moveNowLine = function() {//Moves now line
     var div = this.hours[dt.getHours()];
     if (div) {
         div.prepend(this.nowLine);
-        this.nowLine.css('top', Math.floor(div.height()*dt.getMinutes()/60)).show();
+        var h = Math.floor(div.height()*dt.getMinutes()/60);
+        this.nowLine.css('top', h).show();
     } else {
         this.nowLine.hide();
     };
