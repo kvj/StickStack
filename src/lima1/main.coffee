@@ -151,13 +151,17 @@ class HTML5Provider extends DBProvider
 							create_at index+1
 						, tr
 					else
-						log 'Changing version', @db.version, '=>', @version
+						log 'Changing version ', @db.version, '=>', @version, typeof(@db.version)
 						if not @version_match
-							@db.changeVersion @db.version, @version, (tr) =>
+							@db.changeVersion @db.version or '', @version, (tr) =>
+								log 'Transaction'
 								handler null, true
 							, (err) =>
 								log 'Version change error', err
 								handler err
+							, () =>
+								log 'Changed version'
+								handler null, true
 						else
 							handler null, false
 				drop_at = (index) =>

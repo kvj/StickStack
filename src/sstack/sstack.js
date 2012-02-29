@@ -153,7 +153,7 @@ TopManager.prototype.sync = function() {//Run sync
         this.syncManager.sync(_.bind(function(err) {//Run sync
             $('#sync_indicator').hide();
             if (err) {//Error
-                _showError('Error sync: '+err);
+                _showInfo('Error sync: '+err);
             } else {//Sync done
                 $('#info_dialog').hide();
             };

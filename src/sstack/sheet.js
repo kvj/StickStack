@@ -291,7 +291,7 @@ Sheet.prototype.enableNoteDrop = function(div, handler) {//Called when note or t
 
 Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     var div = $('<div/>').addClass('note draggable').appendTo(parent);
-    applyColor(div, note.color, true);
+    applyColor(div, note.color, false);
     note.div = div;
     div.bind('dblclick', {note: note, div: div}, _.bind(function(e) {
         this.editNote(note, div);
@@ -473,6 +473,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
                             this.reload(id);
                         };
                     }, this), [e.data.note.id, new_text]);
+                    return false;
                 }, this));
                 $('<div/>').addClass('note_word').appendTo(line_div).text(' ');
             } else if (word.type == 'tag') {//Add tag
@@ -593,6 +594,8 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
                 this.textPanel.hide();
                 this.editing = false;
                 this.root.find('.note_line_show').removeClass('note_line_show');
+                this.root.find('.note_selected').removeClass('note_selected');
+                this.selected = null;
                 this.updated();
             }, this));
         };

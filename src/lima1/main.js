@@ -232,13 +232,17 @@
                 return create_at(index + 1);
               }, tr);
             } else {
-              log('Changing version', _this.db.version, '=>', _this.version);
+              log('Changing version ', _this.db.version, '=>', _this.version, typeof _this.db.version);
               if (!_this.version_match) {
-                return _this.db.changeVersion(_this.db.version, _this.version, function(tr) {
+                return _this.db.changeVersion(_this.db.version || '', _this.version, function(tr) {
+                  log('Transaction');
                   return handler(null, true);
                 }, function(err) {
                   log('Version change error', err);
                   return handler(err);
+                }, function() {
+                  log('Changed version');
+                  return handler(null, true);
                 });
               } else {
                 return handler(null, false);
