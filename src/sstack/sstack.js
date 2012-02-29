@@ -1,32 +1,52 @@
-$.fn.mColorPicker.init.enhancedSwatches = false;
-$.fn.mColorPicker.init.showLogo = false;
-$.fn.mColorPicker.defaults.imageFolder = '/lib/color-picker/images/';
-$.fn.mColorPicker.defaults.swatches = [
-    '#efd334',
-    '#34c924',
-    '#ee7b9e',
-    '#7fc9ff',
-    '#d8bfd8',
-    '#e32636',
-    '#bbbbbb',
-    '#006666',
-    '#cc3333',
-    '#FFFFCC'
-];
-$(function() {//Ready
-    if (CURRENT_PLATFORM_MOBILE) {
-        return run();
-    };
-    runOrTest(window.run, window._test, 'Stick Stack');
-});
-
 var manager = null;
 var layout = null;
 var config = null;
 var sheetWindows = {};
 
+yepnope({
+    load: ['lib/custom-web/cross-utils.js', 'lib/common-web/jquery-1.7.1.min.js', 'lib/common-web/jquery.autogrow.js', 'lib/common-web/underscore-min.js', 'lib/common-web/underscore.strings.js', 'lib/custom-web/date.js', 'lib/common-web/json2.js', 'lib/custom-web/layout.js', 'lib/custom-web/pending.js', 'lib/custom-web/calendar.js', 'lib/color-picker/mColorPicker.js', 'lib/ui/ui.css', 'lib/ui/theme-default.css', 'lib/ui/ui.js', 'lima1/net.js', 'lima1/main.js'],
+    complete: function () {
+        yepnope([{
+            test: CURRENT_PLATFORM == PLATFORM_AIR,
+            yep: ['lib/air/AIRAliases.js', 'lib/air/AIRIntrospector.js']
+        }, {
+            test: CURRENT_PLATFORM_MOBILE,
+            yep: ['lib/ui/android.css', 'lib/common-web/phonegap-1.4.1.js'],
+            nope: ['lib/ui/desktop.css']
+        }, {
+            load: ['sstack/sstack.css', 'sstack/datamanager.js', 'sstack/sheet.js'],
+            complete: function () {
+                $(function() {//Ready
+                    return run();
+                });
+            }
+        }, {
+            test: CURRENT_PLATFORM_MOBILE,
+            yep: ['sstack/sstack-android.css']
+        }]);
+    }
+})
+
+
+
+
 
 var run = function() {
+    $.fn.mColorPicker.init.enhancedSwatches = false;
+    $.fn.mColorPicker.init.showLogo = false;
+    $.fn.mColorPicker.defaults.imageFolder = '/lib/color-picker/images/';
+    $.fn.mColorPicker.defaults.swatches = [
+        '#efd334',
+        '#34c924',
+        '#ee7b9e',
+        '#7fc9ff',
+        '#d8bfd8',
+        '#e32636',
+        '#bbbbbb',
+        '#006666',
+        '#cc3333',
+        '#FFFFCC'
+    ];
     _initUI();
     if (CURRENT_PLATFORM_MOBILE) {//Empty layout
         layout = new Layout({});
@@ -79,16 +99,25 @@ var TopManager = function() {//Manages top panel
             new SheetsManager(this.panel, this.manager);
         }, this),
     });
-    this.dateTimeButton = this.topMenu.addButton({
-        caption: _buildIcon('calendar', 'icon32')+'<br/>Calendar',
+    // this.dateTimeButton = this.topMenu.addButton({
+    //     caption: _buildIcon('calendar', 'icon32')+'<br/>Calendar',
+    //     classNameInner: 'button_inner_32',
+    //     classNameOuter: 'button_outer_32',
+    //     classNameText: 'button_text_32',
+    //     handler: _.bind(function() {//Show sheets
+    //         new DateTimeSheet(this.panel, this.manager);
+    //     }, this),
+    // });
+    this.tagsButton = this.topMenu.addButton({
+        caption: _buildIcon('tags', 'icon32')+'<br/>Tags',
         classNameInner: 'button_inner_32',
         classNameOuter: 'button_outer_32',
         classNameText: 'button_text_32',
         handler: _.bind(function() {//Show sheets
-            new DateTimeSheet(this.panel, this.manager);
+            new TagsManager(this.panel, this.manager);
         }, this),
     });
-    this.disabledButtons = [this.syncButton, this.sheetButton, this.dateTimeButton];
+    this.disabledButtons = [this.syncButton, this.sheetButton, this.tagsButton];
     this.configButton = this.topMenu.addButton({
         caption: _buildIcon('config', 'icon32')+'<br/>Config',
         classNameInner: 'button_inner_32',
@@ -96,15 +125,6 @@ var TopManager = function() {//Manages top panel
         classNameText: 'button_text_32',
         handler: _.bind(function() {//Show tags
             var items = [];
-            if (this.manager) {//DB opened
-                items.push({
-                    caption: 'Tag config',
-                    handler: _.bind(function() {//Show tags
-                        new TagsManager(this.panel, this.manager);
-                        return true;
-                    }, this),
-                });
-            };
             items.push({
                 caption: 'App config',
                 handler: _.bind(function() {
@@ -119,7 +139,9 @@ var TopManager = function() {//Manages top panel
         }, this),
     });
     manager.show(this.panel);
-    this.startManager();
+    this.startManager(_.bind(function () {
+        new SheetsManager(this.panel, this.manager);
+    }, this));
 };
 
 TopManager.prototype.sync = function() {//Run sync
@@ -198,19 +220,19 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
     var storage = new StorageProvider(db)
     var jqnet = new jQueryTransport('http://lima1sync.appspot.com')
     var oauth = new OAuthProvider({
-        clientID: 'lima1web'
+        clientID: 'sstack'
     }, jqnet);
     oauth.on_token_error = _.bind(function () {
         this.login();
     }, this);
-    this.syncManager = new Lima1DataManager('sstack', oauth, storage)
+    this.syncManager = new Lima1DataManager('sstack', oauth, storage);
     this.syncManager.on_scheduled_sync = _.bind(function () {
         this.sync();
     }, this);
 
     this.manager = null;
     this.syncManager.open(_.bind(function(err) {//local DB opened
-        if (db) {//
+        if (!err) {//
             this.manager = new DataManager(this.syncManager);
             this.manager.loadTagConfig(_.bind(function() {
                 for (var i = 0; i < this.disabledButtons.length; i++) {
@@ -233,7 +255,7 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
                 };
             }, this))
         } else {//Error
-            _showError('Error opening DB: '+err);
+            _showInfo('Error opening DB: '+err);
         };
     }, this))
 };
@@ -306,6 +328,21 @@ var SheetsManager = function(panel, datamanager) {
                 };
             }, this));
         }, this),
+    });
+    this.calendarPlace = $('<div/>').addClass('calendar_place').appendTo(this.panel.element);
+    this.calendar = new Calendar({
+        renderTo: this.calendarPlace,
+        startWeek: 1,
+        leftArrow: _buildIcon('a_left', 'icon_center'),
+        rightArrow: _buildIcon('a_right', 'icon_center'),
+        handleDay: _.bind(function(div, date) {//Process date
+            div.addClass('draggable').bind('dragstart', function(e) {
+                dd.setDDTarget(e, tagDDType, 'd:'+date.format('yyyymmdd'));
+            });
+        }, this),
+        daySelected: _.bind(function(date, e) {//Click on date
+            newSheet({caption: date.format('m/d/yy'), tags: 'd:'+date.format('yyyymmdd'), autotags: 'd:'+date.format('yyyymmdd'), display: 'day', sort: 't:*'}, this.panel, datamanager, e.ctrlKey);
+        }, this)
     });
     this.textPanel = $('<div/>').addClass('input_wrap').appendTo(this.panel.element);
     this.text = $('<input type="text"/>').addClass('form_control').appendTo(this.textPanel);

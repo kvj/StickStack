@@ -68,13 +68,13 @@ Sheet.prototype.editAreaDone = function(val) {//Creates new note
     if (this.editID) {//Edit existing
         this.proxy('editNoteField', _.bind(function(id, err) {//
             if (id) {
-                this.reload();
+                this.reload(id);
             };
         }, this), [this.editID, val]);
     } else {//Create new
         this.proxy('createNote', _.bind(function(id, err) {//
             if (id) {
-                this.reload();
+                this.reload(id);
             };
         }, this), [val, this.data.autotags+(this.newTags? ' '+this.newTags: '')]);
     };
@@ -289,7 +289,7 @@ Sheet.prototype.enableNoteDrop = function(div, handler) {//Called when note or t
     }, this));
 };
 
-Sheet.prototype.showNote = function(note, parent) {//
+Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     var div = $('<div/>').addClass('note draggable').appendTo(parent);
     applyColor(div, note.color, true);
     note.div = div;
@@ -470,7 +470,7 @@ Sheet.prototype.showNote = function(note, parent) {//
                     var new_text = e.data.note.text.substr(0, e.data.box.at)+(e.data.box.checked? '[ ]': '[X]')+e.data.note.text.substr(e.data.box.at+3);
                     this.proxy('editNoteField', _.bind(function(id, err) {//
                         if (id) {
-                            this.reload();
+                            this.reload(id);
                         };
                     }, this), [e.data.note.id, new_text]);
                 }, this));
@@ -497,19 +497,24 @@ Sheet.prototype.showNote = function(note, parent) {//
         this.showTag(note, t, tags, true);
 
     };
+    if (lastSelected) {
+        div.addClass('note_selected');
+        div.find('.note_line_hide').addClass('note_line_show')
+        this.selected = note;
+    };
     $('<div style="clear: both;"/>').appendTo(tags);
     $('<div style="clear: both;"/>').appendTo(div);
 };
 
-Sheet.prototype.reload_default = function(list) {//
+Sheet.prototype.reload_default = function(list, beforeID) {//
     this.root.children('.note').remove();
     for (var i = 0; i < list.length; i++) {//
-        this.showNote(list[i], this.root);
+        this.showNote(list[i], this.root, list[i].id == beforeID);
     };
     this.updated();
 };
 
-Sheet.prototype.reload_day = function(list) {//
+Sheet.prototype.reload_day = function(list, beforeID) {//
     this.startHour = 0;
     this.endHour = 23;
     this.root.find('.note').remove();
@@ -596,7 +601,7 @@ Sheet.prototype.reload_day = function(list) {//
     };
     for (var i = 0; i < list.length; i++) {//
         var target = this.hours[list[i].hour];
-        this.showNote(list[i], target? target.children('.day_hour_notes'): this.noHour);
+        this.showNote(list[i], target? target.children('.day_hour_notes'): this.noHour, list[i].id == beforeID);
     };
     this.moveNowLine();
     this.updated();
@@ -614,7 +619,7 @@ Sheet.prototype.moveNowLine = function() {//Moves now line
     };
 };
 
-Sheet.prototype.reload = function() {//Asks for items
+Sheet.prototype.reload = function(beforeID) {//Asks for items
     this.areaPanel.hide();
     this.textPanel.hide();
     this.editing = false;
@@ -622,7 +627,7 @@ Sheet.prototype.reload = function() {//Asks for items
         if (list) {//Display list
             var mode = this.data.display || 'default';
             if (this['reload_'+mode]) {//Have reload
-                this['reload_'+mode].call(this, list);
+                this['reload_'+mode].call(this, list, beforeID);
             };
         };
     }, this), [this.data.tags, this.data.sort]);

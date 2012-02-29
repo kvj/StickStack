@@ -18,7 +18,7 @@ class DBProvider
 
 class AirDBProvider extends DBProvider
 
-	open: (clean = true, handler) ->
+	open: (clean = true, handler, absolute) ->
 		@db = new air.SQLConnection()
 		err = (event) =>
 			log 'open error', event
@@ -27,7 +27,10 @@ class AirDBProvider extends DBProvider
 			@db.removeEventListener air.SQLErrorEvent.ERROR, err
 			handler null
 		@db.addEventListener air.SQLErrorEvent.ERROR, err
-		folder = air.File.applicationStorageDirectory
+		if absolute
+			folder = air.File.applicationDirectory
+		else
+			folder = air.File.applicationStorageDirectory
 		@dbFile = folder.resolvePath @name
 		@db.openAsync @dbFile, 'create', null, false, 1024
 
@@ -441,7 +444,10 @@ class StorageProvider
 			for ar in arr
 				if fields[ar] then order.push fields[ar]
 		order.push 'id'
-		@db.query 'select data from data where stream=? and status<>? '+(if where then 'and '+where else '')+' order by '+(order.join ','), values, (err, data) =>
+		limit = ''
+		if options?.limit
+			limit = ' limit '+options?.limit
+		@db.query 'select data from data where stream=? and status<>? '+(if where then 'and '+where else '')+' order by '+(order.join ',')+limit, values, (err, data) =>
 			if err then return handler err
 			result = []
 			for item in data
@@ -481,6 +487,12 @@ class DataManager
 		, 1000*@sync_timeout
 
 	on_scheduled_sync: () ->
+
+	findOne: (stream, id, handler) ->
+		@storage.select stream, ['id', id], (err, data) =>
+			if err then return handler err
+			if data.length is 0 then return handler 'Not found'
+			handler null, data[0]
 
 	_save: (stream, object, handler) ->
 		if not object.id

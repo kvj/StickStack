@@ -4,7 +4,7 @@
   "version": "1",
   "app": {
     "launch": {
-      "local_path": "sstack_chrome.html"
+      "local_path": "sstack.html"
     }
   },
   "icons": {

@@ -181,6 +181,7 @@
     top: 1px;
     font-size: 0.7em;
     color: #aaaaaa;
+    vertical-align: top;
 }
 
 .day_hour_notes {

@@ -43,7 +43,7 @@
       AirDBProvider.__super__.constructor.apply(this, arguments);
     }
 
-    AirDBProvider.prototype.open = function(clean, handler) {
+    AirDBProvider.prototype.open = function(clean, handler, absolute) {
       var err, folder,
         _this = this;
       if (clean == null) clean = true;
@@ -57,7 +57,11 @@
         return handler(null);
       });
       this.db.addEventListener(air.SQLErrorEvent.ERROR, err);
-      folder = air.File.applicationStorageDirectory;
+      if (absolute) {
+        folder = air.File.applicationDirectory;
+      } else {
+        folder = air.File.applicationStorageDirectory;
+      }
       this.dbFile = folder.resolvePath(this.name);
       return this.db.openAsync(this.dbFile, 'create', null, false, 1024);
     };
@@ -541,7 +545,7 @@
     };
 
     StorageProvider.prototype.select = function(stream, query, handler, options) {
-      var ar, arr, array_to_query, extract_fields, fields, order, values, where, _i, _len,
+      var ar, arr, array_to_query, extract_fields, fields, limit, order, values, where, _i, _len,
         _this = this;
       if (!this._precheck(stream, handler)) return;
       extract_fields = function(stream) {
@@ -619,7 +623,11 @@
         }
       }
       order.push('id');
-      return this.db.query('select data from data where stream=? and status<>? ' + (where ? 'and ' + where : '') + ' order by ' + (order.join(',')), values, function(err, data) {
+      limit = '';
+      if (options != null ? options.limit : void 0) {
+        limit = ' limit ' + (options != null ? options.limit : void 0);
+      }
+      return this.db.query('select data from data where stream=? and status<>? ' + (where ? 'and ' + where : '') + ' order by ' + (order.join(',')) + limit, values, function(err, data) {
         var item, result, _j, _len2;
         if (err) return handler(err);
         result = [];
@@ -683,6 +691,15 @@
     };
 
     DataManager.prototype.on_scheduled_sync = function() {};
+
+    DataManager.prototype.findOne = function(stream, id, handler) {
+      var _this = this;
+      return this.storage.select(stream, ['id', id], function(err, data) {
+        if (err) return handler(err);
+        if (data.length === 0) return handler('Not found');
+        return handler(null, data[0]);
+      });
+    };
 
     DataManager.prototype._save = function(stream, object, handler) {
       var _this = this;
