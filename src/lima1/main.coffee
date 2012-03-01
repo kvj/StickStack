@@ -58,7 +58,7 @@ class AirDBProvider extends DBProvider
 			@db.close()
 		@db.addEventListener air.SQLEvent.SCHEMA, (event) =>
 			tables = @db.getSchemaResult().tables
-			log 'Schema', tables, schema, @clean
+			# log 'Schema', tables, schema, @clean
 			if tables?.length isnt schema.length
 				@clean = true
 			log 'Need clean', @clean
@@ -90,10 +90,20 @@ class AirDBProvider extends DBProvider
 		stmt.execute()
 
 	get: (name, def) ->
-		null
+		arr = air.EncryptedLocalStore.getItem name
+		if not name then return def
+		try
+		  return arr.readUTF()
+		catch error
+		return def  
 
 	set: (name, value) ->
-		null
+		if not name then return no
+		if not value
+			air.EncryptedLocalStore.removeItem name
+		arr = new air.ByteArray()
+		arr.writeUTF(''+value)
+		air.EncryptedLocalStore.setItem name, arr
 
 class HTML5Provider extends DBProvider
 	open: (clean, handler) ->
@@ -201,7 +211,7 @@ class StorageProvider
 					log 'StorageProvider::Verify result', err, reset
 					if err then return handler err
 					@db.query 'select schema, token from schema', [], (err, data) =>
-						log 'Schema', err, data
+						# log 'Schema', err, data
 						if err then return handler err
 						if data.length>0
 							@schema = JSON.parse data[0].schema
@@ -313,7 +323,7 @@ class StorageProvider
 					in_from = data[0].version_in or 0
 					out_from = data[0].version_out or 0
 					if not clean_sync and out_from>0 then clean_sync = no
-				log 'Start sync with', in_from, out_from
+				# log 'Start sync with', in_from, out_from
 				send_in null
 		oauth.rest app, '/rest/schema?', null, (err, schema) =>
 			# log 'After schema', err, schema

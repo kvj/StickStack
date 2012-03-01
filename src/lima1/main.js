@@ -103,7 +103,6 @@
       this.db.addEventListener(air.SQLEvent.SCHEMA, function(event) {
         var tables;
         tables = _this.db.getSchemaResult().tables;
-        log('Schema', tables, schema, _this.clean);
         if ((tables != null ? tables.length : void 0) !== schema.length) {
           _this.clean = true;
         }
@@ -146,11 +145,24 @@
     };
 
     AirDBProvider.prototype.get = function(name, def) {
-      return null;
+      var arr;
+      arr = air.EncryptedLocalStore.getItem(name);
+      if (!name) return def;
+      try {
+        return arr.readUTF();
+      } catch (error) {
+
+      }
+      return def;
     };
 
     AirDBProvider.prototype.set = function(name, value) {
-      return null;
+      var arr;
+      if (!name) return false;
+      if (!value) air.EncryptedLocalStore.removeItem(name);
+      arr = new air.ByteArray();
+      arr.writeUTF('' + value);
+      return air.EncryptedLocalStore.setItem(name, arr);
     };
 
     return AirDBProvider;
@@ -301,7 +313,6 @@
             log('StorageProvider::Verify result', err, reset);
             if (err) return handler(err);
             return _this.db.query('select schema, token from schema', [], function(err, data) {
-              log('Schema', err, data);
               if (err) return handler(err);
               if (data.length > 0) {
                 _this.schema = JSON.parse(data[0].schema);
@@ -453,7 +464,6 @@
             out_from = data[0].version_out || 0;
             if (!clean_sync && out_from > 0) clean_sync = false;
           }
-          log('Start sync with', in_from, out_from);
           return send_in(null);
         });
       };

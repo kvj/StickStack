@@ -131,7 +131,7 @@ var _getArgument = function(name) {//Returns list of values
 
 var _appEvents = new EventEmitter();
 
-var _initUI = function() {//Creates root UI elements
+var _initUI = function(storage) {//Creates root UI elements
     var main = $('<div id="main"/>').appendTo(document.body);
     $('<div id="question_dialog"/>').appendTo(document.body).addClass('question_dialog').hide();
     var err_bg = $('<div id="error_dialog_background"/>').appendTo(document.body).hide();
@@ -163,23 +163,23 @@ var _initUI = function() {//Creates root UI elements
         }, false);
     };
     $('<div id="info_dialog"/>').appendTo(document.body).hide();
-    if (CURRENT_PLATFORM == PLATFORM_AIR && window.storage) {//Only for air
-        var w = storage.getInt('window_width');
-        var h = storage.getInt('window_height');
+    if (CURRENT_PLATFORM == PLATFORM_AIR && storage) {//Only for air
+        var w = parseInt(storage.get('window_width', '0'));
+        var h = parseInt(storage.get('window_height', '0'));
         if (w>0 && h>0) {//Resize
             window.nativeWindow.width = w;
             window.nativeWindow.height = h;
         };
-        if (storage.getString('window_state', '') == air.NativeWindowDisplayState.MAXIMIZED) {//Maximize
+        if (storage.get('window_state', '') == air.NativeWindowDisplayState.MAXIMIZED) {//Maximize
             window.nativeWindow.maximize();
         };
         window.nativeWindow.addEventListener('resize', function(e) {//Window resized
             setTimeout(function() {//Save window size
                 //log('Resize:', window.nativeWindow.width, $(window).width());
-                storage.setString('window_state', window.nativeWindow.displayState);
+                storage.set('window_state', window.nativeWindow.displayState);
                 if (window.nativeWindow.displayState != air.NativeWindowDisplayState.MAXIMIZED) {//Save only when not maximized
-                    storage.setInt('window_width', window.nativeWindow.width);
-                    storage.setInt('window_height', window.nativeWindow.height);
+                    storage.set('window_width', window.nativeWindow.width);
+                    storage.set('window_height', window.nativeWindow.height);
                 };
             }, 1000);
         });

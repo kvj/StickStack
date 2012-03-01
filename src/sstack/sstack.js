@@ -2,11 +2,14 @@ var manager = null;
 var layout = null;
 var config = null;
 var sheetWindows = {};
+var db = null;
 
 yepnope({
-    load: ['lib/custom-web/cross-utils.js', 'lib/common-web/jquery-1.7.1.min.js', 'lib/common-web/jquery.autogrow.js', 'lib/common-web/underscore-min.js', 'lib/common-web/underscore.strings.js', 'lib/custom-web/date.js', 'lib/common-web/json2.js', 'lib/custom-web/layout.js', 'lib/custom-web/pending.js', 'lib/custom-web/calendar.js', 'lib/color-picker/mColorPicker.js', 'lib/ui/ui.css', 'lib/ui/theme-default.css', 'lib/ui/ui.js', 'lima1/net.js', 'lima1/main.js'],
+    load: ['lib/custom-web/cross-utils.js', 'lib/common-web/jquery-1.7.1.min.js', 'lib/common-web/underscore-min.js', 'lib/common-web/underscore.strings.js', 'lib/custom-web/date.js', 'lib/common-web/json2.js', 'lib/custom-web/layout.js', 'lib/custom-web/pending.js', 'lib/custom-web/calendar.js', 'lib/ui/ui.css', 'lib/ui/theme-default.css', 'lib/ui/ui.js', 'lima1/net.js', 'lima1/main.js'],
     complete: function () {
         yepnope([{
+            load: ['lib/common-web/jquery.autogrow.js', 'lib/color-picker/mColorPicker.js', 'lib/common-web/jquery.mousewheel.js']
+        }, {
             test: CURRENT_PLATFORM == PLATFORM_AIR,
             yep: ['lib/air/AIRAliases.js', 'lib/air/AIRIntrospector.js']
         }, {
@@ -47,7 +50,12 @@ var run = function() {
         '#cc3333',
         '#FFFFCC'
     ];
-    _initUI();
+    if (CURRENT_PLATFORM == PLATFORM_AIR) {
+        db = new AirDBProvider('sstack');
+    } else {
+        db = new HTML5Provider('sstack', '1');
+    }
+    _initUI(db);
     if (CURRENT_PLATFORM_MOBILE) {//Empty layout
         layout = new Layout({});
     } else {//Simple layout
@@ -211,12 +219,6 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
     for (var i = 0; i < this.disabledButtons.length; i++) {//
         this.topMenu.setDisabled(this.disabledButtons[i], true);
     };
-    var db = null;
-    if (CURRENT_PLATFORM == PLATFORM_AIR) {
-        db = new AirDBProvider('sstack');
-    } else {
-        db = new HTML5Provider('sstack', '1');
-    }
     var storage = new StorageProvider(db)
     var jqnet = new jQueryTransport('http://lima1sync.appspot.com')
     var oauth = new OAuthProvider({

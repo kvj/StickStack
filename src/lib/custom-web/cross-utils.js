@@ -75,7 +75,7 @@ var log = function() {
 };
 
 var getEventCoordinates = function(evt) {//Touch support
-    if (CURRENT_PLATFORM_MOBILE) {//
+    if (CURRENT_PLATFORM_MOBILE && evt && evt.originalEvent && evt.originalEvent.changedTouches && evt.originalEvent.changedTouches[0]) {//
         var x = evt.originalEvent.changedTouches[0].pageX;
         var y = evt.originalEvent.changedTouches[0].pageY;
         return {x: x, y: y};

@@ -42,8 +42,11 @@ $(function() {//
             //e.preventDefault();
         //};
     //});
-    main.bind('mousewheel', function(e){
-        var direction = e.wheelDelta>0? -1: 1;
+    main.bind('mousewheel', function(e, delta){
+        var direction = delta>0? -1: 1;
+        if (e.ctrlKey) {
+            direction *= -1;
+        };
         var opacity = parseFloat(main.css('opacity')) || 1.0;
         opacity += 0.1*direction;
         opacity = opacity<0.1? 0.1: (opacity>1? 1: opacity);

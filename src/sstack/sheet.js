@@ -465,8 +465,8 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
             if (word.type == 'text') {//Add word
                 $('<div/>').addClass('note_word').appendTo(line_div).text(word.text);
             } else if (word.type == 'checkbox') {
-                var cbox = $('<input type="checkbox"/>').addClass('note_checkbox').appendTo(line_div).attr('checked', word.checked);
-                cbox.bind('change', {note: note, box: word}, _.bind(function(e) {
+                var cbox = $(_buildIcon(word.checked? 'check_yes': 'check_no')).appendTo(line_div).css('float', 'left');
+                cbox.bind('click', {note: note, box: word}, _.bind(function(e) {
                     var new_text = e.data.note.text.substr(0, e.data.box.at)+(e.data.box.checked? '[ ]': '[X]')+e.data.note.text.substr(e.data.box.at+3);
                     this.proxy('editNoteField', _.bind(function(id, err) {//
                         if (id) {

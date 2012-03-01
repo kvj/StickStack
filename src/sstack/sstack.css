@@ -1,5 +1,5 @@
 .note {
-    padding: 2px;
+    padding: 1px;
     margin: 1px 2px 2px 1px;
     border: 1px solid #aaaaaa;
     background-color: #efd334;
@@ -22,11 +22,11 @@
 
 .note_tags {
     float: left;
-    min-height: 22px;
+    min-height: 18px;
 }
 
 .note_button {
-    margin: 2px;
+    margin: 0px;
     color: #000000;
     outline: none;
     text-decoration: none;
@@ -53,7 +53,7 @@
 .note_tag {
     margin: 1px;
     padding: 0px 2px 0px 2px;
-    font-size: 0.75em;
+    font-size: 0.7em;
     text-align: center;
     min-width: 20px;
     border: 1px solid #aaaaaa;
