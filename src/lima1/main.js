@@ -325,6 +325,14 @@
       });
     };
 
+    StorageProvider.prototype.get = function(name, def) {
+      return this.db.get(name, def);
+    };
+
+    StorageProvider.prototype.set = function(name, value) {
+      return this.db.set(name, value);
+    };
+
     StorageProvider.prototype._precheck = function(stream, handler) {
       if (!this.schema) {
         handler('Not synchronized');

@@ -218,6 +218,12 @@ class StorageProvider
 							@token = data[0].token
 						handler null
 	
+	get: (name, def) ->
+		return @db.get name, def
+
+	set: (name, value) ->
+		return @db.set name, value
+
 	_precheck: (stream, handler) ->
 		if not @schema 
 			handler 'Not synchronized'

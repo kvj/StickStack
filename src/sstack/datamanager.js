@@ -388,6 +388,17 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new TimeTag());
     this.tagControllers.push(new NoteTag());
     this.tagControllers.push(new DefaultTag());
+
+    this.sheetsConfig = {};
+    try {
+        this.sheetsConfig = JSON.parse(this.db.storage.get('sheets', '{}'));
+    } catch (e) {
+        log('Error reading sheets config', e);
+    }
+};
+
+DataManager.prototype._saveSheetsConfig = function() {
+    this.db.storage.set('sheets', JSON.stringify(this.sheetsConfig));
 };
 
 DataManager.prototype.modified = function() {//Report modification
@@ -497,6 +508,10 @@ DataManager.prototype.addSheet = function(handler) {//Make insert
 };
 
 DataManager.prototype.removeSheet = function(id, handler) {//Removes sheet
+    if (this.sheetsConfig[id]) {
+        delete this.sheetsConfig[id];
+        this._saveSheetsConfig();
+    };
     this.db.storage.remove('sheets', {id: id}, _.bind(function (err) {
         if (err) {
             return handler(null, err);
@@ -507,44 +522,27 @@ DataManager.prototype.removeSheet = function(id, handler) {//Removes sheet
 };
 
 DataManager.prototype.moveSheet = function(id, x, y, handler) {//Make update
-    this.db.storage.select('sheets', ['id', id], _.bind(function (err, data) {
-        if (err) {
-            return handler(null, err);
-        }
-        if(data.length == 0) {
-            return handler(null, 'Sheet not found');
-        }
-        var obj = data[0];
-        obj.x = x || 0;
-        obj.y = y || 0;
-        this.db._save('sheets', obj, _.bind(function (err) {
-            if (err) {
-                return handler(null, err);
-            }
-            this.modified();
-            handler(id);
-        }, this));
-    }, this));
+    if (!this.sheetsConfig[id]) {
+        this.sheetsConfig[id] = {x: 0, y: 0};
+    };
+    this.sheetsConfig[id].x = x || 0;
+    this.sheetsConfig[id].y = y || 0;
+    this._saveSheetsConfig();
+    handler(null);
 };
 
 DataManager.prototype.setSheetVisibility = function(id, visible, handler) {//Make update
-    this.db.storage.select('sheets', ['id', id], _.bind(function (err, data) {
-        if (err) {
-            return handler(null, err);
-        }
-        if(data.length == 0) {
-            return handler(null, 'Sheet not found');
-        }
-        var obj = data[0];
-        obj.visible = visible? 1: 0;
-        this.db._save('sheets', obj, _.bind(function (err) {
-            if (err) {
-                return handler(null, err);
-            }
-            this.modified();
-            handler(id);
-        }, this));
-    }, this));
+    if (visible) {
+        if (!this.sheetsConfig[id]) {
+            this.sheetsConfig[id] = {x: 0, y: 0};
+        };
+    } else {
+        if (this.sheetsConfig[id]) {
+            delete this.sheetsConfig[id];
+        };       
+    };
+    this._saveSheetsConfig();
+    handler(null);
 };
 
 DataManager.prototype.updateSheet = function(id, data, handler) {//Make update
@@ -642,6 +640,15 @@ DataManager.prototype.getSheets = function(handler) {//Gets sheets
         for (var i = 0; i < d.length; i++) {//Copy to data
             var row = _.clone(d[i]);
             row.caption = row.title || row.tags || 'Untitled';
+            if (this.sheetsConfig[row.id]) {
+                row.visible = true;
+                row.x = this.sheetsConfig[row.id].x || 0;
+                row.y = this.sheetsConfig[row.id].y || 0;
+            } else {
+                row.visible = false;
+                row.x = 0;
+                row.y = 0;
+            }
             data.push(row);
         };
         handler(data);

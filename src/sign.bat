@@ -1,0 +1,1 @@
+C:\Home\Download\AdobeAIRSDK\bin\adt.bat -package -storetype pkcs12 -keystore ..\..\kostya.pfx -tsa none -target bundle bin sstack.xml sstack.html sheet.html lib img lima1 sstack
