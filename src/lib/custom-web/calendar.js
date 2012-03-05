@@ -56,10 +56,11 @@ Calendar.prototype.render = function(){
     });
     $('<div/>').addClass('clear').appendTo(nav);
     //Render day names
-    var daynames = $('<div/>').appendTo(this.renderTo).addClass('daynames');
+    var grid = $(document.createElement('div')).addClass('calendar_grid').appendTo(this.renderTo);
+    var daynames = $('<div/>').appendTo(grid).addClass('daynames days_row');
     for(var i = 0; i<7; i++){
         //log('render week day '+i+', '+this.startWeek+', '+((i+this.startWeek) % 7));
-        var div = $('<div>'+this.days[(i+this.startWeek) % 7]+'</div>').appendTo(daynames).addClass('day day_name').css('float', 'left');
+        var div = $('<div>'+this.days[(i+this.startWeek) % 7]+'</div>').appendTo(daynames).addClass('day day_name');
         var isWeekend = false;
         for(id in this.weekends){
             if(this.days[(i+this.startWeek) % 7] == this.weekends[id])
@@ -76,10 +77,10 @@ Calendar.prototype.render = function(){
             if(week){
                 $('<div/>').addClass('clear').appendTo(week);
             }
-            week = $('<div/>').appendTo(this.renderTo).addClass('week');
+            week = $('<div/>').appendTo(grid).addClass('week days_row');
         }
         var dt = new Date(this.date.getFullYear(), this.date.getMonth(), i);
-        var div = $('<div>'+dt.getDate()+'</div>').appendTo(week).addClass('day').css('float', 'left');
+        var div = $('<div>'+dt.getDate()+'</div>').appendTo(week).addClass('day');
         var isWeekend = false;
         for(id in this.weekends){
             if(this.days[(wd+this.startWeek) % 7] == this.weekends[id])

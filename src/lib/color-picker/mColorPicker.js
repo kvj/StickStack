@@ -560,4 +560,4 @@
       $.fn.mColorPicker.liveEvents();
     }
   });
-})(jQuery);
+})($);

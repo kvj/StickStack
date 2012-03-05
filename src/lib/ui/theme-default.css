@@ -1,25 +1,29 @@
 .panel_column {
-	border-color: #555555 !important;
+	border-color: #351330 !important;
 }
 
 .button_inner {
-	background-repeat: repeat-x;
-	background-image:  -webkit-gradient(linear, left top, left bottom, color-stop(0%, #dddddd), color-stop(100%, #aaaaaa));
-	border-color: #dddddd;
-	color: #222 !important;
-	border-radius: 4px;
-	border-width: 1px;
+	color: #fff !important;
 	-webkit-font-smoothing: antialiased;
-	-webkit-box-shadow: 0px 1px 1px #888888;
 	font-weight: normal;
+	background-color: #424254;
+	border-width: 0px;
+	min-height: 32px;
 }
 
-.button_inner:hover {
-	background-image:  -webkit-gradient(linear, left top, left bottom, color-stop(0%, #dddddd), color-stop(100%, #999999));
+.button_create {
+	background-color: #64908A;
+}
+
+.button_outer {
+	min-height: 35px;
+}
+
+.button_list {
+	background-color: #CC2A41;
 }
 
 .button_inner:active {
-	background-image:  -webkit-gradient(linear, left top, left bottom, color-stop(0%, #999999), color-stop(100%, #dddddd));
     left: 2px;
     top: 1px;
     right: 0px;
@@ -29,8 +33,7 @@
     padding: 2px;
     font-weight: bold;
     color: #dddddd;
-	background-repeat: repeat-x;
-	background-image:  -webkit-gradient(linear, left top, left bottom, color-stop(0%, #222222), color-stop(100%, #555555));
+    background-color: #351330;
 }
 
 .form_label {
@@ -40,4 +43,38 @@
 #question_dialog {
 	background-color: #222222;
 	color: #eeeeee;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background-color: #000000;
+ }
+
+ ::-webkit-scrollbar-thumb {
+	background-color: #424254;
+	border: 1px solid #351330;
+}
+
+::-webkit-scrollbar-corner {
+	background-color: #000000;
+}
+
+@-webkit-keyframes rotate {
+  from {
+    -webkit-transform: rotate(0deg);
+  }
+  to { 
+    -webkit-transform: rotate(360deg);
+  }
+}
+
+.rotating {
+    -webkit-animation-name:             rotate; 
+    -webkit-animation-duration:         1s; 
+    -webkit-animation-iteration-count:  infinite;
+    -webkit-animation-timing-function: linear;
 }

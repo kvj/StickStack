@@ -2,7 +2,6 @@
     padding: 1px;
     margin: 1px 2px 2px 1px;
     border: 1px solid #aaaaaa;
-    background-color: #efd334;
     cursor: pointer;
     min-height: 5px;
 }
@@ -26,28 +25,20 @@
 }
 
 .note_button {
-    margin: 0px;
+    margin: 1px;
     color: #000000;
     outline: none;
     text-decoration: none;
-    border-radius: 3px;
+    background-color: #424254;
+    padding: 3px;
+}
+
+.tag_button {
+    color: #222;
 }
 
 .note_tags_button {
     float: left;
-}
-
-.note_button:hover {
-    -webkit-box-shadow: 0px 0px 2px #888;
-}
-
-.note_button:active {
-    background-color: #aaaaaa;
-}
-
-.button_white {
-    -webkit-box-shadow: 0px 0px 0px #888888;
-    background-image: none;
 }
 
 .note_tag {
@@ -89,12 +80,32 @@
     clear: both;
 }
 
+.calendar_place {
+    position: relative;
+}
+
+.calendar_grid {
+    display: table;
+    width: 100%;
+    border-right: #000000 solid 2px;
+}
+
+.days_row {
+    display: table-row;
+    left: 0px;
+    right: 0px;
+}
+
 .day {
-    width: 14.3%;
+    display: table-cell;
     text-align: center;
+    border-left: #000000 solid 3px;
+    border-bottom: #000000 solid 3px;
+    font-size: 1em;
     padding-top: 5px;
     padding-bottom: 5px;
     color: #eeeeee;
+    background-color: #424254;
 }
 
 .navigation {
@@ -109,15 +120,14 @@
 
 .rightArrow {
     float: right;
+    margin-right: 5px !important;
 }
 
 .arrow {
-    margin: 2px;
-    padding: 3px;
-    background-color: #dddddd;
+    margin: 3px;
+    padding: 4px;
+    background-color: #424254;
     overflow: hidden;
-    border: 1px solid #dddddd;
-    -webkit-border-radius: 4px;
     min-width: 20px;
     text-align: center;
 }
@@ -133,6 +143,7 @@
 
 .day_name {
     font-weight: bold;
+    background-color: #000000;
 }
 
 .disabled {
@@ -172,7 +183,7 @@
 .day_hour {
     position: relative;
     min-height: 12px;
-    border-bottom: 1px dotted #dddddd;
+    border-bottom: 1px dotted #888888;
 }
 
 .day_hour_caption {
@@ -180,7 +191,7 @@
     left: 2px;
     top: 1px;
     font-size: 0.7em;
-    color: #aaaaaa;
+    color: #222222;
     vertical-align: top;
 }
 
@@ -217,7 +228,7 @@
 }
 
 .sheet_root, .inline_sheet {
-    background-color: #EFFAB4;
+    background-color: #E8CAA4;
     padding-bottom: 2px;
 }
 
@@ -236,4 +247,8 @@
 
 .mColorPickerTrigger {
     border-color: #eeeeee !important;
+}
+
+.left_icon {
+    float: left;
 }

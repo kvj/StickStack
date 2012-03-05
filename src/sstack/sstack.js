@@ -157,9 +157,11 @@ TopManager.prototype.sync = function() {//Run sync
         //this.jsonHelper.config.url = config.appConfig.sync_url;
         //this.jsonHelper.config.key = config.appConfig.sync_key;
         $('#sync_indicator').show();
+        this.syncButton.element.find('.icon32').addClass('rotating');
         _showInfo('Sync started...', 15000);
         this.syncManager.sync(_.bind(function(err) {//Run sync
             $('#sync_indicator').hide();
+            this.syncButton.element.find('.icon32').removeClass('rotating');
             if (err) {//Error
                 _showInfo('Error sync: '+err);
             } else {//Sync done
@@ -321,6 +323,7 @@ var SheetsManager = function(panel, datamanager) {
     });
     this.topMenu.addButton({
         caption: _buildIcon('add')+'New',
+        classNameInner: 'button_create',
         handler: _.bind(function() {
             this.manager.addSheet(_.bind(function(id, err) {
                 if (id) {//Reload
@@ -336,6 +339,8 @@ var SheetsManager = function(panel, datamanager) {
         renderTo: this.calendarPlace,
         startWeek: 1,
         leftArrow: _buildIcon('a_left', 'icon_center'),
+        leftArrowClass: 'button_inner',
+        rightArrowClass: 'button_inner',
         rightArrow: _buildIcon('a_right', 'icon_center'),
         handleDay: _.bind(function(div, date) {//Process date
             div.addClass('draggable').bind('dragstart', function(e) {
@@ -394,9 +399,9 @@ SheetsManager.prototype.showSheets = function(group) {//
             //newSheet(this.sheets[i], this.panel, this.manager);
         //};
         this.sheetList.addButton({
-            caption: _buildIcon('note')+this.sheets[i].caption,
+            caption: this.sheets[i].caption,
             className: 'button_left',
-            classNameInner: 'button_white',
+            classNameInner: 'button_list',
             sheet: this.sheets[i],
             handler: _.bind(function(btns, btn, e) {
                 //new InlineSheet(btn.sheet, this.panel, this.manager);
@@ -478,6 +483,7 @@ var TagsManager = function(panel, datamanager) {
     });
     this.topMenu.addButton({
         caption: _buildIcon('add')+'New',
+        classNameInner: 'button_create',
         handler: _.bind(function() {
             this.manager.updateTagConfig({}, _.bind(function(id, err) {
                 if (id) {//Reload
@@ -508,7 +514,7 @@ TagsManager.prototype.showList = function() {//
         // };
         var button = this.list.addButton({
             caption: caption,
-            classNameInner: 'button_white',
+            classNameText: 'tag_button',
             config: this.config[i],
             handler: _.bind(function(btns, btn) {
                 new TagsEditor(btn.config, this.panel, this.manager);
@@ -788,6 +794,7 @@ var InlineSheet = function(sheet, panel, datamanager) {//
     });
     this.topMenu.addButton({
         caption: _buildIcon('add')+'New',
+        classNameInner: 'button_create',
         handler: _.bind(function() {
             this.sheet.newNote();
         }, this),

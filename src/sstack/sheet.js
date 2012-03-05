@@ -84,12 +84,12 @@ var applyColor = function (div, color, gradient) {
     if (!color) {
         return false;
     }
-    if (!gradient) {
+    // if (!gradient) {
         div.css('background-color', 'rgb('+color[0]+', '+color[1]+', '+color[2]+')');
-    } else {
-        var step = 32;
-        div.addClass('has_gradient').css('background-image', '-webkit-gradient(linear, left top, left bottom, color-stop(0%, rgb('+(color[0]+step)+', '+(color[1]+step)+', '+(color[2]+step)+')), color-stop(20%, rgb('+(color[0]-step)+', '+(color[1]-step)+', '+(color[2]-step)+')), color-stop(100%, rgb('+(color[0]+step)+', '+(color[1]+step)+', '+(color[2]+step)+')))').css('border-color', 'rgb('+(color[0]-3*step)+', '+(color[1]-3*step)+', '+(color[2]-3*step)+')')
-    }
+    // } else {
+    //     var step = 32;
+    //     div.addClass('has_gradient').css('background-image', '-webkit-gradient(linear, left top, left bottom, color-stop(0%, rgb('+(color[0]+step)+', '+(color[1]+step)+', '+(color[2]+step)+')), color-stop(20%, rgb('+(color[0]-step)+', '+(color[1]-step)+', '+(color[2]-step)+')), color-stop(100%, rgb('+(color[0]+step)+', '+(color[1]+step)+', '+(color[2]+step)+')))').css('border-color', 'rgb('+(color[0]-3*step)+', '+(color[1]-3*step)+', '+(color[2]-3*step)+')')
+    // }
     return true;
 }
 
@@ -411,7 +411,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     }, this));
     var tags = $('<div/>').addClass('note_tags').appendTo(div);
     if (note.subnotes>1) {
-        $(_buildIcon('notes')).appendTo(tags).addClass('note_button note_tags_button').bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
+        $(_buildIcon('notes')).appendTo(tags).addClass('left_icon').bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
             this.proxy('openTag', null, ['n:'+note.id]);
             return false;
         }, this));
@@ -454,7 +454,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
             line_div.text('-');
         };
         if (note.link && j == 0) {//Prepend link
-            $(_buildIcon('link_button')).addClass('link_button').appendTo(line_div).bind('click', _.bind(function(e) {
+            $(_buildIcon('link_button')).addClass('left_icon').appendTo(line_div).bind('click', _.bind(function(e) {
                 this.proxy('openLink', _.bind(function(res) {
                 }, this), [note.link, e.ctrlKey]);
                 return false;
@@ -485,7 +485,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     };
     if (note.display == 'none') {//Hide lines
         text.find('.note_line').addClass('note_line_hide');
-        // tags.addClass('note_line_hide');
+        tags.addClass('note_line_hide');
     };
     if (note.display == 'notags') {//Hide lines
         tags.addClass('note_line_hide');

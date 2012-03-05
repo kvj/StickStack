@@ -6,7 +6,7 @@
  *
  * Date: March 13, 2011
  */
-jQuery.fn.autoGrow = function(max){
+$.fn.autoGrow = function(max){
     return this.each(function(){
         // Variables
         var colsDefault = this.cols;
