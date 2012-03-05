@@ -754,28 +754,24 @@ var PopupMenu = function(config) {//Shows popup menu
         if (i == 0) {//Add class
             mitem.addClass('popup_menu_item_first');
         };
-        mitem.bind('click', {item: this.items[i], index: i, element: mitem, instance: this}, _.bind(function(e) {//Click on item
-            e.data.element.addClass('popup_menu_item_pressed');
-            setTimeout(_.bind(function(e) {//Call handler
-                this.data.element.removeClass('popup_menu_item_pressed');
-                if (this.data.index == this.data.instance.items.length-1) {//Last item - hide menu
-                    this.data.instance.hide();
-                    return;
+        mitem.bind(CURRENT_EVENT_CLICK, {item: this.items[i], index: i, element: mitem, instance: this}, _.bind(function(e) {//Click on item
+            if (e.data.index == e.data.instance.items.length-1) {//Last item - hide menu
+                e.data.instance.hide();
+                return false;
+            };
+            if (e.data.item.handler) {//Item handler
+                var result = e.data.item.handler(e.data.item, e.data.index);
+                if (result) {//Close menu
+                    e.data.instance.hide();
+                    return false;
                 };
-                if (this.data.item.handler) {//Item handler
-                    var result = this.data.item.handler(this.data.item, this.data.index);
-                    if (result) {//Close menu
-                        this.data.instance.hide();
-                        return false;
-                    };
+            };
+            if (e.data.instance.config.handler) {
+                var result = e.data.instance.config.handler(e.data.item, e.data.index);
+                if (result) {//Close menu
+                    e.data.instance.hide();
                 };
-                if (this.data.instance.config.handler) {
-                    var result = this.data.instance.config.handler(this.data.item, this.data.index);
-                    if (result) {//Close menu
-                        this.data.instance.hide();
-                    };
-                };
-            }, e), 100);
+            };
             return false;
         }, this));
     };

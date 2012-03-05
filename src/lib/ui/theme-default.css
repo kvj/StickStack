@@ -2,6 +2,23 @@
 	border-color: #351330 !important;
 }
 
+.popup_menu {
+    border: 1px solid #351330;
+    background-color: #424254;
+    -webkit-border-radius: 5px;
+    -webkit-box-shadow: 1px 1px 2px #351330;
+    opacity: 0.95;
+}
+
+.popup_menu_item {
+    border-color: #351330;
+    color: #ffffff;
+}
+
+.popup_menu_item:active {
+    background-color: #CC2A41;
+}
+
 .button_inner {
 	color: #fff !important;
 	-webkit-font-smoothing: antialiased;
@@ -30,7 +47,7 @@
 }
 
 .panel_title {
-    padding: 2px;
+    padding: 3px;
     font-weight: bold;
     color: #dddddd;
     background-color: #351330;
