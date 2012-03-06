@@ -15,6 +15,7 @@ $(function() {//
             }, controller), 500);
         });
     };
+    _initUI();
     main = $('<div/>').addClass('sheet_root').appendTo(document.body);
     var _top = $('<div/>').addClass('sheet_top panel_title draggable').appendTo(main).attr('draggable', 'true');
     _top.bind('dragstart', function(e) {
@@ -71,9 +72,16 @@ $(function() {//
     }));
     $('<div style="clear: both;"/>').appendTo(_top);
     var sheet_div = $('<div/>').addClass('sheet_div').appendTo(main);
-    controller = new Sheet(sheet, sheet_div, _proxy);
+    controller = new Sheet(sheet, sheet_div, _proxy, $(document.body));
     controller.updated = function() {
-        window.nativeWindow.height = main.outerHeight();
+        var maxHeight = 0;
+        $(document.body).children().each(function (index, item) {
+            var h = $(item).offset().top+$(item).outerHeight();
+            if (h>maxHeight) {
+                maxHeight = h;
+            };
+        })
+        window.nativeWindow.height = maxHeight;
     };
     controller.enableNoteDrop(_top, function(n) {
         if (n.id) {//note drop

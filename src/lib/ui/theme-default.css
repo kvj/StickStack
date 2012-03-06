@@ -4,19 +4,20 @@
 
 .popup_menu {
     border: 1px solid #351330;
-    background-color: #424254;
-    -webkit-border-radius: 5px;
-    -webkit-box-shadow: 1px 1px 2px #351330;
+    -webkit-border-radius: 3px;
+    -webkit-box-shadow: 1px 1px 1px #351330;
     opacity: 0.95;
 }
 
 .popup_menu_item {
+    background-color: #424254;
     border-color: #351330;
     color: #ffffff;
 }
 
 .popup_menu_item:active {
-    background-color: #CC2A41;
+    opacity: 0.8;
+    padding-left: 7px;
 }
 
 .button_inner {
@@ -37,6 +38,10 @@
 }
 
 .button_list {
+	background-color: #CC2A41;
+}
+
+.button_remove {
 	background-color: #CC2A41;
 }
 

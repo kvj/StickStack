@@ -5,13 +5,100 @@ var _buildIcon = function(name, cl) {//Builds img html
     return '<div class="icon'+(cl? ' '+cl: '')+'" style="background-image: url(\'img/icons/'+name+'.png\');"/>';
 };
 
-var Sheet = function(sheet, element, proxy) {//
+var Sheet = function(sheet, element, proxy, menuPlace) {//
     this.data = sheet;
     this.root = element;
     this.proxy = proxy;
     this.areaPanel = $('<div/>').addClass('area_wrap').appendTo(this.root).hide();
     this.area = $('<textarea/>').addClass('form_control').appendTo(this.areaPanel);
     this.area.autoGrow(10);
+    var menuDiv = $(document.createElement('div')).addClass('sheet_menu').appendTo(this.root).hide();
+    this.menu = new Buttons({
+        root: menuDiv,
+        maxElements: 4,
+        safe: true,
+    });
+    this.menu.addButton({
+        caption: '+ Tag',
+        classNameInner: 'button_create',
+        handler: _.bind(function() {//Add tag
+            this.startTextEdit(this.selected.id, this.selected.div, 'tag');
+        }, this)
+    });
+    this.menu.addButton({
+        caption: 'Edit',
+        handler: _.bind(function() {//Edit note
+            this.editNote(this.selected, this.selected.div);
+        }, this)
+    });
+    this.menu.addButton({
+        caption: 'Remove',
+        classNameInner: 'button_remove',
+        handler: _.bind(function() {//
+            _showQuestion('Remove note?', _.bind(function (index) {
+                if (0 == index) {
+                    this.proxy('removeNote', _.bind(function(id, err) {//Removed
+                        if (id) {
+                            this.reload();
+                        };
+                    }, this), [this.selected.id]);
+                };
+            }, this))
+            this.updated();
+        }, this)
+    });
+    this.menu.addButton({
+        caption: 'More',
+        handler: _.bind(function() {//
+            var items = [];
+            if (this.selected.selectedTag) {
+                items.push({
+                    caption: 'Remove tag',
+                    cls: 'button_remove',
+                    handler: _.bind(function() {
+                        _showQuestion('Remove tag?', _.bind(function (index) {
+                            if (0 == index) {
+                                this.proxy('removeTag', _.bind(function(id, err) {//
+                                    if (id) {
+                                        this.reload();
+                                    };
+                                }, this), [this.selected.id, this.selected.selectedTag.id]);
+                            };
+                        }, this))
+                        this.updated();
+                        return true;
+                    }, this),
+                });                
+                items.push({
+                    caption: 'Select tag',
+                    handler: _.bind(function() {
+                        this.proxy('openTag', null, [this.selected.selectedTag.id]);
+                        return true;
+                    }, this),
+                });                
+            };
+            items.push({
+                caption: 'Link',
+                cls: 'button_create',
+                handler: _.bind(function() {
+                    this.startTextEdit(this.selected.id, this.selected.div, 'link', this.selected.link);
+                    return true;
+                }, this),
+            });
+            items.push({
+                caption: 'Open note',
+                handler: _.bind(function() {
+                    this.proxy('openTag', null, ['n:'+this.selected.id]);
+                    return true;
+                }, this),
+            });
+            new PopupMenu({
+                element: menuPlace || this.root,
+                items: items,
+            });
+            this.updated();
+        }, this)
+    });
     this.area.bind('keydown', _.bind(function(e) {
         if (e.which == 13) {//Enter
             var val = this.area.val() || '';
@@ -137,11 +224,6 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
             });
         };
         note.selectedTag = t;
-        if (remove) {//
-            note.tagDelete.show();
-        } else {
-            note.tagDelete.hide();
-        };
         note.div.find('.note_tag').removeClass('note_tag_selected');
         e.data.div.addClass('note_tag_selected');
         this.updated();
@@ -227,7 +309,7 @@ Sheet.prototype.enableNoteDrop = function(div, handler) {//Called when note or t
     }, this)).bind('drop', _.bind(function(e) {//Dropped
         var drop = dd.getDDTarget(e, noteDDType);
         if (drop) {//Only ID - note drop
-            log('Dropped note', drop);
+            // log('Dropped note', drop);
             handler({id: drop});
             e.stopPropagation();
             e.preventDefault();
@@ -308,50 +390,51 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
         this.editing = false;
         this.root.find('.note').removeClass('note_selected');
         div.addClass('note_selected');
-        if (this.selected == note && CURRENT_PLATFORM_MOBILE) {//Show menu
-            var items = [{
-                caption: 'Edit note',
-                handler: _.bind(function() {//
-                    this.editNote(note, div);
-                    return true;
-                }, this),
-            }, {
-                caption: 'Remove note',
-                handler: _.bind(function() {
-                    this.proxy('removeNote', _.bind(function(id, err) {//Removed
-                        if (id) {
-                            this.reload();
-                        };
-                    }, this), [note.id]);
-                    return true;
-                }, this),
-            }, {
-                caption: 'Add tag',
-                handler: _.bind(function() {
-                    this.startTextEdit(note.id, div, 'tag');
-                    return true;
-                }, this),
-            }];
-            if (note.link) {
-                items.push({
-                    caption: 'Open link',
-                    handler: _.bind(function() {
-                        this.proxy('openLink', _.bind(function(res) {
-                        }, this), [note.link]);
-                    }, this),
-                });
-            };
-            new PopupMenu({
-                element: this.root,
-                items: items,
-            });
-        };
+        // if (this.selected == note && CURRENT_PLATFORM_MOBILE) {//Show menu
+        //     var items = [{
+        //         caption: 'Edit note',
+        //         handler: _.bind(function() {//
+        //             this.editNote(note, div);
+        //             return true;
+        //         }, this),
+        //     }, {
+        //         caption: 'Remove note',
+        //         handler: _.bind(function() {
+        //             this.proxy('removeNote', _.bind(function(id, err) {//Removed
+        //                 if (id) {
+        //                     this.reload();
+        //                 };
+        //             }, this), [note.id]);
+        //             return true;
+        //         }, this),
+        //     }, {
+        //         caption: 'Add tag',
+        //         handler: _.bind(function() {
+        //             this.startTextEdit(note.id, div, 'tag');
+        //             return true;
+        //         }, this),
+        //     }];
+        //     if (note.link) {
+        //         items.push({
+        //             caption: 'Open link',
+        //             handler: _.bind(function() {
+        //                 this.proxy('openLink', _.bind(function(res) {
+        //                 }, this), [note.link]);
+        //             }, this),
+        //         });
+        //     };
+        //     new PopupMenu({
+        //         element: this.root,
+        //         items: items,
+        //     });
+        // };
         this.selected = note;
+        div.after(this.menu.element.detach().show());
         note.selectedTag = null;
         div.find('.note_tag').removeClass('note_tag_selected');
-        note.tagDelete.hide();
         this.root.find('.note_line_show').removeClass('note_line_show');
         e.data.div.find('.note_line_hide').addClass('note_line_show');
+        this.moveNowLine();
         this.updated();
         return false;
     }, this));
@@ -409,56 +492,59 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     div.bind('dragstart', {note: note}, _.bind(function(e) {//
         dd.setDDTarget(e, noteDDType, e.data.note.id);
     }, this));
-    var tags = $('<div/>').addClass('note_tags').appendTo(div);
+    var tags = $('<div/>').addClass('note_tags');
     if (note.subnotes>1) {
         $(_buildIcon('notes')).appendTo(tags).addClass('left_icon').bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
             this.proxy('openTag', null, ['n:'+note.id]);
             return false;
         }, this));
     }
-    var menu = $('<div/>').addClass('note_menu note_line_hide').appendTo(div);
-    $(_buildIcon('tag')).addClass('note_button').appendTo(menu).bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
-        this.startTextEdit(e.data.note.id, e.data.div, 'tag');
-        return false;
-    }, this));
-    note.tagDelete = $(_buildIcon('tag_delete')).addClass('note_button').appendTo(menu).bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
-        //Remove tag
-        if (note.selectedTag) {
-            this.proxy('removeTag', _.bind(function(id, err) {//
-                if (id) {
-                    this.reload();
-                };
-            }, this), [note.id, note.selectedTag.id]);
-        };
-        return false;
-    }, this)).hide();
-    $(_buildIcon('link')).addClass('note_button').appendTo(menu).bind('click', _.bind(function(e) {//Add tag
-        this.startTextEdit(note.id, div, 'link', note.link);
-        return false;
-    }, this));
-    $(_buildIcon('bin')).addClass('note_button').appendTo(menu).bind('click', {note: note}, _.bind(function(e) {//Delete
-        this.proxy('removeNote', _.bind(function(id, err) {//Removed
-            if (id) {
-                this.reload();
-            };
-        }, this), [e.data.note.id]);
-        return false;
-    }, this));
+    // var menu = $('<div/>').addClass('note_menu note_line_hide').appendTo(div);
+    // $(_buildIcon('tag')).addClass('note_button').appendTo(menu).bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
+    //     this.startTextEdit(e.data.note.id, e.data.div, 'tag');
+    //     return false;
+    // }, this));
+    // note.tagDelete = $(_buildIcon('tag_delete')).addClass('note_button').appendTo(menu).bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
+    //     //Remove tag
+    //     if (note.selectedTag) {
+    //         this.proxy('removeTag', _.bind(function(id, err) {//
+    //             if (id) {
+    //                 this.reload();
+    //             };
+    //         }, this), [note.id, note.selectedTag.id]);
+    //     };
+    //     return false;
+    // }, this)).hide();
+    // $(_buildIcon('link')).addClass('note_button').appendTo(menu).bind('click', _.bind(function(e) {//Add tag
+    //     this.startTextEdit(note.id, div, 'link', note.link);
+    //     return false;
+    // }, this));
+    // $(_buildIcon('bin')).addClass('note_button').appendTo(menu).bind('click', {note: note}, _.bind(function(e) {//Delete
+    //     this.proxy('removeNote', _.bind(function(id, err) {//Removed
+    //         if (id) {
+    //             this.reload();
+    //         };
+    //     }, this), [e.data.note.id]);
+    //     return false;
+    // }, this));
     $('<div style="clear: both;"/>').appendTo(div);
     var text = $('<div/>').addClass('note_text').appendTo(div);
-    var lines = note.parsed || [];
+    var lines = note.parsed || [''];
     for (var j = 0; j < lines.length; j++) {//Add lines
         var line = lines[j];
         var line_div = $('<div/>').addClass('note_line').appendTo(text);
         if (line.length == 0) {//Add text
             line_div.text('-');
         };
-        if (note.link && j == 0) {//Prepend link
-            $(_buildIcon('link_button')).addClass('left_icon').appendTo(line_div).bind('click', _.bind(function(e) {
-                this.proxy('openLink', _.bind(function(res) {
-                }, this), [note.link, e.ctrlKey]);
-                return false;
-            }, this));
+        if (j == 0) {//Prepend link
+            tags.appendTo(line_div);
+            if (note.link) {
+                $(_buildIcon('link_button')).addClass('left_icon').appendTo(line_div).bind('click', _.bind(function(e) {
+                    this.proxy('openLink', _.bind(function(res) {
+                    }, this), [note.link, e.ctrlKey]);
+                    return false;
+                }, this));
+            };
         };
         for (var k = 0; k < line.length; k++) {//Add words
             var word = line[k];
@@ -485,9 +571,8 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     };
     if (note.display == 'none') {//Hide lines
         text.find('.note_line').addClass('note_line_hide');
-        tags.addClass('note_line_hide');
     };
-    if (note.display == 'notags') {//Hide lines
+    if (note.display == 'notags') {//Hide tags
         tags.addClass('note_line_hide');
     };
     if (note.display == 'title') {//Hide all except first line
@@ -501,6 +586,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     if (lastSelected) {
         div.addClass('note_selected');
         div.find('.note_line_hide').addClass('note_line_show')
+        div.after(this.menu.element.detach().show());
         this.selected = note;
     };
     $('<div style="clear: both;"/>').appendTo(tags);
@@ -596,6 +682,7 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
                 this.root.find('.note_line_show').removeClass('note_line_show');
                 this.root.find('.note_selected').removeClass('note_selected');
                 this.selected = null;
+                this.menu.element.hide();
                 this.updated();
             }, this));
         };
@@ -611,6 +698,9 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
 };
 
 Sheet.prototype.moveNowLine = function() {//Moves now line
+    if (!this.hours) {
+        return;
+    };
     var dt = new Date();
     var div = this.hours[dt.getHours()];
     if (div) {
@@ -625,6 +715,7 @@ Sheet.prototype.moveNowLine = function() {//Moves now line
 Sheet.prototype.reload = function(beforeID) {//Asks for items
     this.areaPanel.hide();
     this.textPanel.hide();
+    this.menu.element.hide();
     this.editing = false;
     this.proxy('loadNotes', _.bind(function(list, err) {//
         if (list) {//Display list

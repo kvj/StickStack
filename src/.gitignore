@@ -2,4 +2,4 @@
 *.exe
 *.db
 node-jsondb
-bin
+.bin

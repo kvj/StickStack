@@ -38,7 +38,6 @@ div {
 .button_inner {
     padding: 3px;
     left: 1px;
-    top: 1px;
     right: 1px;
     position: absolute;
     overflow: hidden;
@@ -63,7 +62,7 @@ div {
     height: 25px;
 }
 
-input[type=text], input[type=password] {
+input[type=text], input[type=password], input[type=color] {
     position: absolute;
     left: 1px;
     right: 1px;
@@ -115,6 +114,7 @@ textarea {
     background-color: #ffffff;
     -webkit-border-radius: 5px;
     text-align: center;
+    z-index: 11;
 }
 
 #info_dialog {
@@ -131,6 +131,7 @@ textarea {
     text-align: center;
     color: #eeeeee;
     opacity: 0.7
+    z-index: 12;
 }
 
 .popup_menu {
@@ -143,11 +144,9 @@ textarea {
     margin-top: 70px;
     margin-bottom: 50px;
     border: 1px solid #aaaaaa;
-    padding: 2px;
-    background-color: #ffffff;
-    -webkit-border-radius: 5px;
+    -webkit-border-radius: 3px;
     z-index: 10;
-    -webkit-box-shadow: 2px 2px 2px #888;
+    -webkit-box-shadow: 1px 1px 2px #888;
 }
 
 .popup_menu_item {

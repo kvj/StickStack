@@ -44,7 +44,7 @@ var _showQuestion = function(message, handler, buttons, element) {//Shows questi
         div.append(element);
     };
     if (!buttons) {//Add default
-        buttons = [{caption: 'Yes'}, {caption: 'No'}];
+        buttons = [{caption: 'Yes', classNameInner: 'button_remove'}, {caption: 'No'}];
     };
     var btns = new Buttons({
         root: div,
@@ -754,7 +754,10 @@ var PopupMenu = function(config) {//Shows popup menu
         if (i == 0) {//Add class
             mitem.addClass('popup_menu_item_first');
         };
-        mitem.bind(CURRENT_EVENT_CLICK, {item: this.items[i], index: i, element: mitem, instance: this}, _.bind(function(e) {//Click on item
+        if (this.items[i].cls) {
+            mitem.addClass(this.items[i].cls);
+        };
+        mitem.bind('click', {item: this.items[i], index: i, element: mitem, instance: this}, _.bind(function(e) {//Click on item
             if (e.data.index == e.data.instance.items.length-1) {//Last item - hide menu
                 e.data.instance.hide();
                 return false;
@@ -837,11 +840,10 @@ var AutoForm = function(element, config, formid, values) {//Creates and handles 
                 if (this.conf[id].type == 'password' && this.conf[id].password) {//Special password type
                     control.val('');
                 };
-                if (this.conf[id].type == 'color' && control.mColorPicker) {//Special call mColorPicker
+                if (this.conf[id].type == 'color') {
                     if(_.isArray(val)) {
                         control.val('#'+val[0].toString(16)+val[1].toString(16)+val[2].toString(16));
                     }
-                    control.attr('data-text', 'hidden').attr('data-hex', 'true').mColorPicker();
                 };
             };
         };

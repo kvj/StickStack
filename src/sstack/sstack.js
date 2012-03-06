@@ -8,7 +8,7 @@ yepnope({
     load: ['lib/custom-web/cross-utils.js', 'lib/common-web/jquery-1.7.1.min.js', 'lib/common-web/underscore-min.js', 'lib/common-web/underscore.strings.js', 'lib/custom-web/date.js', 'lib/common-web/json2.js', 'lib/custom-web/layout.js', 'lib/custom-web/pending.js', 'lib/custom-web/calendar.js', 'lib/ui/ui.css', 'lib/ui/theme-default.css', 'lib/ui/ui.js', 'lima1/net.js', 'lima1/main.js'],
     complete: function () {
         yepnope([{
-            load: ['lib/common-web/jquery.autogrow.js', 'lib/color-picker/mColorPicker.js', 'lib/common-web/jquery.mousewheel.js']
+            load: ['lib/common-web/jquery.autogrow.js', 'lib/common-web/jquery.mousewheel.js']
         }, {
             test: CURRENT_PLATFORM == PLATFORM_AIR,
             yep: ['lib/air/AIRAliases.js', 'lib/air/AIRIntrospector.js']
@@ -35,21 +35,6 @@ yepnope({
 
 
 var run = function() {
-    $.fn.mColorPicker.init.enhancedSwatches = false;
-    $.fn.mColorPicker.init.showLogo = false;
-    $.fn.mColorPicker.defaults.imageFolder = '/lib/color-picker/images/';
-    $.fn.mColorPicker.defaults.swatches = [
-        '#efd334',
-        '#34c924',
-        '#ee7b9e',
-        '#7fc9ff',
-        '#d8bfd8',
-        '#e32636',
-        '#bbbbbb',
-        '#006666',
-        '#cc3333',
-        '#FFFFCC'
-    ];
     if (CURRENT_PLATFORM == PLATFORM_AIR) {
         db = new AirDBProvider('sstack');
     } else {
@@ -140,6 +125,33 @@ var TopManager = function() {//Manages top panel
                     return true;
                 }, this),
             });
+            if (CURRENT_PLATFORM_MOBILE) {
+                //Import stuff
+                items.push({
+                    caption: 'Import from Quebec4',
+                    handler: _.bind(function() {
+                        this.quebec4.list(_.bind(function (err, list) {
+                            log('list result:', err, list);
+                            if (err) {
+                                return _showError(err);
+                            };
+                            var items = [];
+                            for (var i = 0; i < list.length; i++) {
+                                var item = list[i];
+                                log('item', item.id, item.title);
+                                items.push({
+                                    caption: item.title
+                                });
+                            };
+                            new PopupMenu({
+                                element: this.panel.element,
+                                items: items
+                            });
+                        }, this))
+                        return true;
+                    }, this),
+                });
+            };
             new PopupMenu({
                 element: this.panel.element,
                 items: items,
@@ -149,7 +161,11 @@ var TopManager = function() {//Manages top panel
     manager.show(this.panel);
     this.startManager(_.bind(function () {
         new SheetsManager(this.panel, this.manager);
+        this.sync();
     }, this));
+    if (CURRENT_PLATFORM_MOBILE) {
+        this.quebec4 = new Quebec4Plugin();
+    };
 };
 
 TopManager.prototype.sync = function() {//Run sync
@@ -269,13 +285,13 @@ var DateTimeSheet = function(panel, datamanager) {//
     this.endHour = 23;
     this.manager = datamanager;
     _createEsentials(this, 'Calendar:', 1);
-    _goBackFactory(this.topMenu, this.panel, _buildIcon('back'));
+    _goBackFactory(this.topMenu, this.panel, '');
     this.calendarPlace = $('<div/>').addClass('calendar_place').appendTo(this.panel.element);
     this.calendar = new Calendar({
         renderTo: this.calendarPlace,
         startWeek: 1,
-        leftArrow: _buildIcon('a_left', 'icon_center'),
-        rightArrow: _buildIcon('a_right', 'icon_center'),
+        // leftArrow: _buildIcon('a_left', 'icon_center'),
+        // rightArrow: _buildIcon('a_right', 'icon_center'),
         handleDay: _.bind(function(div, date) {//Process date
             div.addClass('draggable').bind('dragstart', function(e) {
                 dd.setDDTarget(e, tagDDType, 'd:'+date.format('yyyymmdd'));
@@ -313,16 +329,16 @@ var DateTimeSheet = function(panel, datamanager) {//
 var SheetsManager = function(panel, datamanager) {
     this.manager = datamanager;
     _createEsentials(this, 'Sheets:', 3);
-    _goBackFactory(this.topMenu, this.panel, _buildIcon('back'));
+    _goBackFactory(this.topMenu, this.panel, '');
     this.topMenu.addButton({
-        caption: _buildIcon('update')+'Reload',
+        caption: 'Reload',
         handler: _.bind(function() {
             this.group = null;
             this.reload();
         }, this),
     });
     this.topMenu.addButton({
-        caption: _buildIcon('add')+'New',
+        caption: 'New',
         classNameInner: 'button_create',
         handler: _.bind(function() {
             this.manager.addSheet(_.bind(function(id, err) {
@@ -338,10 +354,10 @@ var SheetsManager = function(panel, datamanager) {
     this.calendar = new Calendar({
         renderTo: this.calendarPlace,
         startWeek: 1,
-        leftArrow: _buildIcon('a_left', 'icon_center'),
+        // leftArrow: _buildIcon('a_left', 'icon_center'),
+        // rightArrow: _buildIcon('a_right', 'icon_center'),
         leftArrowClass: 'button_inner',
         rightArrowClass: 'button_inner',
-        rightArrow: _buildIcon('a_right', 'icon_center'),
         handleDay: _.bind(function(div, date) {//Process date
             div.addClass('draggable').bind('dragstart', function(e) {
                 dd.setDDTarget(e, tagDDType, 'd:'+date.format('yyyymmdd'));
@@ -381,7 +397,7 @@ SheetsManager.prototype.showSheets = function(group) {//
     for (var i = 0; i < this.sheets.length; i++) {//Create buttons
         if (this.sheets[i].type == 'group') {//Group btn
             this.sheetList.addButton({
-                caption: _buildIcon('folder')+this.sheets[i].caption,
+                caption: this.sheets[i].caption,
                 width: 2,
                 sheet: this.sheets[i],
                 handler: _.bind(function(btns, btn) {
@@ -409,7 +425,7 @@ SheetsManager.prototype.showSheets = function(group) {//
             }, this),
         });
         this.sheetList.addButton({
-            caption: _buildIcon('note_edit')+'Edit',
+            caption: 'Edit',
             sheet: this.sheets[i],
             handler: _.bind(function(btns, btn) {
                 new SheetEditor(btn.sheet, this.panel, this.manager);
@@ -434,9 +450,9 @@ SheetsManager.prototype.reload = function() {
 var SheetEditor = function(sheet, panel, datamanager) {
     this.manager = datamanager;
     _createEsentials(this, 'Edit sheet:', 3);
-    _goBackFactory(this.topMenu, this.panel, _buildIcon('back'));
+    _goBackFactory(this.topMenu, this.panel, '');
     this.topMenu.addButton({
-        caption: _buildIcon('save')+'Save',
+        caption: 'Save',
         handler: _.bind(function() {
             this.manager.updateSheet(sheet.id, this.form.saveForm(), _.bind(function(id, err) {
                 if (id) {//Saved
@@ -448,7 +464,8 @@ var SheetEditor = function(sheet, panel, datamanager) {
         }, this),
     });
     this.topMenu.addButton({
-        caption: _buildIcon('bin')+'Remove',
+        caption: 'Remove',
+        classNameInner: 'button_remove',
         handler: _.bind(function() {
             this.manager.removeSheet(sheet.id, function(id, err) {//Removed
                 if (id) {
@@ -474,15 +491,15 @@ var SheetEditor = function(sheet, panel, datamanager) {
 var TagsManager = function(panel, datamanager) {
     this.manager = datamanager;
     _createEsentials(this, 'Tag config:', 3);
-    _goBackFactory(this.topMenu, this.panel, _buildIcon('back'));
+    _goBackFactory(this.topMenu, this.panel, '');
     this.topMenu.addButton({
-        caption: _buildIcon('update')+'Reload',
+        caption: 'Reload',
         handler: _.bind(function() {
             this.reload();
         }, this),
     });
     this.topMenu.addButton({
-        caption: _buildIcon('add')+'New',
+        caption: 'New',
         classNameInner: 'button_create',
         handler: _.bind(function() {
             this.manager.updateTagConfig({}, _.bind(function(id, err) {
@@ -543,9 +560,9 @@ TagsManager.prototype.reload = function() {
 var TagsEditor = function(config, panel, datamanager) {
     this.manager = datamanager;
     _createEsentials(this, 'Edit Config:', 3);
-    _goBackFactory(this.topMenu, this.panel, _buildIcon('back'));
+    _goBackFactory(this.topMenu, this.panel, '');
     this.topMenu.addButton({
-        caption: _buildIcon('save')+'Save',
+        caption: 'Save',
         handler: _.bind(function() {
             var data = this.form.saveForm();
             data.id = config.id;
@@ -560,7 +577,8 @@ var TagsEditor = function(config, panel, datamanager) {
         }, this),
     });
     this.topMenu.addButton({
-        caption: _buildIcon('bin')+'Remove',
+        caption: 'Remove',
+        classNameInner: 'button_remove',
         handler: _.bind(function() {
             this.manager.removeTagConfig(config.id, function(id, err) {//Removed
                 if (id) {
@@ -784,23 +802,23 @@ var copyFileToStorage = function(files) {//
 
 var InlineSheet = function(sheet, panel, datamanager) {//
     _createEsentials(this, sheet.caption, CURRENT_PLATFORM_MOBILE? 2: 4);
-    _goBackFactory(this.topMenu, this.panel, _buildIcon('back'));
+    _goBackFactory(this.topMenu, this.panel, '');
     this.manager = datamanager;
     this.topMenu.addButton({
-        caption: _buildIcon('update')+'Reload',
+        caption: 'Reload',
         handler: _.bind(function() {
             this.sheet.reload();
         }, this),
     });
     this.topMenu.addButton({
-        caption: _buildIcon('add')+'New',
+        caption: 'New',
         classNameInner: 'button_create',
         handler: _.bind(function() {
             this.sheet.newNote();
         }, this),
     });
     this.topMenu.addButton({
-        caption: _buildIcon('eye')+'Expand',
+        caption: 'Expand',
         handler: _.bind(function() {
             this.sheet.root.find('.note_line_hide').addClass('note_line_show');
         }, this),
@@ -831,3 +849,30 @@ var newSheet = function(sheet, panel, datamanager, forceinline) {//Creates new s
     };
 };
 
+var Quebec4Plugin = function () {
+    PhoneGap.addConstructor(function() {
+        PhoneGap.addPlugin("Quebec4", this);
+    });
+};
+
+Quebec4Plugin.prototype.list = function(clean, handler) {
+    PhoneGap.exec(function (list) {
+        handler(null, list);
+    }, function (err) {
+        handler(err || 'Phonegap error');
+    }, 'Quebec4', 'list', []);
+};
+
+Quebec4Plugin.prototype.get = function(id, handler) {
+    PhoneGap.exec(function (data) {
+        handler(null, data);
+    }, function (err) {
+        handler(err || 'Phonegap error');
+    }, 'Quebec4', 'get', [id]);
+};
+
+Quebec4Plugin.prototype.got = function(id) {
+    PhoneGap.exec(function (data) {
+    }, function (err) {
+    }, 'Quebec4', 'got', [id]);
+};
