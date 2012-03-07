@@ -16,7 +16,7 @@
 }
 
 .popup_menu_item:active {
-    opacity: 0.8;
+    opacity: 0.9;
     padding-left: 7px;
 }
 

@@ -9,6 +9,7 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
     this.data = sheet;
     this.root = element;
     this.proxy = proxy;
+    this.menuPlace = menuPlace;
     this.areaPanel = $('<div/>').addClass('area_wrap').appendTo(this.root).hide();
     this.area = $('<textarea/>').addClass('form_control').appendTo(this.areaPanel);
     this.area.autoGrow(10);
@@ -149,6 +150,63 @@ Sheet.prototype.editTextDone = function(val) {//Edit tag/link/ref
     };
     this.text.val('');
     this.text.blur();
+};
+
+Sheet.prototype.importNotes = function(provider) {
+    if (CURRENT_PLATFORM_MOBILE) {
+        provider.list(_.bind(function (err, list) {
+            if (err) {
+                return _showError(err);
+            };
+            var items = [];
+            for (var i = 0; i < list.length; i++) {
+                var item = list[i];
+                log('item', item.id, item.title);
+                items.push({
+                    taskID: item.id,
+                    caption: item.title
+                });
+            };
+            new PopupMenu({
+                element: this.menuPlace || this.root,
+                items: items,
+                handler: _.bind(function (item) {
+                    // log('Getting task:', item.taskID);
+                    provider.get(item.taskID, _.bind(function (err, task) {
+                        if (err) {
+                            return _showError(err);
+                        };
+                        var tags = this.data.autotags;
+                        // log('Task', task, _.keys(task));
+                        if (task.created>0) {
+                            var dt = new Date(task.created);
+                            tags += ' d:'+dt.format('yyyymmdd')+' t:'+(dt.getHours()*100+dt.getMinutes());
+                        };
+                        if (task.id) {
+                            delete task.id;
+                        };
+                        if (task.title) {
+                            task.text = task.title;
+                            delete task.title;
+                        };
+                        // log('Create note', task, tags);
+                        this.proxy('putNote', _.bind(function(id, err) {//
+                            if (id) {
+                                this.reload();
+                                _showInfo('Item imported');
+                                provider.done(item.taskID, function (err) {
+                                    
+                                });
+                            };
+                        }, this), [task, tags]);
+                        
+                    }, this))
+                    return true;
+                }, this)
+            });
+        }, this))
+        
+    };
 };
 
 Sheet.prototype.editAreaDone = function(val) {//Creates new note

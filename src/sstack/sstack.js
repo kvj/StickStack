@@ -15,7 +15,7 @@ yepnope({
         }, {
             test: CURRENT_PLATFORM_MOBILE,
             yep: ['lib/ui/android.css', 'lib/common-web/phonegap-1.4.1.js'],
-            nope: ['lib/ui/desktop.css']
+            nope: ['lib/ui/desktop.css'],
         }, {
             load: ['sstack/sstack.css', 'sstack/datamanager.js', 'sstack/sheet.js'],
             complete: function () {
@@ -30,10 +30,6 @@ yepnope({
     }
 })
 
-
-
-
-
 var run = function() {
     if (CURRENT_PLATFORM == PLATFORM_AIR) {
         db = new AirDBProvider('sstack');
@@ -42,6 +38,7 @@ var run = function() {
     }
     _initUI(db);
     if (CURRENT_PLATFORM_MOBILE) {//Empty layout
+        PhoneGap.onDOMContentLoaded.fire();
         layout = new Layout({});
     } else {//Simple layout
         layout = new Layout({id: 'main'});
@@ -125,33 +122,39 @@ var TopManager = function() {//Manages top panel
                     return true;
                 }, this),
             });
-            if (CURRENT_PLATFORM_MOBILE) {
-                //Import stuff
-                items.push({
-                    caption: 'Import from Quebec4',
-                    handler: _.bind(function() {
-                        this.quebec4.list(_.bind(function (err, list) {
-                            log('list result:', err, list);
-                            if (err) {
-                                return _showError(err);
-                            };
-                            var items = [];
-                            for (var i = 0; i < list.length; i++) {
-                                var item = list[i];
-                                log('item', item.id, item.title);
-                                items.push({
-                                    caption: item.title
-                                });
-                            };
-                            new PopupMenu({
-                                element: this.panel.element,
-                                items: items
-                            });
-                        }, this))
-                        return true;
-                    }, this),
-                });
-            };
+            items.push({
+                caption: 'Login',
+                handler: _.bind(function() {
+                    this.login();
+                    return true;
+                }, this),
+            });
+            // if (CURRENT_PLATFORM_MOBILE) {
+            //     //Import stuff
+            //     items.push({
+            //         caption: 'Import from Quebec4',
+            //         handler: _.bind(function() {
+            //             this.quebec4.list(_.bind(function (err, list) {
+            //                 if (err) {
+            //                     return _showError(err);
+            //                 };
+            //                 var items = [];
+            //                 for (var i = 0; i < list.length; i++) {
+            //                     var item = list[i];
+            //                     log('item', item.id, item.title);
+            //                     items.push({
+            //                         caption: item.title
+            //                     });
+            //                 };
+            //                 new PopupMenu({
+            //                     element: this.panel.element,
+            //                     items: items
+            //                 });
+            //             }, this))
+            //             return true;
+            //         }, this),
+            //     });
+            // };
             new PopupMenu({
                 element: this.panel.element,
                 items: items,
@@ -160,12 +163,12 @@ var TopManager = function() {//Manages top panel
     });
     manager.show(this.panel);
     this.startManager(_.bind(function () {
+        if (CURRENT_PLATFORM_MOBILE) {
+            this.manager.quebec4 = new Quebec4Plugin();
+        };
         new SheetsManager(this.panel, this.manager);
         this.sync();
     }, this));
-    if (CURRENT_PLATFORM_MOBILE) {
-        this.quebec4 = new Quebec4Plugin();
-    };
 };
 
 TopManager.prototype.sync = function() {//Run sync
@@ -805,12 +808,6 @@ var InlineSheet = function(sheet, panel, datamanager) {//
     _goBackFactory(this.topMenu, this.panel, '');
     this.manager = datamanager;
     this.topMenu.addButton({
-        caption: 'Reload',
-        handler: _.bind(function() {
-            this.sheet.reload();
-        }, this),
-    });
-    this.topMenu.addButton({
         caption: 'New',
         classNameInner: 'button_create',
         handler: _.bind(function() {
@@ -821,6 +818,33 @@ var InlineSheet = function(sheet, panel, datamanager) {//
         caption: 'Expand',
         handler: _.bind(function() {
             this.sheet.root.find('.note_line_hide').addClass('note_line_show');
+        }, this),
+    });
+    this.topMenu.addButton({
+        caption: 'More',
+        handler: _.bind(function() {
+            var items = [];
+            items.push({
+                caption: 'Reload',
+                handler: _.bind(function () {
+                    this.sheet.reload();
+                    return true;
+                }, this)
+            });
+            if (CURRENT_PLATFORM_MOBILE && this.manager.quebec4) {
+                items.push({
+                    caption: 'Import from Quebec4',
+                    handler: _.bind(function () {
+                        this.sheet.importNotes(this.manager.quebec4);
+                        return true;
+                    }, this)
+                })
+            };
+            new PopupMenu({
+                items: items,
+                element: this.panel.element
+            });
+            // this.sheet.reload();
         }, this),
     });
     var root = $('<div/>').addClass('inline_sheet').appendTo(this.panel.element);
@@ -855,7 +879,7 @@ var Quebec4Plugin = function () {
     });
 };
 
-Quebec4Plugin.prototype.list = function(clean, handler) {
+Quebec4Plugin.prototype.list = function(handler) {
     PhoneGap.exec(function (list) {
         handler(null, list);
     }, function (err) {
@@ -871,8 +895,8 @@ Quebec4Plugin.prototype.get = function(id, handler) {
     }, 'Quebec4', 'get', [id]);
 };
 
-Quebec4Plugin.prototype.got = function(id) {
+Quebec4Plugin.prototype.done = function(id) {
     PhoneGap.exec(function (data) {
     }, function (err) {
-    }, 'Quebec4', 'got', [id]);
+    }, 'Quebec4', 'done', [id]);
 };

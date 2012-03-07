@@ -60,7 +60,7 @@ var _showQuestion = function(message, handler, buttons, element) {//Shows questi
         }, {handler: handler, div: div})
         btns.addButton(buttons[i]);
     };
-    div.show();
+    div.css('top', 20+document.body.scrollTop).show();
     return btns;
 };
 
@@ -142,7 +142,7 @@ var _initUI = function(storage) {//Creates root UI elements
     });
     var warningShown = false;
     if (CURRENT_PLATFORM_MOBILE) {//Add back handler
-        $(document).bind('backbutton', function() {//Back button
+        document.addEventListener('backbutton', function() {//Back button
             if (__visiblePopupMenu) {//Have visible menu
                 if (__visiblePopupMenu.hide()) {//Was hidden menu
                     return false;
@@ -160,7 +160,7 @@ var _initUI = function(storage) {//Creates root UI elements
                     return true;
                 };
             };
-        }, false);
+        }, true);
     };
     $('<div id="info_dialog"/>').appendTo(document.body).hide();
     if (CURRENT_PLATFORM == PLATFORM_AIR && storage) {//Only for air

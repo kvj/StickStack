@@ -38,7 +38,8 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
     if (method == 'putNote') {
         datamanager.putNote(params[0], function(id, err) {
             if (id) {//Add notes
-                var tags = datamanager.noteToSheet(params[1], []);
+                var tags = datamanager.noteToSheet(params[1], params[0].tags);
+                log('Saving tags', tags);
                 datamanager.updateTags(id, tags, function(id, err) {
                     if (id) {
                         handler(id);

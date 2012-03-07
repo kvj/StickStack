@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Handler;
+import android.util.Log;
 
 import com.phonegap.api.PhonegapActivity;
 import com.phonegap.api.Plugin;
@@ -22,12 +23,14 @@ public class Quebec4Plugin extends Plugin {
 	private static final String GET_TASK_ACTION = "org.kvj.quebec4.action.GET";
 	private static final String GET_TASK_RESPONSE_ACTION = "org.kvj.quebec4.action.GET_RESP";
 	private static final String GOT_TASK_ACTION = "org.kvj.quebec4.action.GOT";
-	private static final long OP_TIMEOUT = 2000;
+	private static final long OP_TIMEOUT = 4000;
+	private static final String TAG = "Q4Plugin";
 	private Handler handler = null;
 
 	public Quebec4Plugin() {
 		super();
 		handler = new Handler();
+		Log.i(TAG, "Quebec4 plugin created");
 	}
 
 	@Override
@@ -37,6 +40,7 @@ public class Quebec4Plugin extends Plugin {
 				GET_TASK_RESPONSE_ACTION));
 		ctx.registerReceiver(getTasksReceiver, new IntentFilter(
 				GET_TASKS_RESPONSE_ACTION));
+		Log.i(TAG, "Quebec4 plugin context set");
 	}
 
 	private BroadcastReceiver getTaskReceiver = new BroadcastReceiver() {
@@ -44,9 +48,13 @@ public class Quebec4Plugin extends Plugin {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			try {
+				// Log.i(TAG,
+				// "Task: " + callback + ", "
+				// + intent.getStringExtra("object"));
 				if (null != callback) {
 					success(new PluginResult(Status.OK, new JSONObject(
 							intent.getStringExtra("object"))), callback);
+					callback = null;
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -60,9 +68,13 @@ public class Quebec4Plugin extends Plugin {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			try {
+				// Log.i(TAG,
+				// "Task: " + callback + ", "
+				// + intent.getStringExtra("list"));
 				if (null != callback) {
 					success(new PluginResult(Status.OK, new JSONArray(
 							intent.getStringExtra("list"))), callback);
+					callback = null;
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -82,10 +94,13 @@ public class Quebec4Plugin extends Plugin {
 
 	@Override
 	public PluginResult execute(String action, JSONArray params, String callback) {
+		Log.i(TAG, "execute: " + action + ", " + callback + ", " + params);
+		PluginResult noResult = new PluginResult(Status.NO_RESULT);
+		noResult.setKeepCallback(true);
 		if ("list".equals(action)) {
 			startTimeoutTimer(callback);
 			ctx.sendBroadcast(new Intent(GET_TASKS_ACTION));
-			return new PluginResult(Status.NO_RESULT);
+			return noResult;
 		}
 		if ("get".equals(action)) {
 			Intent intent = new Intent(GET_TASK_ACTION);
@@ -96,7 +111,7 @@ public class Quebec4Plugin extends Plugin {
 			}
 			startTimeoutTimer(callback);
 			ctx.sendBroadcast(intent);
-			return new PluginResult(Status.NO_RESULT);
+			return noResult;
 		}
 		if ("done".equals(action)) {
 			Intent intent = new Intent(GOT_TASK_ACTION);
@@ -111,15 +126,17 @@ public class Quebec4Plugin extends Plugin {
 		return new PluginResult(Status.INVALID_ACTION);
 	}
 
-	private void startTimeoutTimer(final String callback) {
-		this.callback = callback;
+	private void startTimeoutTimer(final String _callback) {
+		this.callback = _callback;
 		handler.postDelayed(new Runnable() {
 
 			@Override
 			public void run() {
-				if (callback.equals(Quebec4Plugin.this.callback)) {
-					Quebec4Plugin.this.callback = null;
-					Quebec4Plugin.this.error("Timeout", callback);
+				// Log.i(TAG, "Timeout: " + _callback + " = " + callback);
+				if (_callback.equals(callback)) {
+					Log.i(TAG, "Sending error");
+					callback = null;
+					Quebec4Plugin.this.error("Timeout", _callback);
 				}
 			}
 		}, OP_TIMEOUT);
