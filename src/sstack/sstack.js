@@ -129,32 +129,6 @@ var TopManager = function() {//Manages top panel
                     return true;
                 }, this),
             });
-            // if (CURRENT_PLATFORM_MOBILE) {
-            //     //Import stuff
-            //     items.push({
-            //         caption: 'Import from Quebec4',
-            //         handler: _.bind(function() {
-            //             this.quebec4.list(_.bind(function (err, list) {
-            //                 if (err) {
-            //                     return _showError(err);
-            //                 };
-            //                 var items = [];
-            //                 for (var i = 0; i < list.length; i++) {
-            //                     var item = list[i];
-            //                     log('item', item.id, item.title);
-            //                     items.push({
-            //                         caption: item.title
-            //                     });
-            //                 };
-            //                 new PopupMenu({
-            //                     element: this.panel.element,
-            //                     items: items
-            //                 });
-            //             }, this))
-            //             return true;
-            //         }, this),
-            //     });
-            // };
             new PopupMenu({
                 element: this.panel.element,
                 items: items,
@@ -162,13 +136,15 @@ var TopManager = function() {//Manages top panel
         }, this),
     });
     manager.show(this.panel);
-    this.startManager(_.bind(function () {
-        if (CURRENT_PLATFORM_MOBILE) {
-            this.manager.quebec4 = new Quebec4Plugin();
-        };
-        new SheetsManager(this.panel, this.manager);
-        this.sync();
-    }, this));
+    setTimeout(_.bind(function () {
+        this.startManager(_.bind(function () {
+            if (CURRENT_PLATFORM_MOBILE) {
+                this.manager.quebec4 = new Quebec4Plugin();
+            };
+            new SheetsManager(this.panel, this.manager);
+            this.sync();
+        }, this));
+    }, this), 100);
 };
 
 TopManager.prototype.sync = function() {//Run sync
@@ -840,6 +816,13 @@ var InlineSheet = function(sheet, panel, datamanager) {//
                     }, this)
                 })
             };
+            // items.push({
+            //     caption: 'Import from Test',
+            //     handler: _.bind(function () {
+            //         this.sheet.importNotes(new Quebec4Test());
+            //         return true;
+            //     }, this)
+            // });
             new PopupMenu({
                 items: items,
                 element: this.panel.element
@@ -900,3 +883,165 @@ Quebec4Plugin.prototype.done = function(id) {
     }, function (err) {
     }, 'Quebec4', 'done', [id]);
 };
+
+// var Quebec4Test = function () {
+//     this.items = [{
+//   "created": 1331162873995,
+//   "points": [
+//     {
+//       "id": 61,
+//       "lon": 139.6792856,
+//       "created": 1331159942657,
+//       "speed": 0,
+//       "lat": 35.4977779,
+//       "acc": 34,
+//       "alt": 0
+//     },
+//     {
+//       "id": 62,
+//       "lon": 139.6793991,
+//       "created": 1331160123848,
+//       "speed": 0,
+//       "lat": 35.4975134,
+//       "acc": 25,
+//       "alt": 0
+//     },
+//     {
+//       "id": 63,
+//       "lon": 139.6743254,
+//       "created": 1331160304465,
+//       "speed": 0,
+//       "lat": 35.5038108,
+//       "acc": 37,
+//       "alt": 0
+//     },
+//     {
+//       "id": 64,
+//       "lon": 139.6780739,
+//       "created": 1331160486982,
+//       "speed": 0,
+//       "lat": 35.5105486,
+//       "acc": 30,
+//       "alt": 0
+//     },
+//     {
+//       "id": 65,
+//       "lon": 139.7143397,
+//       "created": 1331160940770,
+//       "speed": 0,
+//       "lat": 35.5594627,
+//       "acc": 36,
+//       "alt": 0
+//     },
+//     {
+//       "id": 66,
+//       "lon": 139.7416851,
+//       "created": 1331161121605,
+//       "speed": 0,
+//       "lat": 35.6274957,
+//       "acc": 29,
+//       "alt": 0
+//     },
+//     {
+//       "id": 67,
+//       "lon": 139.7164573,
+//       "created": 1331161440740,
+//       "speed": 0,
+//       "lat": 35.5633473,
+//       "acc": 40,
+//       "alt": 0
+//     },
+//     {
+//       "id": 68,
+//       "lon": 139.7349164,
+//       "created": 1331161621963,
+//       "speed": 0,
+//       "lat": 35.6070725,
+//       "acc": 27,
+//       "alt": 0
+//     },
+//     {
+//       "id": 69,
+//       "lon": 139.7271928,
+//       "created": 1331161848550,
+//       "speed": 0,
+//       "lat": 35.6085113,
+//       "acc": 27,
+//       "alt": 0
+//     },
+//     {
+//       "id": 70,
+//       "lon": 139.7125585,
+//       "created": 1331162029310,
+//       "speed": 0,
+//       "lat": 35.60603,
+//       "acc": 48,
+//       "alt": 0
+//     },
+//     {
+//       "id": 71,
+//       "lon": 139.70810151658952,
+//       "created": 1331162220626,
+//       "speed": 5.817149639129639,
+//       "lat": 35.60206243302673,
+//       "acc": 5,
+//       "alt": 79.0999755859375
+//     },
+//     {
+//       "id": 72,
+//       "lon": 139.7080678,
+//       "created": 1331162403284,
+//       "speed": 0,
+//       "lat": 35.6005952,
+//       "acc": 53,
+//       "alt": 0
+//     },
+//     {
+//       "id": 73,
+//       "lon": 139.7078764,
+//       "created": 1331162586992,
+//       "speed": 0,
+//       "lat": 35.6000794,
+//       "acc": 24,
+//       "alt": 0
+//     },
+//     {
+//       "id": 74,
+//       "lon": 139.7061661,
+//       "created": 1331162812308,
+//       "speed": 0,
+//       "lat": 35.5989421,
+//       "acc": 37,
+//       "alt": 0
+//     }
+//   ],
+//   "title": "На работу",
+//   "id": 0
+// }, {
+//   "created": 1331121639481,
+//   "point": {
+//     "id": 60,
+//     "lon": 139.6782793,
+//     "created": 1331121573620,
+//     "speed": 0,
+//     "lat": 35.4989528,
+//     "acc": 34,
+//     "alt": 0
+//   },
+//   "title": "Дома",
+//   "id": 1
+// }]
+// };
+
+// Quebec4Test.prototype.list = function(handler) {
+//     handler(null, this.items);
+// };
+
+// Quebec4Test.prototype.get = function(id, handler) {
+//     handler(null, this.items[id]);
+// };
+
+// Quebec4Test.prototype.done = function(id) {
+
+// };
+

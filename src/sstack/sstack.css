@@ -256,3 +256,13 @@
 .left_icon {
     float: left;
 }
+
+.geo {
+    text-align: center;
+}
+
+.geo_image {
+    margin: 2px;
+    padding: 2px;
+    border: 1px solid #888888;
+}

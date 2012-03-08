@@ -207,6 +207,57 @@ var DataManager = function(database) {//Do DB operations
         return '(nt.type=? and nt.value=?) or n.id=?';
     };
 
+    var GeoTag = function() {
+        this.name = 'geo';
+        this.display = 'geo';
+    };
+    GeoTag.prototype = new DefaultTag();
+
+    GeoTag.prototype.accept = function(text) {
+        if (_.startsWith(text || '', 'g:')) {
+            return true;
+        };
+        return false;
+    };
+
+    GeoTag.prototype.store = function(text) {//Convert to Date
+        return ['g:', 0];
+    };
+
+    GeoTag.prototype.format = function(text) {
+        return 'geo';
+    };
+
+    GeoTag.prototype.select = function(text, values) {//Default 
+        values.push('id', this._in(['text', text]));
+        return '(nt.type=? and nt.value=?) or n.id=?';
+    };
+
+    var PathTag = function() {
+        this.name = 'path';
+    };
+    PathTag.prototype = new DefaultTag();
+
+    PathTag.prototype.accept = function(text) {
+        if (_.startsWith(text || '', 'p:')) {
+            return true;
+        };
+        return false;
+    };
+
+    PathTag.prototype.store = function(text) {//Convert to Date
+        return ['p:', 0];
+    };
+
+    PathTag.prototype.format = function(text) {
+        return 'path';
+    };
+
+    PathTag.prototype.select = function(text, values) {//Default 
+        values.push('id', this._in(['text', text]));
+        return '(nt.type=? and nt.value=?) or n.id=?';
+    };
+
     var DateTag = function() {//Date starts d:
         this.reg = /^d:(((\d{4})(\d{2})(\d{2}))|((\+|\-)(\d+)(d|w|m|y)))$/;
         this.rangeReg = /^d:(.+):(.+)$/;
@@ -388,6 +439,8 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new DateTag());
     this.tagControllers.push(new TimeTag());
     this.tagControllers.push(new NoteTag());
+    this.tagControllers.push(new GeoTag());
+    this.tagControllers.push(new PathTag());
     this.tagControllers.push(new DefaultTag());
 
     this.sheetsConfig = {};
@@ -413,6 +466,15 @@ DataManager.prototype.adoptTag = function(text) {
         };
     };
     return text;
+};
+
+DataManager.prototype.findTagController = function(text) {
+    for (var i = 0; i < this.tagControllers.length; i++) {
+        if (this.tagControllers[i].accept(text)) {
+            return this.tagControllers[i];
+        };
+    };
+    return null;
 };
 
 DataManager.prototype.formatTag = function(text) {
@@ -948,6 +1010,9 @@ DataManager.prototype.sortNotes = function(list, sort) {
             };
         };
         //log('created', a.text, b.text, a.created>b.created? -1: 1);
+        if (a.created == b.created) {
+            return a.id>b.id? 1: -1
+        };
         return a.created>b.created? 1: -1;
     }, this));
 };
@@ -990,7 +1055,12 @@ DataManager.prototype.loadTags = function(list, handler) {//Loads tags to this
             //Also create and sort tags to display
             var tag_display = [];
             for (var j = 0; j < tags.length; j++) {//Create text repr.
-                var tag_info = {id: tags[j], caption: this.formatTag(tags[j])};
+                var controller = this.findTagController(tags[j]);
+                var tag_info = {id: tags[j], caption: tags[j]};
+                if (controller) {
+                    tag_info.caption = controller.format(tags[j]);
+                    tag_info.display = controller.display || '';
+                };
                 tag_info.config = this.findTagConfig(tag_info.id);
                 tag_info.color = tag_info.config.tag_color;
                 tag_display.push(tag_info);
@@ -1102,7 +1172,7 @@ DataManager.prototype.selectNotes = function(tags, handler, parse) {//Selects an
             };
         }
     };
-    log('Select', tags, values);
+    // log('Select', tags, values);
     this.db.storage.select('notes', values, _.bind(function (err, data) {
         if (err) {
             return handler(null, err);
@@ -1113,6 +1183,7 @@ DataManager.prototype.selectNotes = function(tags, handler, parse) {//Selects an
         var result = [];
         for (var j = 0; j < data.length; j++) {
             var note = _.clone(data[j]);
+            // log(JSON.stringify(note, null, 2));
             note.parsed = this.parseText(note.text);
             result.push(note);
         };

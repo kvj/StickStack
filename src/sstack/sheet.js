@@ -130,6 +130,51 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
     this.reload();
 };
 
+Sheet.prototype.launchTagMethod = function(note, method) {
+    for (var j = 0; j < note.tags_captions.length; j++) {//Display tags
+        var t = note.tags_captions[j];
+        if (t.display) {
+            var m = 'tag_'+method+'_'+t.display;
+            if (this[m]) {
+                this[m].call(this, note, t.id);
+            };
+        };
+    };
+};
+
+Sheet.prototype.tag_unselect_geo = function(note, tag) {
+    if (note.geoCreated) {
+        note.div.find('.geo').remove();
+        note.geoCreated = false;
+    };
+};
+
+Sheet.prototype.tag_select_geo = function(note, tag) {
+    // log('Ready to show geo', tag);
+    if (!note.geoCreated) {
+        var arr = tag.split(':');
+        var point = {};
+        for (var i = 0; i < arr.length; i++) {
+            var item = arr[i];
+            var vp = item.split('=');
+            if (vp.length == 2) {
+                point[vp[0]] = vp[1];
+            };
+        };
+        // log('Show point', point);
+        note.geoCreated = true;
+        if (point.lat && point.lon) {
+            var gap = 8;
+            var width = note.div.innerWidth()-2*gap;
+            var height = 180;
+            var frame = $(document.createElement('div')).addClass('geo note_line_hide').appendTo(note.div);
+            var img = $(document.createElement('img')).addClass('geo_image').appendTo(frame);
+            img.attr('src', 'http://maps.google.com/maps/api/staticmap?center='+point.lat+','+point.lon+'&zoom=15&size='+width+'x'+height+'&sensor=true&markers=color:red|size:mid|'+point.lat+','+point.lon);
+            img.width(width).height(height);
+        };
+    };
+};
+
 Sheet.prototype.editTextDone = function(val) {//Edit tag/link/ref
     var method = null;
     if (this.editField == 'tag') {
@@ -152,61 +197,87 @@ Sheet.prototype.editTextDone = function(val) {//Edit tag/link/ref
     this.text.blur();
 };
 
-Sheet.prototype.importNotes = function(provider) {
-    if (CURRENT_PLATFORM_MOBILE) {
-        provider.list(_.bind(function (err, list) {
-            if (err) {
-                return _showError(err);
-            };
-            var items = [];
-            for (var i = 0; i < list.length; i++) {
-                var item = list[i];
-                log('item', item.id, item.title);
-                items.push({
-                    taskID: item.id,
-                    caption: item.title
-                });
-            };
-            new PopupMenu({
-                element: this.menuPlace || this.root,
-                items: items,
-                handler: _.bind(function (item) {
-                    // log('Getting task:', item.taskID);
-                    provider.get(item.taskID, _.bind(function (err, task) {
-                        if (err) {
-                            return _showError(err);
-                        };
-                        var tags = this.data.autotags;
-                        // log('Task', task, _.keys(task));
-                        if (task.created>0) {
-                            var dt = new Date(task.created);
-                            tags += ' d:'+dt.format('yyyymmdd')+' t:'+(dt.getHours()*100+dt.getMinutes());
-                        };
-                        if (task.id) {
-                            delete task.id;
-                        };
-                        if (task.title) {
-                            task.text = task.title;
-                            delete task.title;
-                        };
-                        // log('Create note', task, tags);
-                        this.proxy('putNote', _.bind(function(id, err) {//
-                            if (id) {
-                                this.reload();
-                                _showInfo('Item imported');
-                                provider.done(item.taskID, function (err) {
-                                    
-                                });
-                            };
-                        }, this), [task, tags]);
-                        
-                    }, this))
-                    return true;
-                }, this)
-            });
-        }, this))
-        
+Sheet.prototype.pointToTag = function(point) {
+    var fixFloat = function (fl) {
+        if (!fl) {
+            return 0;
+        };
+        return Math.round(fl*10000)/10000;
     };
+    return 'g:lat='+fixFloat(point.lat)+':lon='+fixFloat(point.lon)+':sp='+fixFloat(point.speed)+':acc='+fixFloat(point.acc)+':alt='+fixFloat(point.alt)+':tstamp='+point.created;
+};
+
+Sheet.prototype.importNotes = function(provider) {
+    provider.list(_.bind(function (err, list) {
+        if (err) {
+            return _showError(err);
+        };
+        var items = [];
+        for (var i = 0; i < list.length; i++) {
+            var item = list[i];
+            log('item', item.id, item.title);
+            items.push({
+                taskID: item.id,
+                caption: item.title
+            });
+        };
+        new PopupMenu({
+            element: this.menuPlace || this.root,
+            items: items,
+            handler: _.bind(function (item) {
+                // log('Getting task:', item.taskID);
+                provider.get(item.taskID, _.bind(function (err, task) {
+                    if (err) {
+                        return _showError(err);
+                    };
+                    var tags = this.data.autotags;
+                    // log('Task', task, _.keys(task));
+                    if (task.created>0) {
+                        var dt = new Date(task.created);
+                        tags += ' d:'+dt.format('yyyymmdd')+' t:'+(dt.getHours()*100+Math.floor(dt.getMinutes()/15)*15);
+                    };
+                    if (task.id) {
+                        delete task.id;
+                    };
+                    if (task.title) {
+                        task.text = task.title;
+                        delete task.title;
+                    };
+                    var points = null;
+                    if (task.point) {
+                        tags +=' '+this.pointToTag(task.point);
+                        delete task.point;
+                    };
+                    if (task.points) {
+                        points = task.points;
+                        delete task.points;
+                        tags += ' p:';
+                    };
+                    // log('Create note', task, tags);
+                    this.proxy('putNote', _.bind(function(id, err) {//
+                        if (id) {
+                            this.reload();
+                            _showInfo('Item imported');
+                            provider.done(item.taskID, function (err) {
+                                
+                            });
+                            for (var i = 0; points && i < points.length; i++) {
+                                var point = points[i];
+                                var n = {
+                                    text: new Date(point.created).format('m/d/yy h:MMt')
+                                }
+                                this.proxy('putNote', _.bind(function (id, err) {
+                                    
+                                }, this), [n, 'n:'+id+' '+this.pointToTag(point)]);
+                            };
+                        };
+                    }, this), [task, tags]);
+                    
+                }, this))
+                return true;
+            }, this)
+        });
+    }, this))
 };
 
 Sheet.prototype.editAreaDone = function(val) {//Creates new note
@@ -238,6 +309,35 @@ var applyColor = function (div, color, gradient) {
     return true;
 }
 
+Sheet.prototype.selectNote = function(note) {
+    if (this.selected != note) {
+        if (this.selected) {
+            this.launchTagMethod(this.selected, 'unselect');
+        };
+        this.launchTagMethod(note, 'select');
+    };
+    this.selected = note;
+    note.div.after(this.menu.element.detach().show());
+    note.selectedTag = null;
+    this.root.find('.note_tag').removeClass('note_tag_selected');
+    this.root.find('.note_line_show').removeClass('note_line_show');
+    note.div.find('.note_line_hide').addClass('note_line_show');
+    this.moveNowLine();
+    this.updated();
+};
+
+Sheet.prototype.unselectNote = function() {
+    this.root.find('.note_line_show').removeClass('note_line_show');
+    this.root.find('.note_selected').removeClass('note_selected');
+    if (this.selected) {
+        this.selected.div.find('.note_tag').removeClass('note_tag_selected');
+        this.selected.selectedTag = null;
+    };
+    this.selected = null;
+    this.menu.element.hide();
+    this.updated();
+};
+
 Sheet.prototype.showTag = function(note, t, parent, remove) {//
     var tag = $('<div/>').addClass('note_tag draggable').attr('draggable', 'true').appendTo(parent);
     applyColor(tag, t.color, true);
@@ -253,34 +353,34 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
         };
         //e.data.div.siblings('.note_tag').find('.note_button').hide();
         //e.data.div.find('.note_button').show();
-        if (note.selectedTag == t && CURRENT_PLATFORM_MOBILE) {//Show menu
-            new PopupMenu({
-                element: this.root,
-                items: [{
-                    caption: 'Select notes',
-                    handler: _.bind(function() {
-                        this.proxy('openTag', null, [t.id]);
-                        return true;
-                    }, this),
-                }, {
-                    caption: 'Remove tag',
-                    handler: _.bind(function() {
-                        this.proxy('removeTag', _.bind(function(id, err) {//
-                            if (id) {
-                                this.reload();
-                            };
-                        }, this), [note.id, t.id]);
-                        return true;
-                    }, this),
-                }, {
-                    caption: 'Create note',
-                    handler: _.bind(function() {
-                        this.newNote(t.id);
-                        return true;
-                    }, this),
-                }]
-            });
-        };
+        // if (note.selectedTag == t && CURRENT_PLATFORM_MOBILE) {//Show menu
+        //     new PopupMenu({
+        //         element: this.root,
+        //         items: [{
+        //             caption: 'Select notes',
+        //             handler: _.bind(function() {
+        //                 this.proxy('openTag', null, [t.id]);
+        //                 return true;
+        //             }, this),
+        //         }, {
+        //             caption: 'Remove tag',
+        //             handler: _.bind(function() {
+        //                 this.proxy('removeTag', _.bind(function(id, err) {//
+        //                     if (id) {
+        //                         this.reload();
+        //                     };
+        //                 }, this), [note.id, t.id]);
+        //                 return true;
+        //             }, this),
+        //         }, {
+        //             caption: 'Create note',
+        //             handler: _.bind(function() {
+        //                 this.newNote(t.id);
+        //                 return true;
+        //             }, this),
+        //         }]
+        //     });
+        // };
         note.selectedTag = t;
         note.div.find('.note_tag').removeClass('note_tag_selected');
         e.data.div.addClass('note_tag_selected');
@@ -443,6 +543,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
             this.proxy('openTag', null, ['n:'+note.id]);
             return false;
         };
+        // log('Note', note);
         this.areaPanel.hide();
         this.textPanel.hide();
         this.editing = false;
@@ -486,14 +587,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
         //         items: items,
         //     });
         // };
-        this.selected = note;
-        div.after(this.menu.element.detach().show());
-        note.selectedTag = null;
-        div.find('.note_tag').removeClass('note_tag_selected');
-        this.root.find('.note_line_show').removeClass('note_line_show');
-        e.data.div.find('.note_line_hide').addClass('note_line_show');
-        this.moveNowLine();
-        this.updated();
+        this.selectNote(note);
         return false;
     }, this));
     div.bind('dragover', {note: note}, _.bind(function(e) {
@@ -642,10 +736,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
 
     };
     if (lastSelected) {
-        div.addClass('note_selected');
-        div.find('.note_line_hide').addClass('note_line_show')
-        div.after(this.menu.element.detach().show());
-        this.selected = note;
+        this.selectNote(note);
     };
     $('<div style="clear: both;"/>').appendTo(tags);
     $('<div style="clear: both;"/>').appendTo(div);
@@ -737,11 +828,7 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
                 this.areaPanel.hide();
                 this.textPanel.hide();
                 this.editing = false;
-                this.root.find('.note_line_show').removeClass('note_line_show');
-                this.root.find('.note_selected').removeClass('note_selected');
-                this.selected = null;
-                this.menu.element.hide();
-                this.updated();
+                this.unselectNote();
             }, this));
         };
         this.nowLine = $('<div/>').appendTo(this.root).addClass('now_line');
