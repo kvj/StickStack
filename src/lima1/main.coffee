@@ -130,7 +130,7 @@ class HTML5Provider extends DBProvider
 				data.push obj
 			handler null, data, transaction
 		, (transaction, error) =>
-			log 'Error SQL', error
+			log 'Error SQL', query, error
 			handler error.message
 
 	query: (query, params, handler, transaction) ->
@@ -147,14 +147,16 @@ class HTML5Provider extends DBProvider
 
 	verify: (schema, handler) ->
 		# log 'verify', schema
-		@query 'select name, type from sqlite_master where type=? or type=?', ['table', 'index'], (err, res, tr) =>
+		@query 'select name, type from sqlite_master where type=? or type=? order by type desc', ['table', 'index'], (err, res, tr) =>
 			log	'SQL result', err, res, tr
 			if err
 				return handler err
-			if not @version_match or @clean
+			if not @version_match or @clean or res.length<5
+				@clean = yes
 				# drop tables/etc
 				create_at = (index) =>
 					if index < schema.length
+						log 'Create SQL:', schema[index]
 						@query schema[index], [], (err) =>
 							if err
 								return handler err
@@ -199,7 +201,8 @@ class HTML5Provider extends DBProvider
 class StorageProvider
 
 	last_id: 0
-	db_schema: ['create table if not exists updates (id integer primary key, version_in integer, version_out integer, version text)', 'create table if not exists data (id integer primary key, status integer default 0, updated integer default 0, own integer default 1, stream text, data text, i0 integer, i1 integer, i2 integer, i3 integer, i4 integer, i5 integer, i6 integer, i7 integer, i8 integer, i9 integer, t0 text, t1 text, t2 text, t3 text, t4 text, t5 text, t6 text, t7 text, t8 text, t9 text)', 'create table if not exists schema (id integer primary key, token text, schema text)']
+	db_schema: ['create table if not exists updates (id integer primary key, version_in integer, version_out integer, version text)', 'create table if not exists schema (id integer primary key, token text, schema text)', 'create table if not exists uploads (id integer primary key, path text, name text, status integer)']
+	data_template: '(id integer primary key, status integer default 0, updated integer default 0, own integer default 1, stream text, data text'
 
 	constructor: (@db) ->
 
@@ -238,7 +241,7 @@ class StorageProvider
 		@db.query 'update schema set token=?', [token], (err) =>
 			if handler then handler err
 	
-	sync: (app, oauth, handler) ->
+	sync: (app, oauth, handler, force_clean) ->
 		log 'Starting sync...', app
 		oauth.token = @token
 		reset_schema = no
@@ -250,11 +253,13 @@ class StorageProvider
 		finish_sync = (err) =>
 			if err then return handler err
 			@db.query 'insert into updates (id, version_in, version_out) values (?, ?, ?)', [@_id(), in_from, out_from], () =>
-				@db.query 'delete from data where status=?', [3], () =>
-					handler err, {
-						in: in_items
-						out: out_items
-					}
+				for name, item of @schema
+					if name.charAt(0) == '_' then continue
+					@db.query 'delete from t_'+name+' where status=?', [3], () =>
+				handler err, {
+					in: in_items
+					out: out_items
+				}
 		receive_out = () =>
 			url = "/rest/out?from=#{out_from}&"
 			if not clean_sync
@@ -288,8 +293,16 @@ class StorageProvider
 								internal: yes
 							}
 		send_in = () =>
+			if force_clean then return do_reset_schema null
 			slots = @schema._slots ? 10
-			@db.query 'select id, stream, data, updated, status from data where own=? and updated>? order by updated limit '+slots, [1, in_from], (err, data) =>
+			sql = []
+			vars = []
+			for name, item of @schema
+				if name.charAt(0) == '_' then continue
+				sql.push 'select id, stream, data, updated, status from t_'+name+' where own=? and updated>?'
+				vars.push 1
+				vars.push in_from
+			@db.query sql.join(' union ')+' order by updated limit '+slots, vars, (err, data) =>
 				if err then return finish_sync err
 				result = []
 				slots_used = 0
@@ -315,7 +328,28 @@ class StorageProvider
 					send_in null
 		do_reset_schema = () =>
 			@db.clean = true
-			@db.verify @db_schema, (err, reset) =>
+			new_schema = []
+			for item in @db_schema
+				new_schema.push item
+			for name, item of @schema
+				fields = id: 'id'
+				if name.charAt(0) == '_' then continue;
+				numbers = item.numbers ? []
+				texts = item.texts ? []
+				sql = 'create table if not exists t_'+name+' '+@data_template
+				for field in numbers
+					sql += ', f_'+field+' integer'
+				for field in texts
+					sql += ', f_'+field+' text'
+				new_schema.push sql+')'
+				indexes = item.indexes ? []
+				index_idx = 0
+				for index in indexes
+					index_sql = 'create index i_'+name+'_'+(index_idx++)+' on t_'+name+' (status';
+					for index_field in index
+						index_sql += ', f_'+index_field;
+					new_schema.push index_sql+')'
+			@db.verify new_schema, (err, reset) =>
 				# log 'Verify result', err, reset
 				if err then return finish_sync err
 				out_from = 0
@@ -334,7 +368,7 @@ class StorageProvider
 		oauth.rest app, '/rest/schema?', null, (err, schema) =>
 			# log 'After schema', err, schema
 			if err then return finish_sync err
-			if not @schema or @schema._rev isnt schema._rev
+			if not @schema or @schema._rev isnt schema._rev or force_clean
 				@schema = schema
 				reset_schema = yes
 				clean_sync = yes
@@ -364,13 +398,13 @@ class StorageProvider
 		texts = @schema[stream].texts ? []
 		for i in [0...numbers.length]
 			questions += ', ?'
-			fields += ', i'+i
+			fields += ', f_'+numbers[i]
 			values.push object[numbers[i]] ? null
 		for i in [0...texts.length]
 			questions += ', ?'
-			fields += ', t'+i
+			fields += ', f_'+texts[i]
 			values.push object[texts[i]] ? null
-		@db.query 'insert or replace into data ('+fields+') values ('+questions+')', values, (err) =>
+		@db.query 'insert or replace into t_'+stream+' ('+fields+') values ('+questions+')', values, (err) =>
 			if err
 				handler err
 			else 
@@ -387,14 +421,14 @@ class StorageProvider
 		numbers = @schema[stream].numbers ? []
 		texts = @schema[stream].texts ? []
 		for i in [0...numbers.length]
-			fields += ', i'+i+'=?'
+			fields += ', f_'+numbers[i]+'=?'
 			values.push object[numbers[i]] ? null
 		for i in [0...texts.length]
-			fields += ', t'+i+'=?'
+			fields += ', f_'+texts[i]+'=?'
 			values.push object[texts[i]] ? null
 		values.push object.id
 		values.push stream
-		@db.query 'update data set '+fields+' where id=? and stream=?', values, (err) =>
+		@db.query 'update t_'+stream+' set '+fields+' where id=? and stream=?', values, (err) =>
 			if not err
 				@on_change 'update', stream, object.id
 			handler err
@@ -403,7 +437,7 @@ class StorageProvider
 		if not @_precheck stream, handler then return
 		if not object or not object.id
 			return handler 'Invalid object ID'
-		@db.query 'update data set status=?, updated=?, own=? where  id=? and stream=?', [3, @_id(new Date().getTime()), 1, object.id, stream], (err) =>
+		@db.query 'update t_'+stream+' set status=?, updated=?, own=? where  id=? and stream=?', [3, @_id(new Date().getTime()), 1, object.id, stream], (err) =>
 			if not err
 				@on_change 'remove', stream, object.id
 			handler err
@@ -414,12 +448,12 @@ class StorageProvider
 			numbers = @schema[stream]?.numbers ? []
 			fields = id: 'id'
 			for own i, name of @schema[stream]?.texts ? []
-				fields[name] = 't'+i
+				fields[name] = 'f_'+name
 			for own i, name of @schema[stream]?.numbers ? []
-				fields[name] = 'i'+i
+				fields[name] = 'f_'+name
 			return fields
 		fields = extract_fields stream
-		values = [stream, 3]
+		values = [3]
 		array_to_query = (fields, arr = [], op = 'and') =>
 			result = []
 			for i in [0...arr.length]
@@ -439,9 +473,8 @@ class StorageProvider
 						if value?.op
 							if value.op is 'in'
 								f = extract_fields value.stream
-								values.push value.stream
 								values.push 3
-								result.push(''+fields[name]+' in (select '+f[value.field]+' from data where stream=? and status<>? and '+array_to_query(f, value.query ? [])+')')
+								result.push(''+fields[name]+' in (select '+f[value.field]+' from t_'+value.stream+' where status<>? and '+array_to_query(f, value.query ? [])+')')
 							else
 								# custom op
 								if value.var
@@ -467,7 +500,7 @@ class StorageProvider
 		limit = ''
 		if options?.limit
 			limit = ' limit '+options?.limit
-		@db.query 'select data from data where stream=? and status<>? '+(if where then 'and '+where else '')+' order by '+(order.join ',')+limit, values, (err, data) =>
+		@db.query 'select data from t_'+stream+' where status<>? '+(if where then 'and '+where else '')+' order by '+(order.join ',')+limit, values, (err, data) =>
 			if err then return handler err
 			result = []
 			for item in data
@@ -530,11 +563,12 @@ class DataManager
 	set: (name, value) ->
 		return @storage.db.set name, value
 
-	sync: (handler) ->
+	sync: (handler, force_clean) ->
 		return @storage.sync @app, @oauth, (err, data) =>
 			if not err and @timeout_id
 				@unschedule_sync null
 			handler err, data
+		, force_clean
 
 window.HTML5Provider = HTML5Provider
 window.AirDBProvider = AirDBProvider

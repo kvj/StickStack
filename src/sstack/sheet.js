@@ -197,14 +197,17 @@ Sheet.prototype.editTextDone = function(val) {//Edit tag/link/ref
     this.text.blur();
 };
 
-Sheet.prototype.pointToTag = function(point) {
+Sheet.prototype.pointToTag = function(point, round) {
     var fixFloat = function (fl) {
         if (!fl) {
             return 0;
         };
-        return Math.round(fl*10000)/10000;
+        if (!round) {
+            return fl;
+        };
+        return Math.round(fl*round)/round;
     };
-    return 'g:lat='+fixFloat(point.lat)+':lon='+fixFloat(point.lon)+':sp='+fixFloat(point.speed)+':acc='+fixFloat(point.acc)+':alt='+fixFloat(point.alt)+':tstamp='+point.created;
+    return 'g:lat='+fixFloat(point.lat)+':lon='+fixFloat(point.lon)+':sp='+fixFloat(point.speed, 100)+':acc='+fixFloat(point.acc, 100)+':alt='+fixFloat(point.alt, 100)+':tstamp='+point.created;
 };
 
 Sheet.prototype.importNotes = function(provider) {

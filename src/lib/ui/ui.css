@@ -88,7 +88,7 @@ textarea {
 #error_dialog {
     position: fixed;
     width: 90%;
-    max-width: 400px;
+    max-width: 500px;
     margin: 0pt auto;
     top: 50px;
     left: 0px;
@@ -104,7 +104,7 @@ textarea {
 #question_dialog {
     position: fixed;
     width: 90%;
-    max-width: 350px;
+    max-width: 500px;
     margin: 0pt auto;
     top: 60px;
     left: 0px;
@@ -119,13 +119,10 @@ textarea {
 
 #info_dialog {
     position: fixed;
-    width: 80%;
-    max-width: 200px;
-    margin: 0pt auto;
-    top: 130px;
-    left: 0px;
-    right: 0px;
+    width: 250px;
     padding: 5px;
+    left: 50%;
+    margin-left: -125px;
     background-color: #333333;
     -webkit-border-radius: 6px;
     text-align: center;

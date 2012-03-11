@@ -1050,6 +1050,9 @@ DataManager.prototype.loadTags = function(list, handler) {//Loads tags to this
                 handler(null, gr.results[i][1]);
                 return;
             };
+            if (tags.length == 0) {
+                tags.push('no-tags');
+            };
             list[i].tags = tags;
             list[i].subnotes = subnotes;
             //Also create and sort tags to display

@@ -1,22 +1,21 @@
 html {
-    font-size: 1.2em;
-    padding-top: 2px;
+    font-size: 1.8em;
 }
 
 .button_text {
     padding: 4px;
 }
 
-input[type=text], input[type=password] {
-    font-size: 1.1em;
+input, textarea {
+    font-size: 1.2em;
 }
 
 .button_outer {
-    min-height: 40px;
+    min-height: 43px;
 }
 
 .input_wrap {
-    height: 27px;
+    height: 46px;
 }
 
 .icon {
@@ -24,10 +23,19 @@ input[type=text], input[type=password] {
 }
 
 .popup_menu_item {
-    padding: 10px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+    font-size: 1.2em;
 }
 
 .button_text_32 {
-    padding-top: 17px;
+    padding-top: 50px;
 }
 
+.popup_menu {
+    max-width: 500px;
+}
+
+label {
+	font-size: 1.2em;
+}

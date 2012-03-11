@@ -14,7 +14,7 @@ yepnope({
             yep: ['lib/air/AIRAliases.js', 'lib/air/AIRIntrospector.js']
         }, {
             test: CURRENT_PLATFORM_MOBILE,
-            yep: ['lib/ui/android.css', 'lib/common-web/phonegap-1.4.1.js'],
+            yep: ['lib/ui/android.css', 'lib/ui/theme-default-android.css', 'lib/common-web/phonegap-1.4.1.js'],
             nope: ['lib/ui/desktop.css'],
         }, {
             load: ['sstack/sstack.css', 'sstack/datamanager.js', 'sstack/sheet.js'],
@@ -107,7 +107,7 @@ var TopManager = function() {//Manages top panel
             new TagsManager(this.panel, this.manager);
         }, this),
     });
-    this.disabledButtons = [this.syncButton, this.sheetButton, this.tagsButton];
+    this.disabledButtons = [];
     this.configButton = this.topMenu.addButton({
         caption: _buildIcon('config', 'icon32')+'<br/>Config',
         classNameInner: 'button_inner_32',
@@ -123,9 +123,9 @@ var TopManager = function() {//Manages top panel
                 }, this),
             });
             items.push({
-                caption: 'Login',
+                caption: 'Reset and Sync',
                 handler: _.bind(function() {
-                    this.login();
+                    this.sync(true);
                     return true;
                 }, this),
             });
@@ -147,7 +147,7 @@ var TopManager = function() {//Manages top panel
     }, this), 100);
 };
 
-TopManager.prototype.sync = function() {//Run sync
+TopManager.prototype.sync = function(force_clean) {//Run sync
     if (this.manager) {//Have manager
         //this.jsonHelper.config.url = config.appConfig.sync_url;
         //this.jsonHelper.config.key = config.appConfig.sync_key;
@@ -162,7 +162,7 @@ TopManager.prototype.sync = function() {//Run sync
             } else {//Sync done
                 $('#info_dialog').hide();
             };
-        }, this));
+        }, this), force_clean);
     };
 };
 

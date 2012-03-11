@@ -3,26 +3,22 @@ body {
 }
 
 .note_tag {
-    font-size: 1em;
-    padding-left: 4px;
-    padding-right: 4px;
+    font-size: 1.1em;
+    padding-left: 6px;
+    padding-right: 6px;
+    margin-right: 2px;
+    border-radius: 20px;
 }
 
 .note {
-    min-height: 15px;
-}
-
-.note_menu {
-    display: none !important;
-}
-
-.note-button {
-    font-size: 1.3em;
-    padding-left: 5px;
+    min-height: 45px;
+    margin-bottom: 6px;
+    padding-top: 9px;
+    padding-left: 6px;
 }
 
 .day_hour_caption {
-    font-size: 0.9em;
+    font-size: 0.8em;
 }
 
 .day_hour {
@@ -30,10 +26,23 @@ body {
 }
 
 .day_hour_notes {
-    padding-left: 35px;
+    padding-left: 45px;
 }
 
-.note_checkbox {
-    zoom: 1.5;
+.note_word {
+    float: left;
+    padding-right: 6px;
+    font-size: 1.2em;
 }
 
+.day {
+    font-size: 1.2em;
+}
+
+.day_name {
+    font-size: 1.2em;    
+}
+
+.navigation {
+    font-size: 1.3em;
+}
