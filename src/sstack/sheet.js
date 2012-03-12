@@ -303,10 +303,10 @@ var applyColor = function (div, color, gradient) {
     if (!color) {
         return false;
     }
+    var step = 32;
     // if (!gradient) {
-        div.css('background-color', 'rgb('+color[0]+', '+color[1]+', '+color[2]+')');
+        div.css('background-color', 'rgb('+color[0]+', '+color[1]+', '+color[2]+')').css('border-color', 'rgb('+(color[0]-3*step)+', '+(color[1]-3*step)+', '+(color[2]-3*step)+')');
     // } else {
-    //     var step = 32;
     //     div.addClass('has_gradient').css('background-image', '-webkit-gradient(linear, left top, left bottom, color-stop(0%, rgb('+(color[0]+step)+', '+(color[1]+step)+', '+(color[2]+step)+')), color-stop(20%, rgb('+(color[0]-step)+', '+(color[1]-step)+', '+(color[2]-step)+')), color-stop(100%, rgb('+(color[0]+step)+', '+(color[1]+step)+', '+(color[2]+step)+')))').css('border-color', 'rgb('+(color[0]-3*step)+', '+(color[1]-3*step)+', '+(color[2]-3*step)+')')
     // }
     return true;
@@ -453,7 +453,7 @@ Sheet.prototype.editNote = function(note, div) {
     this.updated();
 };
 
-Sheet.prototype.enableNoteDrop = function(div, handler) {//Called when note or text is dropped
+Sheet.prototype.enableNoteDrop = function(div, handler, id) {//Called when note or text is dropped
     var filesDD = 'application/x-vnd.adobe.air.file-list';
     var ctrlKey = false;
     div.bind('dragover', _.bind(function(e) {
@@ -494,22 +494,27 @@ Sheet.prototype.enableNoteDrop = function(div, handler) {//Called when note or t
         drop = dd.getDDTarget(e, filesDD);
         if (drop) {//URL - new note
             //log('Drop file', e.ctrlKey, e.shiftKey, ctrlKey, e.originalEvent.dataTransfer.dropEffect);
-            if (ctrlKey) {//Copy links
-                for (var i = 0; i < drop.length; i++) {//Copy and create file
-                    var f = drop[i];
-                    log('Dropped file link', f.nativePath);
-                    handler({text: f.name, link: f.nativePath});
-                };
-            } else {//Copy files
-                var files = this.proxy('copyFile', drop);
-                if (!files) {
-                    log('File copy error');
-                    return false;
-                };
-                for (var i = 0; i < files.length; i++) {//
-                    log('Dropped file storage', files[i].text);
-                    handler(files[i]);
-                };
+            // if (ctrlKey) {//Copy links
+            //     for (var i = 0; i < drop.length; i++) {//Copy and create file
+            //         var f = drop[i];
+            //         log('Dropped file link', f.nativePath);
+            //         handler({text: f.name, link: f.nativePath});
+            //     };
+            // } else {//Copy files
+            //     var files = this.proxy('copyFile', drop);
+            //     if (!files) {
+            //         log('File copy error');
+            //         return false;
+            //     };
+            //     for (var i = 0; i < files.length; i++) {//
+            //         log('Dropped file storage', files[i].text);
+            //         handler(files[i]);
+            //     };
+            // };
+            if (drop.length == 1) {
+                this.proxy('createAttachment', _.bind(function (err) {
+                    this.reload(id);
+                }, this), [id, drop[0].nativePath]);
             };
             e.stopPropagation();
             e.preventDefault();
@@ -643,7 +648,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
                 };
             }, this), [n]);
         };
-    }, this));
+    }, this), note.id);
     div.bind('dragstart', {note: note}, _.bind(function(e) {//
         dd.setDDTarget(e, noteDDType, e.data.note.id);
     }, this));

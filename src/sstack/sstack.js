@@ -72,7 +72,7 @@ var run = function() {
 var TopManager = function() {//Manages top panel
     _createEsentials(this, 'Welcome:', 2);
     this.syncButton = this.topMenu.addButton({
-        caption: _buildIcon('sync', 'icon32')+'<br/>Sync',
+        caption: 'Sync',
         classNameInner: 'button_inner_32',
         classNameOuter: 'button_outer_32',
         classNameText: 'button_text_32',
@@ -81,7 +81,7 @@ var TopManager = function() {//Manages top panel
         }, this),
     });
     this.sheetButton = this.topMenu.addButton({
-        caption: _buildIcon('sheets', 'icon32')+'<br/>Sheets',
+        caption: 'Sheets',
         classNameInner: 'button_inner_32',
         classNameOuter: 'button_outer_32',
         classNameText: 'button_text_32',
@@ -99,7 +99,7 @@ var TopManager = function() {//Manages top panel
     //     }, this),
     // });
     this.tagsButton = this.topMenu.addButton({
-        caption: _buildIcon('tags', 'icon32')+'<br/>Tags',
+        caption: 'Tags',
         classNameInner: 'button_inner_32',
         classNameOuter: 'button_outer_32',
         classNameText: 'button_text_32',
@@ -109,7 +109,7 @@ var TopManager = function() {//Manages top panel
     });
     this.disabledButtons = [];
     this.configButton = this.topMenu.addButton({
-        caption: _buildIcon('config', 'icon32')+'<br/>Config',
+        caption: 'Config',
         classNameInner: 'button_inner_32',
         classNameOuter: 'button_outer_32',
         classNameText: 'button_text_32',
@@ -142,7 +142,7 @@ var TopManager = function() {//Manages top panel
                 this.manager.quebec4 = new Quebec4Plugin();
             };
             new SheetsManager(this.panel, this.manager);
-            this.sync();
+            // this.sync();
         }, this));
     }, this), 100);
 };

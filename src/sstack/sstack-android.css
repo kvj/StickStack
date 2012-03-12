@@ -4,17 +4,12 @@ body {
 
 .note_tag {
     font-size: 1.1em;
-    padding-left: 6px;
-    padding-right: 6px;
-    margin-right: 2px;
-    border-radius: 20px;
 }
 
 .note {
-    min-height: 45px;
-    margin-bottom: 6px;
-    padding-top: 9px;
-    padding-left: 6px;
+    min-height: 2em;
+    padding-top: 1em;
+    padding-left: 1em;
 }
 
 .day_hour_caption {
@@ -22,27 +17,5 @@ body {
 }
 
 .day_hour {
-    min-height: 20px;
-}
-
-.day_hour_notes {
-    padding-left: 45px;
-}
-
-.note_word {
-    float: left;
-    padding-right: 6px;
-    font-size: 1.2em;
-}
-
-.day {
-    font-size: 1.2em;
-}
-
-.day_name {
-    font-size: 1.2em;    
-}
-
-.navigation {
-    font-size: 1.3em;
+    min-height: 2em;
 }

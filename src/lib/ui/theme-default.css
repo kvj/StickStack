@@ -4,7 +4,7 @@
 
 .popup_menu {
     border: 1px solid #351330;
-    -webkit-border-radius: 3px;
+    -webkit-border-radius: 0.5em;
     -webkit-box-shadow: 1px 1px 1px #351330;
     opacity: 0.95;
 }
@@ -17,7 +17,7 @@
 
 .popup_menu_item:active {
     opacity: 0.9;
-    padding-left: 7px;
+    padding-left: 0.6em;
 }
 
 .button_inner {
@@ -26,7 +26,7 @@
 	font-weight: normal;
 	background-color: #424254;
 	border-width: 0px;
-	min-height: 32px;
+	min-height: 2.4em;
 }
 
 .button_create {
@@ -34,7 +34,7 @@
 }
 
 .button_outer {
-	min-height: 35px;
+	min-height: 2.55em;
 }
 
 .button_list {
@@ -52,7 +52,7 @@
 }
 
 .panel_title {
-    padding: 3px;
+    padding: 0.2em;
     font-weight: bold;
     color: #dddddd;
     background-color: #351330;

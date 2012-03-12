@@ -2,6 +2,12 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
     if (!params) {
         params = [];
     };
+    if (method == 'createAttachment') {
+        datamanager.createAttachment(params[0], params[1], function (err) {
+            handler(err);
+        });
+        return true;
+    };
     if (method == 'loadNotes') {
         datamanager.selectNotes(params[0], function(list, err) {
             if (list) {

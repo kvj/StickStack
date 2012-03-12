@@ -1,21 +1,9 @@
 html {
-    font-size: 1.8em;
-}
-
-.button_text {
-    padding: 4px;
+    font-size: 3em;
 }
 
 input, textarea {
     font-size: 1.2em;
-}
-
-.button_outer {
-    min-height: 43px;
-}
-
-.input_wrap {
-    height: 46px;
 }
 
 .icon {
@@ -23,19 +11,10 @@ input, textarea {
 }
 
 .popup_menu_item {
-    padding-top: 14px;
-    padding-bottom: 14px;
-    font-size: 1.2em;
-}
-
-.button_text_32 {
-    padding-top: 50px;
+    padding-top: 1em;
+    padding-bottom: 1em;
 }
 
 .popup_menu {
     max-width: 500px;
-}
-
-label {
-	font-size: 1.2em;
 }

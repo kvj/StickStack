@@ -74,9 +74,10 @@
         return do_reset_schema();
       };
       do_reset_schema = function() {
+        var afterClose;
         _this.db.removeEventListener(air.SQLErrorEvent.ERROR, err);
-        _this.db.addEventListener('close', function(event) {
-          _this.dbFile.deleteFile();
+        afterClose = function() {
+          if (_this.dbFile.exists) _this.dbFile.deleteFile();
           return _this.open(false, function(err) {
             var createStmt, sql, sqlsDone, _i, _len, _results;
             if (err) return handler(err);
@@ -97,16 +98,22 @@
             }
             return _results;
           });
+        };
+        _this.db.addEventListener('close', function(event) {
+          return setTimeout(function() {
+            return afterClose();
+          }, 10);
         });
         return _this.db.close();
       };
       this.db.addEventListener(air.SQLEvent.SCHEMA, function(event) {
-        var tables;
-        tables = _this.db.getSchemaResult().tables;
-        if ((tables != null ? tables.length : void 0) !== schema.length) {
-          _this.clean = true;
+        var table, tables, _i, _len, _ref, _ref2;
+        tables = (_ref = (_ref2 = _this.db.getSchemaResult()) != null ? _ref2.tables : void 0) != null ? _ref : [];
+        _this.tables = [];
+        for (_i = 0, _len = tables.length; _i < _len; _i++) {
+          table = tables[_i];
+          _this.tables.push(table.name);
         }
-        log('Need clean', _this.clean);
         if (_this.clean) {
           return do_reset_schema();
         } else {
@@ -233,10 +240,17 @@
     HTML5Provider.prototype.verify = function(schema, handler) {
       var _this = this;
       return this.query('select name, type from sqlite_master where type=? or type=? order by type desc', ['table', 'index'], function(err, res, tr) {
-        var create_at, drop_at;
+        var create_at, drop_at, row, _i, _len;
         log('SQL result', err, res, tr);
         if (err) return handler(err);
-        if (!_this.version_match || _this.clean || res.length < 5) {
+        _this.tables = [];
+        for (_i = 0, _len = res.length; _i < _len; _i++) {
+          row = res[_i];
+          if (row.type === 'table' && !(_.startsWith(row.name, 'sqlite_') || _.startsWith(row.name, '_'))) {
+            _this.tables.push(row.name);
+          }
+        }
+        if (!_this.version_match || _this.clean || (_this.tables.length === 0)) {
           _this.clean = true;
           create_at = function(index) {
             if (index < schema.length) {
@@ -268,7 +282,7 @@
               if (res[index].name.substr(0, 2) === '__' || res[index].name.substr(0, 7) === 'sqlite_') {
                 return drop_at(index + 1);
               }
-              return _this.query('drop ' + res[index].type + ' ' + res[index].name, [], function(err) {
+              return _this.query('drop ' + res[index].type + ' if exists ' + res[index].name, [], function(err) {
                 if (err) return handler(err);
                 return drop_at(index + 1);
               }, tr);
@@ -433,10 +447,12 @@
         for (name in _ref2) {
           item = _ref2[name];
           if (name.charAt(0) === '_') continue;
+          if (_.indexOf(_this.db.tables, 't_' + name) === -1) continue;
           sql.push('select id, stream, data, updated, status from t_' + name + ' where own=? and updated>?');
           vars.push(1);
           vars.push(in_from);
         }
+        if (sql.length === 0) return do_reset_schema(null);
         return _this.db.query(sql.join(' union ') + ' order by updated limit ' + slots, vars, function(err, data) {
           var i, item, result, slots_needed, slots_used, _ref3, _ref4;
           if (err) return finish_sync(err);

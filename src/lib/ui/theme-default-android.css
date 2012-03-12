@@ -1,25 +1,4 @@
-.button_inner {
-	min-height: 61px;
-	font-size: 1.2em;
-}
-
-.button_outer {
-	min-height: 67px;
-}
-
-.button_outer_32 {
-    min-height: 200px !important;
-}
-
 .button_inner_32 {
-    width: 200px;
-    height: 180px;
     vertical-align: middle;
-    font-size: 1.4em;
-}
-
-.panel_title {
-    padding: 6px;
-	font-size: 1.2em;
 }
 

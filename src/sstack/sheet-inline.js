@@ -49,7 +49,7 @@ $(function() {//
             direction *= -1;
         };
         var opacity = parseFloat(main.css('opacity')) || 1.0;
-        opacity += 0.1*direction;
+        opacity += 0.05*direction;
         opacity = opacity<0.1? 0.1: (opacity>1? 1: opacity);
         main.css('opacity', opacity);
         return false;

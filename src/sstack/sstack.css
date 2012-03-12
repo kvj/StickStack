@@ -3,7 +3,7 @@
     margin: 1px 2px 2px 1px;
     border: 1px solid #aaaaaa;
     cursor: pointer;
-    min-height: 5px;
+    min-height: 0.4em;
 }
 
 .note_selected {
@@ -23,15 +23,6 @@
     float: right;
 }
 
-.note_button {
-    margin: 1px;
-    color: #000000;
-    outline: none;
-    text-decoration: none;
-    background-color: #424254;
-    padding: 3px;
-}
-
 .tag_button {
     color: #222;
 }
@@ -41,14 +32,14 @@
 }
 
 .note_tag {
-    margin: 1px;
-    padding: 0px 2px 0px 2px;
-    font-size: 0.7em;
+    margin: 0.1em;
+    padding: 0px 0.2em 0px 0.2em;
+    font-size: 0.8em;
     text-align: center;
-    min-width: 20px;
     border: 1px solid #aaaaaa;
     background-color: #dddddd;
-    border-radius: 10px;
+    border-radius: 1em;
+    min-width: 1em;
     float: left;
 }
 
@@ -124,10 +115,10 @@
 
 .arrow {
     margin: 3px;
-    padding: 4px;
+    padding: 0.4em;
     background-color: #424254;
     overflow: hidden;
-    min-width: 20px;
+    min-width: 2em;
     text-align: center;
 }
 
@@ -137,7 +128,7 @@
 
 .month {
     text-align: center;
-    padding-top: 3px;
+    padding-top: 0.3em;
 }
 
 .day_name {
@@ -161,42 +152,23 @@
 .time_place {
 }
 
-.time_hour {
-    width: 40px;
-    margin: 3px;
-    float: left;
-    padding: 2px;
-    border: 1px solid #555555;
-    border-radius: 10px;
-    text-align: center;
-    color: #eeeeee;
-}
-
-.time_in_hour {
-    display: none;
-}
-
-.time_is_hour {
-    cursor: pointer;
-}
-
 .day_hour {
     position: relative;
-    min-height: 12px;
+    min-height: 0.8em;
     border-bottom: 1px dotted #888888;
 }
 
 .day_hour_caption {
     position: absolute;
     left: 2px;
-    top: 1px;
+    top: -2px;
     font-size: 0.7em;
     color: #222222;
     vertical-align: top;
 }
 
 .day_hour_notes {
-    padding-left: 25px;
+    padding-left: 1.5em;
 }
 
 .note_line {
@@ -237,7 +209,7 @@
 
 .note_word {
     float: left;
-    padding-right: 3px;
+    padding-right: 0.4em;
     font-size: 0.9em;
 }
 

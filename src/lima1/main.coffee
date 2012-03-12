@@ -16,6 +16,19 @@ class DBProvider
 	set: (name, value) ->
 		null
 
+class CacheProvider
+
+	constructor: (@oauth) ->
+
+	store: (name, path, handler) ->
+		handler null
+
+	get: (name, handler) ->
+		handler null
+
+	remove: (name, handler) ->
+		handler null
+
 class AirDBProvider extends DBProvider
 
 	open: (clean = true, handler, absolute) ->
@@ -40,8 +53,8 @@ class AirDBProvider extends DBProvider
 			do_reset_schema()
 		do_reset_schema = () =>
 			@db.removeEventListener air.SQLErrorEvent.ERROR, err
-			@db.addEventListener 'close', (event) =>
-				@dbFile.deleteFile()
+			afterClose = () =>
+				if @dbFile.exists then @dbFile.deleteFile()
 				@open false, (err) =>
 					if err then return handler err
 					sqlsDone = 0
@@ -55,13 +68,19 @@ class AirDBProvider extends DBProvider
 							handler event.error.message
 						createStmt.text = sql
 						createStmt.execute()
+			@db.addEventListener 'close', (event) =>
+				setTimeout () =>
+					afterClose()
+				, 10
 			@db.close()
 		@db.addEventListener air.SQLEvent.SCHEMA, (event) =>
-			tables = @db.getSchemaResult().tables
+			tables = @db.getSchemaResult()?.tables ? []
 			# log 'Schema', tables, schema, @clean
-			if tables?.length isnt schema.length
-				@clean = true
-			log 'Need clean', @clean
+			@tables = []
+			for table in tables
+				# log 'Now schema:', table.name
+				@tables.push table.name
+			# log 'Need clean', @clean
 			if @clean
 				do_reset_schema()
 			else
@@ -151,7 +170,12 @@ class HTML5Provider extends DBProvider
 			log	'SQL result', err, res, tr
 			if err
 				return handler err
-			if not @version_match or @clean or res.length<5
+			@tables = []
+			for row in res
+				if row.type is 'table' and not (_.startsWith(row.name, 'sqlite_') or _.startsWith(row.name, '_'))
+					@tables.push row.name
+			# log '@tables', @tables, @version_match, @clean
+			if not @version_match or @clean or (@tables.length is 0)
 				@clean = yes
 				# drop tables/etc
 				create_at = (index) =>
@@ -180,7 +204,7 @@ class HTML5Provider extends DBProvider
 					if index < res.length
 						if res[index].name.substr(0, 2) is '__' or res[index].name.substr(0, 7) is 'sqlite_'
 							return drop_at index+1
-						@query 'drop '+res[index].type+' '+res[index].name, [], (err) =>
+						@query 'drop '+res[index].type+' if exists '+res[index].name, [], (err) =>
 							if err
 								return handler err
 							drop_at index+1
@@ -299,9 +323,11 @@ class StorageProvider
 			vars = []
 			for name, item of @schema
 				if name.charAt(0) == '_' then continue
+				if _.indexOf(@db.tables, 't_'+name) is -1 then continue
 				sql.push 'select id, stream, data, updated, status from t_'+name+' where own=? and updated>?'
 				vars.push 1
 				vars.push in_from
+			if sql.length is 0 then return do_reset_schema null
 			@db.query sql.join(' union ')+' order by updated limit '+slots, vars, (err, data) =>
 				if err then return finish_sync err
 				result = []
