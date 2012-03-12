@@ -758,6 +758,7 @@ var PopupMenu = function(config) {//Shows popup menu
             mitem.addClass(this.items[i].cls);
         };
         mitem.bind('click', {item: this.items[i], index: i, element: mitem, instance: this}, _.bind(function(e) {//Click on item
+            e.stopPropagation();
             if (e.data.index == e.data.instance.items.length-1) {//Last item - hide menu
                 e.data.instance.hide();
                 return false;
@@ -768,6 +769,7 @@ var PopupMenu = function(config) {//Shows popup menu
                     e.data.instance.hide();
                     return false;
                 };
+                return false;
             };
             if (e.data.instance.config.handler) {
                 var result = e.data.instance.config.handler(e.data.item, e.data.index);

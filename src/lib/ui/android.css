@@ -1,5 +1,5 @@
 html {
-    font-size: 3em;
+    font-size: 2em;
 }
 
 input, textarea {
@@ -11,8 +11,8 @@ input, textarea {
 }
 
 .popup_menu_item {
-    padding-top: 1em;
-    padding-bottom: 1em;
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
 }
 
 .popup_menu {

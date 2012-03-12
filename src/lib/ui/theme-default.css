@@ -4,7 +4,6 @@
 
 .popup_menu {
     border: 1px solid #351330;
-    -webkit-border-radius: 0.5em;
     -webkit-box-shadow: 1px 1px 1px #351330;
     opacity: 0.95;
 }
@@ -16,8 +15,8 @@
 }
 
 .popup_menu_item:active {
-    opacity: 0.9;
     padding-left: 0.6em;
+    background-color: #CC2A41;
 }
 
 .button_inner {

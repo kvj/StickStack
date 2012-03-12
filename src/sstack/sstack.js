@@ -142,7 +142,7 @@ var TopManager = function() {//Manages top panel
                 this.manager.quebec4 = new Quebec4Plugin();
             };
             new SheetsManager(this.panel, this.manager);
-            // this.sync();
+            this.sync();
         }, this));
     }, this), 100);
 };

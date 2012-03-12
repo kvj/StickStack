@@ -85,11 +85,12 @@ textarea {
 
 #error_dialog {
     position: fixed;
-    width: 300px;
+    width: 500px;
+    max-width: 90%;
     margin: 0pt auto;
-    top: 50px;
+    top: 60px;
     left: 50%;
-    margin-left: -150px;
+    margin-left: -250px;
     border: 1px solid #777777;
     padding: 0.5em;
     background-color: #ffffff;
@@ -100,11 +101,12 @@ textarea {
 
 #question_dialog {
     position: fixed;
-    width: 300px;
+    width: 500px;
+    max-width: 90%;
     margin: 0pt auto;
     top: 60px;
     left: 50%;
-    margin-left: -150px;
+    margin-left: -250px;
     border: 1px solid #777777;
     padding: 0.5em;
     background-color: #ffffff;
@@ -137,7 +139,6 @@ textarea {
     margin-top: 3em;
     margin-bottom: 3em;
     border: 1px solid #aaaaaa;
-    -webkit-border-radius: 0.5em;
     z-index: 10;
     -webkit-box-shadow: 1px 1px 2px #888;
 }
