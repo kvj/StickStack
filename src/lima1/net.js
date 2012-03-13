@@ -79,6 +79,10 @@
       this.token = (_ref5 = this.config) != null ? _ref5.token : void 0;
     }
 
+    OAuthProvider.prototype.getFullURL = function(app, path) {
+      return this.transport.uri + ("" + path + "app=" + app + "&oauth_token=" + this.token);
+    };
+
     OAuthProvider.prototype.rest = function(app, path, body, handler, options) {
       var _this = this;
       return this.transport.request({

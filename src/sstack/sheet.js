@@ -149,6 +149,45 @@ Sheet.prototype.tag_unselect_geo = function(note, tag) {
     };
 };
 
+Sheet.prototype.tag_unselect_file = function(note, tag) {
+    if (note.fileCreated) {
+        note.div.find('.file').remove();
+        note.fileCreated = false;
+    };
+};
+
+Sheet.prototype.tag_select_file = function(note, tag) {
+    if (!note.fileCreated) {
+        note.fileCreated = true;
+        var frame = $(document.createElement('div')).addClass('file note_frame note_line_hide').appendTo(note.div);
+        log('Show file', tag);
+        var name = tag.substr(2);
+        if (_.endsWith(name, '.jpg')) {
+            var loading = $(document.createElement('div')).addClass('file_loading note_line_hide').appendTo(frame).text('Loading...');
+            this.proxy('getAttachment', _.bind(function (err, uri) {
+                loading.remove();
+                if (err) {
+                    return _showInfo(err);
+                };
+                var img = $(document.createElement('img')).addClass('file_image note_image').appendTo(frame);
+                img.bind('load', _.bind(function () {
+                    var gap = 8;
+                    var width = note.div.innerWidth()-2*gap;
+                    var iw = img.width();
+                    var ih = img.height();
+                    var mul = width / iw;
+                    iw *= mul;
+                    ih *= mul;
+                    img.width(Math.floor(iw)).height(Math.floor(ih));
+                    this.updated();
+                }, this));
+                img.attr('src', uri);
+            }, this), [name]);
+            
+        };
+    };
+};
+
 Sheet.prototype.tag_select_geo = function(note, tag) {
     // log('Ready to show geo', tag);
     if (!note.geoCreated) {
@@ -167,8 +206,8 @@ Sheet.prototype.tag_select_geo = function(note, tag) {
             var gap = 8;
             var width = note.div.innerWidth()-2*gap;
             var height = 180;
-            var frame = $(document.createElement('div')).addClass('geo note_line_hide').appendTo(note.div);
-            var img = $(document.createElement('img')).addClass('geo_image').appendTo(frame);
+            var frame = $(document.createElement('div')).addClass('geo note_frame note_line_hide').appendTo(note.div);
+            var img = $(document.createElement('img')).addClass('geo_image note_image').appendTo(frame);
             img.attr('src', 'http://maps.google.com/maps/api/staticmap?center='+point.lat+','+point.lon+'&zoom=15&size='+width+'x'+height+'&sensor=true&markers=color:red|size:mid|'+point.lat+','+point.lon);
             img.width(width).height(height);
         };

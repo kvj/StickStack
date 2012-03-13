@@ -1,5 +1,5 @@
 (function() {
-  var AirDBProvider, DBProvider, DataManager, HTML5Provider, StorageProvider,
+  var AirCacheProvider, AirDBProvider, CacheProvider, DBProvider, DataManager, HTML5Provider, StorageProvider,
     __hasProp = Object.prototype.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
@@ -34,6 +34,134 @@
     return DBProvider;
 
   })();
+
+  CacheProvider = (function() {
+
+    function CacheProvider(oauth, app, maxwidth) {
+      this.oauth = oauth;
+      this.app = app;
+      this.maxwidth = maxwidth;
+    }
+
+    CacheProvider.prototype.store = function(name, path, handler) {
+      return handler(null);
+    };
+
+    CacheProvider.prototype.get = function(name, handler) {
+      return handler(null);
+    };
+
+    CacheProvider.prototype.upload = function(name, handler) {
+      return handler(null);
+    };
+
+    CacheProvider.prototype.remove = function(name, handler) {
+      return handler(null);
+    };
+
+    return CacheProvider;
+
+  })();
+
+  AirCacheProvider = (function(_super) {
+
+    __extends(AirCacheProvider, _super);
+
+    function AirCacheProvider() {
+      AirCacheProvider.__super__.constructor.apply(this, arguments);
+    }
+
+    AirCacheProvider.prototype._folder = function() {
+      var folder;
+      folder = air.File.applicationStorageDirectory.resolvePath('cache');
+      if (!folder.exists) folder.createDirectory();
+      return folder;
+    };
+
+    AirCacheProvider.prototype.store = function(name, path, handler) {
+      var file,
+        _this = this;
+      file = new air.File(path);
+      if (!file.exists) return handler('File not found');
+      file.addEventListener('complete', function() {
+        return handler(null);
+      });
+      file.addEventListener('ioError', function() {
+        return handler('Error copying file');
+      });
+      return file.copyToAsync(this._folder().resolvePath(name), true);
+    };
+
+    AirCacheProvider.prototype.get = function(name, handler) {
+      var file, loader, request, url,
+        _this = this;
+      file = this._folder().resolvePath(name);
+      if (file.exists) return handler(null, file.url);
+      loader = new air.URLLoader();
+      url = "/rest/file/download?name=" + name + "&";
+      if (_.endsWith(name, '.jpg')) url += "width=" + this.maxwidth + "&";
+      log('Download', url);
+      request = new air.URLRequest(this.oauth.getFullURL(this.app, url));
+      loader.dataFormat = air.URLLoaderDataFormat.BINARY;
+      loader.addEventListener('complete', function(e) {
+        var stream;
+        log('File arrived');
+        stream = new air.FileStream();
+        try {
+          stream.open(file, air.FileMode.WRITE);
+          stream.writeBytes(loader.data);
+          stream.close();
+          return handler(null, file.url);
+        } catch (error) {
+          return handler('Error writing data');
+        }
+      });
+      loader.addEventListener('ioError', function() {
+        log('File download error');
+        return handler('Error downloading file');
+      });
+      return loader.load(request);
+    };
+
+    AirCacheProvider.prototype.upload = function(name, handler) {
+      var file,
+        _this = this;
+      file = this._folder().resolvePath(name);
+      if (!file.exists) return handler(null, -2);
+      return this.oauth.rest(this.app, "/rest/file/upload?name=" + name + "&", null, function(err, data) {
+        var request, vars;
+        if (err) return handler('Error uploading file');
+        log('Uploading:', _this.oauth.transport.uri, data.u);
+        request = new air.URLRequest(data.u);
+        request.method = air.URLRequestMethod.POST;
+        request.contentType = 'multipart/form-data';
+        vars = new air.URLVariables();
+        file.addEventListener('ioError', function(e) {
+          log('Upload error', e);
+          return handler('Error uploading file');
+        });
+        file.addEventListener('uploadCompleteData', function() {
+          log('File uploaded');
+          return handler(null, -1);
+        });
+        return file.upload(request, 'file', false);
+      });
+    };
+
+    AirCacheProvider.prototype.remove = function(name, handler) {
+      var file;
+      file = this._folder().resolvePath(name);
+      try {
+        if (file.exists) file.deleteFile();
+        return handler(null);
+      } catch (error) {
+        return handler('Error removing file');
+      }
+    };
+
+    return AirCacheProvider;
+
+  })(CacheProvider);
 
   AirDBProvider = (function(_super) {
 
@@ -372,7 +500,7 @@
     };
 
     StorageProvider.prototype.sync = function(app, oauth, handler, force_clean) {
-      var clean_sync, do_reset_schema, finish_sync, get_last_sync, in_from, in_items, out_from, out_items, receive_out, reset_schema, send_in,
+      var clean_sync, do_reset_schema, finish_sync, get_last_sync, in_from, in_items, out_from, out_items, receive_out, reset_schema, send_in, upload_file,
         _this = this;
       log('Starting sync...', app);
       oauth.token = this.token;
@@ -396,6 +524,36 @@
             "in": in_items,
             out: out_items
           });
+        });
+      };
+      upload_file = function() {
+        var _ref;
+        if (_.indexOf((_ref = _this.db) != null ? _ref.tables : void 0, 'uploads') === -1 || !_this.cache) {
+          return send_in(null);
+        }
+        return _this.db.query('select id, name, status from uploads order by id limit 1', [], function(err, data) {
+          var remove_entry, row;
+          if (err) return finish_sync(err);
+          if (data.length === 0) return send_in(null);
+          row = data[0];
+          remove_entry = function() {
+            _this.cache.remove(row.name, function() {});
+            return _this.db.query('delete from uploads where id=?', [row.id], function(err, res) {
+              if (err) return finish_sync(err);
+              return upload_file(null);
+            });
+          };
+          if (row.status === 3) {
+            return oauth.rest(app, '/rest/file/remove?name=' + row.name + '&', null, function(err, res) {
+              if (err) return finish_sync(err);
+              return remove_entry(null);
+            });
+          } else {
+            return _this.cache.upload(row.name, function(err) {
+              if (err) return finish_sync(err);
+              return remove_entry(null);
+            });
+          }
         });
       };
       receive_out = function() {
@@ -539,6 +697,10 @@
         });
       };
       get_last_sync = function() {
+        var _ref;
+        if (_.indexOf((_ref = _this.db) != null ? _ref.tables : void 0, 'updates') === -1) {
+          return upload_file(null);
+        }
         return _this.db.query('select * from updates order by id desc', [], function(err, data) {
           if (err) return finish_sync(err);
           if (data.length > 0) {
@@ -546,7 +708,7 @@
             out_from = data[0].version_out || 0;
             if (!clean_sync && out_from > 0) clean_sync = false;
           }
-          return send_in(null);
+          return upload_file(null);
         });
       };
       return oauth.rest(app, '/rest/schema?', null, function(err, schema) {
@@ -572,6 +734,56 @@
     };
 
     StorageProvider.prototype.on_change = function(type, stream, id) {};
+
+    StorageProvider.prototype.uploadFile = function(path, handler) {
+      var dotloc, ext, name,
+        _this = this;
+      if (!this.cache) return handler('Not supported');
+      dotloc = path.lastIndexOf('.');
+      ext = '';
+      if (dotloc !== -1) ext = path.substr(dotloc);
+      name = '' + this._id() + ext.toLowerCase();
+      return this.cache.store(name, path, function(err) {
+        if (err) return handler(err);
+        return _this.db.query('insert into uploads (id, path, name, status) values (?, ?, ?, ?)', [_this._id(), path, name, 1], function(err) {
+          if (err) return handler(err);
+          return handler(null, name);
+        });
+      });
+    };
+
+    StorageProvider.prototype.getFile = function(name, handler) {
+      var _this = this;
+      if (!this.cache) return handler('Not supported');
+      this.cache.oauth.token = this.token;
+      return this.cache.get(name, function(err, uri) {
+        if (err) return handler(err);
+        return handler(null, uri);
+      });
+    };
+
+    StorageProvider.prototype.removeFile = function(name, handler) {
+      var _this = this;
+      if (!this.cache) return handler('Not supported');
+      return this.cache.remove(name, function() {
+        return _this.db.query('select id from uploads where name=? and status=?', [name, 1], function(err, data) {
+          var query, vars;
+          if (err) return handler(err);
+          query = null;
+          vars = null;
+          if (data.length > 0) {
+            query = 'delete from uploads where name=?';
+            vars = [name];
+          } else {
+            query = 'insert into uploads (id, path, name, status) values (?, ?, ?, ?)';
+            vars = [_this._id(), null, name, 3];
+          }
+          return _this.db.query(query, vars, function(err) {
+            return handler(err);
+          });
+        });
+      });
+    };
 
     StorageProvider.prototype.create = function(stream, object, handler, options) {
       var fields, i, numbers, questions, texts, values, _ref, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9,
@@ -838,6 +1050,8 @@
   window.StorageProvider = StorageProvider;
 
   window.Lima1DataManager = DataManager;
+
+  window.AirCacheProvider = AirCacheProvider;
 
   window.env = {
     mobile: false,

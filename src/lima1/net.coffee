@@ -8,7 +8,7 @@ class NetTransport
 class jQueryTransport extends NetTransport
 
 	request: (config, handler) -> 
-		# log 'Doing request', @uri, config?.uri, config?.type
+		log 'Doing request', @uri, config?.uri, config?.type
 		$.ajax({
 			url: @uri+config?.uri
 			type: config?.type ? 'GET'
@@ -41,6 +41,9 @@ class OAuthProvider
 		@clientID = @config?.clientID ? 'no_client_id'
 		@token = @config?.token
 	
+	getFullURL: (app, path) ->
+		return @transport.uri+"#{path}app=#{app}&oauth_token=#{@token}"
+
 	rest: (app, path, body, handler, options) ->
 		@transport.request {
 			uri: "#{path}app=#{app}&oauth_token=#{@token}"

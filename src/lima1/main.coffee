@@ -18,16 +18,99 @@ class DBProvider
 
 class CacheProvider
 
-	constructor: (@oauth) ->
+	constructor: (@oauth, @app, @maxwidth) ->
 
+	# Copies file to cache
 	store: (name, path, handler) ->
 		handler null
 
+	# Downloads? and Returns path to file in cache
 	get: (name, handler) ->
 		handler null
 
+	# Uploads file from cache
+	upload: (name, handler) ->
+		handler null
+
+	# Removes file from cache
 	remove: (name, handler) ->
 		handler null
+
+class AirCacheProvider extends CacheProvider
+
+	_folder: () ->
+		folder = air.File.applicationStorageDirectory.resolvePath 'cache'
+		if not folder.exists
+			folder.createDirectory()
+		return folder
+
+	# Copies file to cache
+	store: (name, path, handler) ->
+		file  = new air.File path
+		if not file.exists then return handler 'File not found'
+		file.addEventListener 'complete', () =>
+			handler null
+		file.addEventListener 'ioError', () =>
+			handler 'Error copying file'
+		file.copyToAsync @_folder().resolvePath(name), yes
+
+	# Downloads? and Returns path to file in cache
+	get: (name, handler) ->
+		file = @_folder().resolvePath name
+		if file.exists
+			return handler null, file.url
+		
+		loader = new air.URLLoader()
+		url = "/rest/file/download?name=#{name}&"
+		if _.endsWith name, '.jpg'
+			url += "width=#{@maxwidth}&"
+		log 'Download', url
+		request = new air.URLRequest(@oauth.getFullURL(@app, url))
+		loader.dataFormat = air.URLLoaderDataFormat.BINARY
+		loader.addEventListener 'complete', (e) =>
+			log 'File arrived'
+			stream = new air.FileStream()
+			try
+			  stream.open file, air.FileMode.WRITE
+			  stream.writeBytes loader.data
+			  stream.close();
+			  return handler null, file.url
+			catch error
+				handler 'Error writing data'
+		loader.addEventListener 'ioError', () =>
+			log 'File download error'
+			handler 'Error downloading file'
+		loader.load request
+
+	# Uploads file from cache
+	upload: (name, handler) ->
+		file = @_folder().resolvePath name
+		if not file.exists
+			return handler null, -2
+		@oauth.rest @app, "/rest/file/upload?name=#{name}&", null, (err, data) => 
+			if err then return handler 'Error uploading file'
+			log 'Uploading:', @oauth.transport.uri, data.u
+			request = new air.URLRequest(data.u)
+			request.method = air.URLRequestMethod.POST
+			request.contentType = 'multipart/form-data'
+			vars = new air.URLVariables()
+			file.addEventListener 'ioError', (e) =>
+				log 'Upload error', e
+				handler 'Error uploading file'
+			file.addEventListener 'uploadCompleteData', () =>
+				log 'File uploaded'
+				handler null, -1
+			file.upload request, 'file', no
+
+	# Removes file from cache
+	remove: (name, handler) ->
+		file = @_folder().resolvePath name
+		try
+			if file.exists
+				file.deleteFile()
+			handler null
+		catch error
+		  handler 'Error removing file'
 
 class AirDBProvider extends DBProvider
 
@@ -284,6 +367,27 @@ class StorageProvider
 					in: in_items
 					out: out_items
 				}
+		upload_file = () =>
+			if _.indexOf(@db?.tables, 'uploads') is -1 or not @cache
+				return send_in null
+			@db.query 'select id, name, status from uploads order by id limit 1', [], (err, data) =>
+				if err then return finish_sync err
+				if data.length is 0 then return send_in null
+				row = data[0]
+				remove_entry = () =>
+					@cache.remove row.name, () =>
+					@db.query 'delete from uploads where id=?', [row.id], (err, res) =>
+						if err then return finish_sync err
+						upload_file null
+				if row.status is 3
+					oauth.rest app, '/rest/file/remove?name='+row.name+'&', null, (err, res) =>
+						if err then return finish_sync err
+						remove_entry null
+				else
+					@cache.upload row.name, (err) =>
+						if err then return finish_sync err
+						remove_entry null
+
 		receive_out = () =>
 			url = "/rest/out?from=#{out_from}&"
 			if not clean_sync
@@ -383,6 +487,8 @@ class StorageProvider
 					if err then return handler err
 					receive_out null
 		get_last_sync = () =>
+			if _.indexOf(@db?.tables, 'updates') is -1
+				return upload_file null
 			@db.query 'select * from updates order by id desc', [], (err, data) =>
 				if err then return finish_sync err
 				if data.length>0
@@ -390,7 +496,7 @@ class StorageProvider
 					out_from = data[0].version_out or 0
 					if not clean_sync and out_from>0 then clean_sync = no
 				# log 'Start sync with', in_from, out_from
-				send_in null
+				upload_file null
 		oauth.rest app, '/rest/schema?', null, (err, schema) =>
 			# log 'After schema', err, schema
 			if err then return finish_sync err
@@ -412,6 +518,41 @@ class StorageProvider
 		return id
 
 	on_change: (type, stream, id) ->
+
+	uploadFile: (path, handler) ->
+		if not @cache then return handler 'Not supported'
+		dotloc = path.lastIndexOf '.'
+		ext = ''
+		if dotloc isnt -1 then ext = path.substr dotloc
+		name = ''+@_id()+ext.toLowerCase()
+		@cache.store name, path, (err) =>
+			if err then return handler err
+			@db.query 'insert into uploads (id, path, name, status) values (?, ?, ?, ?)', [@_id(), path, name, 1], (err) =>
+				if err then return handler err
+				handler null, name
+
+	getFile: (name, handler) ->
+		if not @cache then return handler 'Not supported'
+		@cache.oauth.token = @token
+		@cache.get name, (err, uri) =>
+			if err then return handler err
+			handler null, uri
+
+	removeFile: (name, handler) ->
+		if not @cache then return handler 'Not supported'
+		@cache.remove name, () =>
+			@db.query 'select id from uploads where name=? and status=?', [name, 1], (err, data) =>
+				if err then return handler err
+				query = null
+				vars = null
+				if data.length>0
+					query = 'delete from uploads where name=?'
+					vars = [name]
+				else
+					query = 'insert into uploads (id, path, name, status) values (?, ?, ?, ?)'
+					vars = [@_id(), null, name, 3]
+				@db.query query, vars, (err) =>
+					handler err
 
 	create: (stream, object, handler, options) ->
 		if not @_precheck stream, handler then return
@@ -600,6 +741,7 @@ window.HTML5Provider = HTML5Provider
 window.AirDBProvider = AirDBProvider
 window.StorageProvider = StorageProvider
 window.Lima1DataManager = DataManager
+window.AirCacheProvider = AirCacheProvider
 window.env =
 	mobile: no
 	prefix: ''

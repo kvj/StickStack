@@ -229,11 +229,11 @@
     float: left;
 }
 
-.geo {
+.note_frame {
     text-align: center;
 }
 
-.geo_image {
+.note_image {
     margin: 2px;
     padding: 2px;
     border: 1px solid #888888;

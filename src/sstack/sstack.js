@@ -142,7 +142,7 @@ var TopManager = function() {//Manages top panel
                 this.manager.quebec4 = new Quebec4Plugin();
             };
             new SheetsManager(this.panel, this.manager);
-            this.sync();
+            // this.sync();
         }, this));
     }, this), 100);
 };
@@ -225,6 +225,9 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
         this.login();
     }, this);
     this.syncManager = new Lima1DataManager('sstack', oauth, storage);
+    if (CURRENT_PLATFORM == PLATFORM_AIR) {
+        storage.cache = new AirCacheProvider(oauth, 'sstack', 600);
+    };
     this.syncManager.on_scheduled_sync = _.bind(function () {
         this.sync();
     }, this);

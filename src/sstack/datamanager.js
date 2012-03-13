@@ -8,6 +8,12 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
         });
         return true;
     };
+    if (method == 'getAttachment') {
+        datamanager.getAttachment(params[0], function (err, uri) {
+            handler(err, uri);
+        });
+        return true;
+    };
     if (method == 'loadNotes') {
         datamanager.selectNotes(params[0], function(list, err) {
             if (list) {
@@ -264,6 +270,35 @@ var DataManager = function(database) {//Do DB operations
         return '(nt.type=? and nt.value=?) or n.id=?';
     };
 
+    var AttachmentTag = function() {
+        this.name = 'file';
+        this.display = 'file';
+    };
+    AttachmentTag.prototype = new DefaultTag();
+
+    AttachmentTag.prototype.accept = function(text) {
+        if (_.startsWith(text || '', 'a:')) {
+            return true;
+        };
+        return false;
+    };
+
+    AttachmentTag.prototype.store = function(text) {//Convert to Date
+        return ['a:', 0];
+    };
+
+    AttachmentTag.prototype.format = function(text) {
+        if (_.endsWith(text, '.jpg')) {
+            return 'image'
+        };
+        return 'file';
+    };
+
+    AttachmentTag.prototype.select = function(text, values) {//Default 
+        values.push('id', this._in(['text', text]));
+        return '(nt.type=? and nt.value=?) or n.id=?';
+    };
+
     var DateTag = function() {//Date starts d:
         this.reg = /^d:(((\d{4})(\d{2})(\d{2}))|((\+|\-)(\d+)(d|w|m|y)))$/;
         this.rangeReg = /^d:(.+):(.+)$/;
@@ -447,6 +482,7 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new NoteTag());
     this.tagControllers.push(new GeoTag());
     this.tagControllers.push(new PathTag());
+    this.tagControllers.push(new AttachmentTag());
     this.tagControllers.push(new DefaultTag());
 
     this.sheetsConfig = {};
@@ -455,6 +491,35 @@ var DataManager = function(database) {//Do DB operations
     } catch (e) {
         log('Error reading sheets config', e);
     }
+};
+
+DataManager.prototype.getAttachment = function(name, handler) {
+    this.db.storage.getFile(name, _.bind(function (err, uri) {
+        handler(err, uri);
+    }, this))
+};
+
+DataManager.prototype.createAttachment = function(id, path, handler) {
+    this.getTags(id, _.bind(function(tags, err) {
+        if (tags) {
+            this.db.storage.uploadFile(path, _.bind(function (err, name) {
+                if (err) {
+                    return handler(err);
+                };
+                tags = this.tagToNote(tags, 'a:'+name);
+                this.updateTags(id, tags, _.bind(function (id, err) {
+                    if (id) {
+                        handler(null, id);
+                    } else {
+                        handler(err);
+                    }
+                }, this))
+            }, this))
+        } else {
+            handler(err);
+        };
+    }, this));
+    
 };
 
 DataManager.prototype._saveSheetsConfig = function() {
