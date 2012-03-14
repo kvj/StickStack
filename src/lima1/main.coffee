@@ -36,6 +36,62 @@ class CacheProvider
 	remove: (name, handler) ->
 		handler null
 
+class PhoneGapCacheProvider extends CacheProvider
+
+	constructor: (@oauth, @app, @maxwidth) ->
+	    PhoneGap.addConstructor () =>
+	        PhoneGap.addPlugin 'Cache', this
+
+	# Copies file to cache
+	store: (name, path, handler) ->
+		PhoneGap.exec () =>
+			handler null
+		, (err) =>
+			handler err ? 'PhoneGap error'
+		, 'Cache', 'copy', [name, path]
+
+	# Downloads? and Returns path to file in cache
+	get: (name, handler) ->
+		PhoneGap.exec (url) =>
+			handler null, url
+		, (err) =>
+			url = "/rest/file/download?name=#{name}&"
+			if _.endsWith name, '.jpg'
+				url += "width=#{@maxwidth}&"
+			log 'Download', url
+			PhoneGap.exec (url) =>
+				handler null, url
+			, (err) =>
+				handler err ? 'PhoneGap error'
+			, 'Cache', 'download', [name, @oauth.getFullURL(@app, url)]
+		, 'Cache', 'get', [name]
+		handler null
+
+	# Uploads file from cache
+	upload: (name, handler) ->
+		PhoneGap.exec () =>
+			@oauth.rest @app, "/rest/file/upload?name=#{name}&", null, (err, data) => 
+				if err then return handler 'Error uploading file'
+				log 'Uploading:', @oauth.transport.uri, data.u
+				PhoneGap.exec () =>
+					# Uploaded
+					handler null, -1
+				, (err) =>
+					handler err ? 'PhoneGap error'
+				, 'Cache', 'upload', [name, data.u]
+		, (err) =>
+			# File not in cache - give a chance to skip
+			handler null, -2
+		, 'Cache', 'get', [name]
+
+	# Removes file from cache
+	remove: (name, handler) ->
+		PhoneGap.exec () =>
+			handler null
+		, (err) =>
+			handler err ? 'PhoneGap error'
+		, 'Cache', 'remove', [name]
+
 class AirCacheProvider extends CacheProvider
 
 	_folder: () ->
@@ -742,6 +798,7 @@ window.AirDBProvider = AirDBProvider
 window.StorageProvider = StorageProvider
 window.Lima1DataManager = DataManager
 window.AirCacheProvider = AirCacheProvider
+window.PhoneGapCacheProvider = PhoneGapCacheProvider
 window.env =
 	mobile: no
 	prefix: ''

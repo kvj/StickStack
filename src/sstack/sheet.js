@@ -285,6 +285,11 @@ Sheet.prototype.importNotes = function(provider) {
                         task.text = task.title;
                         delete task.title;
                     };
+                    var media = null;
+                    if (task.media) {
+                        media = task.media;
+                        delete task.media;
+                    };
                     var points = null;
                     if (task.point) {
                         tags +=' '+this.pointToTag(task.point);
@@ -298,8 +303,15 @@ Sheet.prototype.importNotes = function(provider) {
                     // log('Create note', task, tags);
                     this.proxy('putNote', _.bind(function(id, err) {//
                         if (id) {
-                            this.reload();
+                            this.reload(id);
                             _showInfo('Item imported');
+                            if (media) {
+                                this.proxy('createAttachment', _.bind(function (err) {
+                                    if (!err) {
+                                        this.reload(id);
+                                    };
+                                }, this), [id, media]);
+                            };
                             provider.done(item.taskID, function (err) {
                                 
                             });

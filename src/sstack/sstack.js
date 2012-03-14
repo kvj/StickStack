@@ -228,6 +228,9 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
     if (CURRENT_PLATFORM == PLATFORM_AIR) {
         storage.cache = new AirCacheProvider(oauth, 'sstack', 600);
     };
+    if (CURRENT_PLATFORM_MOBILE) {
+        storage.cache = new PhoneGapCacheProvider(oauth, 'sstack', $(window).width());
+    };
     this.syncManager.on_scheduled_sync = _.bind(function () {
         this.sync();
     }, this);

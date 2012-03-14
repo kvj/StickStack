@@ -1,5 +1,5 @@
 (function() {
-  var AirCacheProvider, AirDBProvider, CacheProvider, DBProvider, DataManager, HTML5Provider, StorageProvider,
+  var AirCacheProvider, AirDBProvider, CacheProvider, DBProvider, DataManager, HTML5Provider, PhoneGapCacheProvider, StorageProvider,
     __hasProp = Object.prototype.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
@@ -62,6 +62,77 @@
     return CacheProvider;
 
   })();
+
+  PhoneGapCacheProvider = (function(_super) {
+
+    __extends(PhoneGapCacheProvider, _super);
+
+    function PhoneGapCacheProvider(oauth, app, maxwidth) {
+      var _this = this;
+      this.oauth = oauth;
+      this.app = app;
+      this.maxwidth = maxwidth;
+      PhoneGap.addConstructor(function() {
+        return PhoneGap.addPlugin('Cache', _this);
+      });
+    }
+
+    PhoneGapCacheProvider.prototype.store = function(name, path, handler) {
+      var _this = this;
+      return PhoneGap.exec(function() {
+        return handler(null);
+      }, function(err) {
+        return handler(err != null ? err : 'PhoneGap error');
+      }, 'Cache', 'copy', [name, path]);
+    };
+
+    PhoneGapCacheProvider.prototype.get = function(name, handler) {
+      var _this = this;
+      PhoneGap.exec(function(url) {
+        return handler(null, url);
+      }, function(err) {
+        var url;
+        url = "/rest/file/download?name=" + name + "&";
+        if (_.endsWith(name, '.jpg')) url += "width=" + _this.maxwidth + "&";
+        log('Download', url);
+        return PhoneGap.exec(function(url) {
+          return handler(null, url);
+        }, function(err) {
+          return handler(err != null ? err : 'PhoneGap error');
+        }, 'Cache', 'download', [name, _this.oauth.getFullURL(_this.app, url)]);
+      }, 'Cache', 'get', [name]);
+      return handler(null);
+    };
+
+    PhoneGapCacheProvider.prototype.upload = function(name, handler) {
+      var _this = this;
+      return PhoneGap.exec(function() {
+        return _this.oauth.rest(_this.app, "/rest/file/upload?name=" + name + "&", null, function(err, data) {
+          if (err) return handler('Error uploading file');
+          log('Uploading:', _this.oauth.transport.uri, data.u);
+          return PhoneGap.exec(function() {
+            return handler(null, -1);
+          }, function(err) {
+            return handler(err != null ? err : 'PhoneGap error');
+          }, 'Cache', 'upload', [name, data.u]);
+        });
+      }, function(err) {
+        return handler(null, -2);
+      }, 'Cache', 'get', [name]);
+    };
+
+    PhoneGapCacheProvider.prototype.remove = function(name, handler) {
+      var _this = this;
+      return PhoneGap.exec(function() {
+        return handler(null);
+      }, function(err) {
+        return handler(err != null ? err : 'PhoneGap error');
+      }, 'Cache', 'remove', [name]);
+    };
+
+    return PhoneGapCacheProvider;
+
+  })(CacheProvider);
 
   AirCacheProvider = (function(_super) {
 
@@ -1052,6 +1123,8 @@
   window.Lima1DataManager = DataManager;
 
   window.AirCacheProvider = AirCacheProvider;
+
+  window.PhoneGapCacheProvider = PhoneGapCacheProvider;
 
   window.env = {
     mobile: false,
