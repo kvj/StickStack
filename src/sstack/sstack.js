@@ -131,6 +131,15 @@ var TopManager = function() {//Manages top panel
                     return true;
                 }, this),
             });
+            if (CURRENT_PLATFORM_MOBILE && this.android) {
+                items.push({
+                    caption: 'Change orientation',
+                    handler: _.bind(function() {
+                        this.android.setOrientation(true);
+                        return true;
+                    }, this),
+                });                
+            };
             new PopupMenu({
                 element: this.panel.element,
                 items: items,
@@ -142,6 +151,7 @@ var TopManager = function() {//Manages top panel
         this.startManager(_.bind(function () {
             if (CURRENT_PLATFORM_MOBILE) {
                 this.manager.quebec4 = new Quebec4Plugin();
+                this.android = new MiscPlugin();
             };
             new SheetsManager(this.panel, this.manager);
             this.sync();
@@ -862,6 +872,19 @@ var newSheet = function(sheet, panel, datamanager, forceinline) {//Creates new s
     } else {
         return new InlineSheet(sheet, panel, datamanager);
     };
+};
+
+var MiscPlugin = function () {
+    PhoneGap.addConstructor(function() {
+        PhoneGap.addPlugin("Misc", this);
+    });
+};
+
+MiscPlugin.prototype.setOrientation = function(landscape) {
+    PhoneGap.exec(function () {
+    }, function (err) {
+        log('Error', err);
+    }, 'Misc', landscape? 'landscape': 'portrait', []);    
 };
 
 var Quebec4Plugin = function () {

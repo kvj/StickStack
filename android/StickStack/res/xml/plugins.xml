@@ -3,6 +3,7 @@
     <plugin name="App" value="com.phonegap.App"/>
     <plugin name="Quebec4" value="org.kvj.sstack.Quebec4Plugin"/>
     <plugin name="Cache" value="org.kvj.sstack.CachePlugin"/>
+    <plugin name="Misc" value="org.kvj.sstack.MiscPlugin"/>
 <!--     <plugin name="Geolocation" value="com.phonegap.GeoBroker"/> -->
     <plugin name="Device" value="com.phonegap.Device"/>
 <!--     <plugin name="Accelerometer" value="com.phonegap.AccelListener"/> -->

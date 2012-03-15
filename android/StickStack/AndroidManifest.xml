@@ -25,6 +25,7 @@
         <activity
             android:label="@string/app_name"
             android:name=".StickStackActivity" 
+            android:screenOrientation="nosensor"
             android:configChanges="orientation|keyboardHidden|keyboard|screenLayout|uiMode|fontScale"
             android:launchMode="singleInstance">
             <intent-filter >

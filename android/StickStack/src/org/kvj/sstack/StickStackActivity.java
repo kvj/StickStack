@@ -1,5 +1,6 @@
 package org.kvj.sstack;
 
+import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.webkit.WebView;
@@ -13,9 +14,10 @@ public class StickStackActivity extends DroidGap {
 	public void onCreate(Bundle savedInstanceState) {
 		WebView.enablePlatformNotifications();
 		// Log.i(TAG, "onCreate: " + savedInstanceState);
-		setRequestedOrientation(getResources().getConfiguration().orientation);
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		super.setIntegerProperty("backgroundColor", Color.BLACK);
 		super.setBooleanProperty("keepRunning", true);
+		setStringProperty("loadingDialog", "Stick Stack,Loading...");
 		super.onCreate(savedInstanceState);
 		super.init();
 		appView.setVerticalScrollBarEnabled(true);
