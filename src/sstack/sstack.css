@@ -238,3 +238,13 @@
     padding: 2px;
     border: 1px solid #888888;
 }
+
+.map_editor {
+    margin: 5px;
+}
+
+.marker_date {
+    text-align: center;
+    padding: 3px;
+    color: #efefef;
+}

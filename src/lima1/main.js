@@ -974,10 +974,10 @@
                   result.push('' + fields[name] + ' in (select ' + f[value.field] + ' from t_' + value.stream + ' where status<>? and ' + array_to_query(f, (_ref4 = value.query) != null ? _ref4 : []) + ')');
                 } else {
                   if (value["var"]) {
-                    result.push(fields[name] + value.op + '?');
+                    result.push(fields[name] + ' ' + value.op + ' ?');
                     values.push((_ref5 = value["var"]) != null ? _ref5 : null);
                   } else {
-                    result.push(fields[name] + value.op);
+                    result.push(fields[name] + ' ' + value.op);
                   }
                 }
               } else {

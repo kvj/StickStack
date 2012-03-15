@@ -26,6 +26,8 @@ yepnope({
         }, {
             test: CURRENT_PLATFORM_MOBILE,
             yep: ['sstack/sstack-android.css']
+        }, {
+            load: ['http://maps.googleapis.com/maps/api/js?key=AIzaSyDsX-iJNxBCxisojTuFsdHwkur6EhrUt7g&sensor=true&language=en&callback=_gmapsLoaded']
         }]);
     }
 })
@@ -890,164 +892,150 @@ Quebec4Plugin.prototype.done = function(id) {
     }, 'Quebec4', 'done', [id]);
 };
 
-// var Quebec4Test = function () {
-//     this.items = [{
-//   "created": 1331162873995,
-//   "points": [
-//     {
-//       "id": 61,
-//       "lon": 139.6792856,
-//       "created": 1331159942657,
-//       "speed": 0,
-//       "lat": 35.4977779,
-//       "acc": 34,
-//       "alt": 0
-//     },
-//     {
-//       "id": 62,
-//       "lon": 139.6793991,
-//       "created": 1331160123848,
-//       "speed": 0,
-//       "lat": 35.4975134,
-//       "acc": 25,
-//       "alt": 0
-//     },
-//     {
-//       "id": 63,
-//       "lon": 139.6743254,
-//       "created": 1331160304465,
-//       "speed": 0,
-//       "lat": 35.5038108,
-//       "acc": 37,
-//       "alt": 0
-//     },
-//     {
-//       "id": 64,
-//       "lon": 139.6780739,
-//       "created": 1331160486982,
-//       "speed": 0,
-//       "lat": 35.5105486,
-//       "acc": 30,
-//       "alt": 0
-//     },
-//     {
-//       "id": 65,
-//       "lon": 139.7143397,
-//       "created": 1331160940770,
-//       "speed": 0,
-//       "lat": 35.5594627,
-//       "acc": 36,
-//       "alt": 0
-//     },
-//     {
-//       "id": 66,
-//       "lon": 139.7416851,
-//       "created": 1331161121605,
-//       "speed": 0,
-//       "lat": 35.6274957,
-//       "acc": 29,
-//       "alt": 0
-//     },
-//     {
-//       "id": 67,
-//       "lon": 139.7164573,
-//       "created": 1331161440740,
-//       "speed": 0,
-//       "lat": 35.5633473,
-//       "acc": 40,
-//       "alt": 0
-//     },
-//     {
-//       "id": 68,
-//       "lon": 139.7349164,
-//       "created": 1331161621963,
-//       "speed": 0,
-//       "lat": 35.6070725,
-//       "acc": 27,
-//       "alt": 0
-//     },
-//     {
-//       "id": 69,
-//       "lon": 139.7271928,
-//       "created": 1331161848550,
-//       "speed": 0,
-//       "lat": 35.6085113,
-//       "acc": 27,
-//       "alt": 0
-//     },
-//     {
-//       "id": 70,
-//       "lon": 139.7125585,
-//       "created": 1331162029310,
-//       "speed": 0,
-//       "lat": 35.60603,
-//       "acc": 48,
-//       "alt": 0
-//     },
-//     {
-//       "id": 71,
-//       "lon": 139.70810151658952,
-//       "created": 1331162220626,
-//       "speed": 5.817149639129639,
-//       "lat": 35.60206243302673,
-//       "acc": 5,
-//       "alt": 79.0999755859375
-//     },
-//     {
-//       "id": 72,
-//       "lon": 139.7080678,
-//       "created": 1331162403284,
-//       "speed": 0,
-//       "lat": 35.6005952,
-//       "acc": 53,
-//       "alt": 0
-//     },
-//     {
-//       "id": 73,
-//       "lon": 139.7078764,
-//       "created": 1331162586992,
-//       "speed": 0,
-//       "lat": 35.6000794,
-//       "acc": 24,
-//       "alt": 0
-//     },
-//     {
-//       "id": 74,
-//       "lon": 139.7061661,
-//       "created": 1331162812308,
-//       "speed": 0,
-//       "lat": 35.5989421,
-//       "acc": 37,
-//       "alt": 0
-//     }
-//   ],
-//   "title": "На работу",
-//   "id": 0
-// }, {
-//   "created": 1331121639481,
-//   "point": {
-//     "id": 60,
-//     "lon": 139.6782793,
-//     "created": 1331121573620,
-//     "speed": 0,
-//     "lat": 35.4989528,
-//     "acc": 34,
-//     "alt": 0
-//   },
-//   "title": "Дома",
-//   "id": 1
-// }]
-// };
+var _gmapsLoaded = function () {
+    log('Maps loaded');
+}
 
-// Quebec4Test.prototype.list = function(handler) {
-//     handler(null, this.items);
-// };
+var MapsEditor = function (datamanager, data, handler) {
+    _createEsentials(this, 'Maps editor', 2);
+    _goBackFactory(this.topMenu, this.panel, '');
+    var points = [];
+    this.manager = datamanager;
+    this.topMenu.addButton({
+        caption: 'Save',
+        handler: _.bind(function() {
+            var count = 0;
+            for (var i = 0; i < edits.length; i++) {
+                if (edits[i]) {
+                    count++;
+                };
+            };
+            var gr = new AsyncGrouper(count, _.bind(function (gr) {
+                manager.goBack(this.panel);
+                if (handler) {
+                    handler();
+                };
+            }, this));
+            for (var i = 0; i < edits.length; i++) {
+                if (edits[i]) {
+                    point = points[i];
+                    _proxy(datamanager, 'addTag', gr.ok, [data[i].id, data[i].data, 'g:lat='+fixFloat(point.lat)+':lon='+fixFloat(point.lon)+':sp='+fixFloat(point.sp, 100)+':acc='+fixFloat(point.acc, 100)+':alt='+fixFloat(point.alt, 100)+':tstamp='+point.created]);
+                };
+            };
+            gr.check();
+        }, this),
+    });
+    manager.show(this.panel);
+    if (!window.google || !google.maps) {
+        _showInfo('No Google Maps library loaded');
+        return;
+    };
+    for (var i = 0; i < data.length; i++) {
+        // log('Data[i]', i, data[i]);
+        points.push(splitPoint(data[i].data));
+    };
+    if (points.length == 0) {
+        _showInfo('No data loaded');
+        return;
+    };
+    var width = this.panel.element.innerWidth()-10;
+    this.mapDiv = $(document.createElement('div')).addClass('map_editor').appendTo(this.panel.element);
+    this.mapDiv.width(width).height(width);
+    var myOptions = {
+        zoom: 8,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        center: new google.maps.LatLng(points[0].lat, points[0].lon)
+    };
+    if (points.length == 1) {
+        myOptions.zoom = 15;
+    };
+    this.map = new google.maps.Map(this.mapDiv.get(0), myOptions);
+    var markers = [];
+    var edits = [];
+    var path = null;
+    this.drawPath = function () {
+        if (path) {
+            path.setMap(null);
+        };
+        var arr = [];
+        for (var i = 0; i < markers.length; i++) {
+            // log('Marker', markers[i]);
+            arr.push(markers[i].position);
+        };
+        path = new google.maps.Polyline({
+            path: arr,
+            strokeColor: '#0000FF',
+            strokeOpacity: 0.4,
+            clickable: false,
+            strokeWeight: 3,
+            map: this.map
+        });
+    }
+    this.selectMarker = function (index) {
+        this.formDiv.show();
+        this.form.loadForm(points[index]);
+        this.currentIndex = index;
+        log('Select', points[index]);
+        if (points[index].tstamp) {
+            this.dateDiv.text(new Date(parseInt(points[index].tstamp)).format('m/d/yy h:MMt'));
+        };
+    }
+    this.initMarker = function (point, index) {
+        var loc = new google.maps.LatLng(point.lat, point.lon);
+        var marker = new google.maps.Marker({
+            position: loc,
+            map: this.map,
+            draggable: true,
+            animation: google.maps.Animation.DROP
+        });
+        markers.push(marker);
+        edits.push(false);
+        if (point.acc>0) {
+            var circle = new google.maps.Circle({
+                center: loc,
+                map: this.map,
+                radius: parseFloat(point.acc),
+                strokeColor: '#0000FF',
+                strokeOpacity: 0.4,
+                clickable: false,
+                strokeWeight: 2,
+                fillColor: '#0000FF',
+                fillOpacity: 0.2
+            });
+        };
+        google.maps.event.addListener(marker, 'dragend', _.bind(function(event) {
+            log('Dragend:', event.latLng, index);
+            point.lat = event.latLng.lat();
+            point.lon = event.latLng.lng();
+            point.acc = 0;
+            edits[index] = true;
+            this.selectMarker(index);
+            this.drawPath();
+        }, this));
+        google.maps.event.addListener(marker, 'click', _.bind(function(event) {
+            this.selectMarker(index);
+        }, this));
 
-// Quebec4Test.prototype.get = function(id, handler) {
-//     handler(null, this.items[id]);
-// };
-
-// Quebec4Test.prototype.done = function(id) {
-
-// };
-
+    };
+    for (var i = 0; i < points.length; i++) {
+        this.initMarker(points[i], i);
+    };
+    this.drawPath();
+    this.dateDiv = $(document.createElement('div')).addClass('marker_date').appendTo(this.panel.element);
+    this.formDiv = $(document.createElement('div')).appendTo(this.panel.element);
+    this.form = new AutoForm(this.formDiv, {
+        sp: {
+            label: 'Speed'
+        },
+        alt: {
+            label: 'Altitude'
+        }
+    }, 'map', {}, _.bind(function (values) {
+        var point = points[this.currentIndex];
+        point.sp = values.sp;
+        point.alt = values.alt;
+        edits[this.currentIndex] = true;
+        log('Edit:', point);
+    }, this));
+    this.formDiv.hide();
+};

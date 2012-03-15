@@ -816,7 +816,7 @@ PopupMenu.prototype.hide = function() {//Hides menu
     return true;
 };
 
-var AutoForm = function(element, config, formid, values) {//Creates and handles form
+var AutoForm = function(element, config, formid, values, handler) {//Creates and handles form
     this.conf = config || {};
     this.element = $(element);
     var values = values || {};
@@ -839,6 +839,15 @@ var AutoForm = function(element, config, formid, values) {//Creates and handles 
             } else {//Input
                 var wr = $('<div/>').addClass('input_wrap').appendTo(this.element);
                 var control = $('<input/>').attr('type', this.conf[id].type? this.conf[id].type: 'text').addClass('form_control').attr('id', this.formid+id).appendTo(wr).val(this.conf[id].value || values[id] || '');
+                if (handler) {
+                    control.bind('keydown', _.bind(function(e) {
+                        if (e.which == 13) {//Enter
+                            handler(this.saveForm());
+                            return false;
+                        };
+                        return true;
+                    }, this))
+                };
                 if (this.conf[id].type == 'password' && this.conf[id].password) {//Special password type
                     control.val('');
                 };
@@ -849,6 +858,16 @@ var AutoForm = function(element, config, formid, values) {//Creates and handles 
                 };
             };
         };
+    };
+};
+
+AutoForm.prototype.loadForm = function(values) {
+    for (var id in this.conf) {//Create control
+        if (!this.conf[id].label) {
+            continue;
+        };
+        var item = this.element.find('#'+this.formid+id);
+        item.val(values[id] || '');
     };
 };
 

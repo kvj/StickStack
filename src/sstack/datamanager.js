@@ -2,6 +2,10 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
     if (!params) {
         params = [];
     };
+    if (method == 'editMap') {
+        new MapsEditor(datamanager, params[0], handler);
+        return true;
+    };
     if (method == 'createAttachment') {
         datamanager.createAttachment(params[0], params[1], function (err) {
             handler(err);
@@ -241,12 +245,17 @@ var DataManager = function(database) {//Do DB operations
     };
 
     GeoTag.prototype.select = function(text, values) {//Default 
+        if (text == 'g:*') {
+            values.push('id', this._in(['text', {op: 'like', 'var': 'g:%'}]));
+            return 'like';
+        };
         values.push('id', this._in(['text', text]));
         return '(nt.type=? and nt.value=?) or n.id=?';
     };
 
     var PathTag = function() {
         this.name = 'path';
+        this.display = 'path';
     };
     PathTag.prototype = new DefaultTag();
 

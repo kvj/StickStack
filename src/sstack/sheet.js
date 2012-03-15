@@ -9,6 +9,7 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
     this.data = sheet;
     this.root = element;
     this.proxy = proxy;
+    this.mediaGap = 8;
     this.menuPlace = menuPlace;
     this.areaPanel = $('<div/>').addClass('area_wrap').appendTo(this.root).hide();
     this.area = $('<textarea/>').addClass('form_control').appendTo(this.areaPanel);
@@ -76,16 +77,17 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
                         this.proxy('openTag', null, [this.selected.selectedTag.id]);
                         return true;
                     }, this),
-                });                
+                });
+                this.launchTagMethod(this.selected, 'menu', this.selected.selectedTag.id, items);       
             };
-            items.push({
-                caption: 'Link',
-                cls: 'button_create',
-                handler: _.bind(function() {
-                    this.startTextEdit(this.selected.id, this.selected.div, 'link', this.selected.link);
-                    return true;
-                }, this),
-            });
+            // items.push({
+            //     caption: 'Link',
+            //     cls: 'button_create',
+            //     handler: _.bind(function() {
+            //         this.startTextEdit(this.selected.id, this.selected.div, 'link', this.selected.link);
+            //         return true;
+            //     }, this),
+            // });
             items.push({
                 caption: 'Open note',
                 handler: _.bind(function() {
@@ -130,22 +132,22 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
     this.reload();
 };
 
-Sheet.prototype.launchTagMethod = function(note, method) {
+Sheet.prototype.launchTagMethod = function(note, method, tag) {
     for (var j = 0; j < note.tags_captions.length; j++) {//Display tags
         var t = note.tags_captions[j];
+        if (tag && t.id != tag) {
+            continue;
+        };
         if (t.display) {
             var m = 'tag_'+method+'_'+t.display;
             if (this[m]) {
-                this[m].call(this, note, t.id);
+                var params = [note, t.id];
+                for (var i = 3; i < arguments.length; i++) {
+                    params.push(arguments[i]);
+                };
+                this[m].apply(this, params);
             };
         };
-    };
-};
-
-Sheet.prototype.tag_unselect_geo = function(note, tag) {
-    if (note.geoCreated) {
-        note.div.find('.geo').remove();
-        note.geoCreated = false;
     };
 };
 
@@ -171,8 +173,7 @@ Sheet.prototype.tag_select_file = function(note, tag) {
                 };
                 var img = $(document.createElement('img')).addClass('file_image note_image').appendTo(frame);
                 img.bind('load', _.bind(function () {
-                    var gap = 8;
-                    var width = note.div.innerWidth()-2*gap;
+                    var width = note.div.innerWidth()-2*this.mediaGap;
                     var iw = img.width();
                     var ih = img.height();
                     var mul = width / iw;
@@ -188,29 +189,141 @@ Sheet.prototype.tag_select_file = function(note, tag) {
     };
 };
 
+
+Sheet.prototype.tag_menu_geo = function(note, tag, items) {
+    items.push({
+        caption: 'Edit location',
+        handler: _.bind(function () {
+            this.proxy('editMap', _.bind(function () {
+                this.reload(note.id);
+            }, this), [[{
+                id: note.id,
+                data: tag
+            }]]);
+            return true;
+        }, this)
+    })
+};
+
+Sheet.prototype.tag_unselect_geo = function(note, tag) {
+    if (note.geoCreated) {
+        note.div.find('.geo').remove();
+        note.geoCreated = false;
+    };
+};
+
 Sheet.prototype.tag_select_geo = function(note, tag) {
     // log('Ready to show geo', tag);
     if (!note.geoCreated) {
-        var arr = tag.split(':');
-        var point = {};
-        for (var i = 0; i < arr.length; i++) {
-            var item = arr[i];
-            var vp = item.split('=');
-            if (vp.length == 2) {
-                point[vp[0]] = vp[1];
-            };
-        };
-        // log('Show point', point);
+        var point = splitPoint(tag);
         note.geoCreated = true;
         if (point.lat && point.lon) {
-            var gap = 8;
-            var width = note.div.innerWidth()-2*gap;
+            var width = note.div.innerWidth()-2*this.mediaGap;
             var height = Math.floor(width*0.75);
             var frame = $(document.createElement('div')).addClass('geo note_frame note_line_hide').appendTo(note.div);
             var img = $(document.createElement('img')).addClass('geo_image note_image').appendTo(frame);
             img.attr('src', 'http://maps.google.com/maps/api/staticmap?center='+point.lat+','+point.lon+'&zoom=15&size='+width+'x'+height+'&sensor=true&markers=color:red|size:mid|'+point.lat+','+point.lon);
             img.width(width).height(height);
         };
+    };
+};
+
+var splitPoint = function (tag) {
+    var arr = tag.split(':');
+    var point = {};
+    for (var i = 0; i < arr.length; i++) {
+        var item = arr[i];
+        var vp = item.split('=');
+        if (vp.length == 2) {
+            point[vp[0]] = vp[1];
+        };
+    };
+    return point;
+};
+
+Sheet.prototype.tag_unselect_path = function(note, tag) {
+    if (note.geoCreated) {
+        note.div.find('.path').remove();
+        note.geoCreated = false;
+    };
+};
+
+Sheet.prototype.tag_menu_path = function(note, tag, items) {
+    items.push({
+        caption: 'Edit path',
+        handler: _.bind(function () {
+            this.proxy('loadNotes', _.bind(function(list, err) {//
+                if (list && list.length>0) {//Display list
+                    var path = [];
+                    for (var i = 0; i < list.length; i++) {
+                        var n = list[i];
+                        var tags = n.tags || [];
+                        // log('Tags', tags, n);
+                        var pointTag = null;
+                        for (var j = 0; j < tags.length; j++) {
+                            if (_.startsWith(tags[j], 'g:')) {
+                                pointTag = tags[j];
+                                break;
+                            };
+                        };
+                        if (!pointTag) {
+                            continue;
+                        };
+                        path.push({
+                            id: n.id,
+                            data: pointTag
+                        })
+                    };
+                    this.proxy('editMap', _.bind(function () {
+                        this.reload(note.id);
+                    }, this), [path]);
+                } else {
+                    _showInfo('Path not found')
+                }
+            }, this), ['n:'+note.id+' g:*']);
+            return true;
+        }, this)
+    })
+};
+
+Sheet.prototype.tag_select_path = function(note, tag) {
+    // log('Ready to show geo', tag);
+    if (!note.pathCreated) {
+        var point = splitPoint(tag);
+        note.pathCreated = true;
+        var frame = $(document.createElement('div')).addClass('path note_frame note_line_hide').appendTo(note.div);
+        this.proxy('loadNotes', _.bind(function(list, err) {//
+            if (list && list.length>0) {//Display list
+                // log('Points:', list.length);
+                var path = ['color:0x0000ff', 'weight: 3'];
+                for (var i = 0; i < list.length; i++) {
+                    var n = list[i];
+                    var tags = n.tags || [];
+                    // log('Tags', tags, n);
+                    var pointTag = null;
+                    for (var j = 0; j < tags.length; j++) {
+                        if (_.startsWith(tags[j], 'g:')) {
+                            pointTag = tags[j];
+                            break;
+                        };
+                    };
+                    if (!pointTag) {
+                        continue;
+                    };
+                    var point = splitPoint(pointTag);
+                    if (point.lat && point.lon) {
+                        path.push(''+point.lat+','+point.lon);
+                    }
+                };
+                var width = note.div.innerWidth()-2*this.mediaGap;
+                var height = Math.floor(width*0.75);
+                var img = $(document.createElement('img')).addClass('geo_image note_image').appendTo(frame);
+                img.attr('src', 'http://maps.google.com/maps/api/staticmap?size='+width+'x'+height+'&sensor=true&path='+path.join('|'));
+                img.width(width).height(height);
+            } else {
+                _showInfo('Path not found')
+            }
+        }, this), ['n:'+note.id+' g:*']);
     };
 };
 
@@ -236,16 +349,17 @@ Sheet.prototype.editTextDone = function(val) {//Edit tag/link/ref
     this.text.blur();
 };
 
-Sheet.prototype.pointToTag = function(point, round) {
-    var fixFloat = function (fl) {
-        if (!fl) {
-            return 0;
-        };
-        if (!round) {
-            return fl;
-        };
-        return Math.round(fl*round)/round;
+var fixFloat = function (fl, round) {
+    if (!fl) {
+        return 0;
     };
+    if (!round) {
+        return fl;
+    };
+    return Math.round(fl*round)/round;
+};
+
+Sheet.prototype.pointToTag = function(point) {
     return 'g:lat='+fixFloat(point.lat)+':lon='+fixFloat(point.lon)+':sp='+fixFloat(point.speed, 100)+':acc='+fixFloat(point.acc, 100)+':alt='+fixFloat(point.alt, 100)+':tstamp='+point.created;
 };
 
@@ -749,13 +863,13 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
         };
         if (j == 0) {//Prepend link
             tags.appendTo(line_div);
-            if (note.link) {
-                $(_buildIcon('link_button')).addClass('left_icon').appendTo(line_div).bind('click', _.bind(function(e) {
-                    this.proxy('openLink', _.bind(function(res) {
-                    }, this), [note.link, e.ctrlKey]);
-                    return false;
-                }, this));
-            };
+            // if (note.link) {
+            //     $(_buildIcon('link_button')).addClass('left_icon').appendTo(line_div).bind('click', _.bind(function(e) {
+            //         this.proxy('openLink', _.bind(function(res) {
+            //         }, this), [note.link, e.ctrlKey]);
+            //         return false;
+            //     }, this));
+            // };
         };
         for (var k = 0; k < line.length; k++) {//Add words
             var word = line[k];

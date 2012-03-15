@@ -701,10 +701,10 @@ class StorageProvider
 							else
 								# custom op
 								if value.var
-									result.push fields[name]+value.op+'?'
+									result.push fields[name]+' '+value.op+' ?'
 									values.push value.var ? null
 								else
-									result.push fields[name]+value.op
+									result.push fields[name]+' '+value.op
 						else
 							#equal
 							result.push fields[name]+'=?'
