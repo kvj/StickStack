@@ -679,7 +679,7 @@ WindowSheet.prototype.getBounds = function(x, y) {
 
 var openTag = function(tag, panel, manager) {
     if (tag) {
-        newSheet({caption: 'Tag: '+manager.formatTag(tag), tags: tag, autotags: tag}, panel, manager);
+        newSheet({caption: 'Tag: '+manager.formatTag(tag), tags: tag, autotags: tag, sort: '-'+tag+' -x'}, panel, manager);
     };
 };
 
@@ -812,6 +812,7 @@ var InlineSheet = function(sheet, panel, datamanager) {//
         caption: 'Expand',
         handler: _.bind(function() {
             this.sheet.root.find('.note_line_hide').addClass('note_line_show');
+            this.sheet.root.find('.note').addClass('note_selected');
         }, this),
     });
     this.topMenu.addButton({

@@ -4,10 +4,20 @@
     border: 1px solid #aaaaaa;
     cursor: pointer;
     min-height: 0.4em;
+    clear: both;
+}
+
+.note_short {
+    float: left;
+    width: 30%;
+    clear: none;
 }
 
 .note_selected {
     -webkit-box-shadow: 1px 1px 1px #888888;
+    float: inherit;
+    width: inherit;
+    clear: both;
 }
 
 .note_menu {
@@ -156,6 +166,7 @@
     position: relative;
     min-height: 0.8em;
     border-bottom: 1px dotted #888888;
+    clear: both;
 }
 
 .day_hour_caption {

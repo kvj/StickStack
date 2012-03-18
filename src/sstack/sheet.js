@@ -129,6 +129,7 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
     }, this))
     this.editing = false;
     this.selected = null;
+    $(document.createElement('div')).addClass('clear').appendTo(this.root);
     this.reload();
 };
 
@@ -703,7 +704,7 @@ Sheet.prototype.enableNoteDrop = function(div, handler, id) {//Called when note 
 };
 
 Sheet.prototype.showNote = function(note, parent, lastSelected) {//
-    var div = $('<div/>').addClass('note draggable').appendTo(parent);
+    var div = $('<div/>').addClass('note draggable').insertBefore(parent.children('.clear'));
     applyColor(div, note.color, false);
     note.div = div;
     div.bind('dblclick', {note: note, div: div}, _.bind(function(e) {
@@ -894,14 +895,23 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
         };
         $('<div style="clear: both;"/>').appendTo(line_div);
     };
-    if (note.display == 'none') {//Hide lines
-        text.find('.note_line').addClass('note_line_hide');
-    };
-    if (note.display == 'notags') {//Hide tags
-        tags.addClass('note_line_hide');
-    };
-    if (note.display == 'title') {//Hide all except first line
-        text.find('.note_line').not(text.find('.note_line').first()).addClass('note_line_hide');
+    if (note.display) {
+        var displays = note.display.split(' ');
+        for (var i = 0; i < displays.length; i++) {
+            var disp = displays[i];
+            if (disp == 'none') {//Hide lines
+                text.find('.note_line').addClass('note_line_hide');
+            };
+            if (disp== 'notags') {//Hide tags
+                tags.addClass('note_line_hide');
+            };
+            if (disp == 'title') {//Hide all except first line
+                text.find('.note_line').not(text.find('.note_line').first()).addClass('note_line_hide');
+            };        
+            if (disp == 'short') {//Small note
+                div.addClass('note_short');
+            };        
+        };
     };
     for (var j = 0; j < note.tags_captions.length; j++) {//Display tags
         var t = _.clone(note.tags_captions[j]);
@@ -930,11 +940,13 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
     if (!this.hours) {//Create hours
         this.hours = [];
         this.noHour = $('<div/>').appendTo(this.root);
+        $(document.createElement('div')).addClass('clear').appendTo(this.noHour);
         for (var i = this.startHour; i <= this.endHour; i++) {//Create divs
             var hr = $('<div/>').addClass('day_hour').appendTo(this.root);
             $('<div/>').addClass('day_hour_caption').appendTo(hr).text(''+(i>12? i-12: i)+(i>11? 'p': 'a'));
             this.hours[i] = hr;
-            $('<div/>').addClass('day_hour_notes').appendTo(hr);
+            var notes_place = $('<div/>').addClass('day_hour_notes').appendTo(hr);
+            $(document.createElement('div')).addClass('clear').appendTo(notes_place);
             if (CURRENT_PLATFORM_MOBILE) {
                 installSwipeHandler(hr, _.bind(function(hour) {//
                     this.newNote('t:'+(hour*100));
@@ -1005,7 +1017,7 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
             }, this));
         };
         this.nowLine = $('<div/>').appendTo(this.root).addClass('now_line');
-        setInterval(_.bind(this.moveNowLine, this), 60*1000);
+        setInterval(_.bind(this.moveNowLine, this), 3*60*1000);
     };
     for (var i = 0; i < list.length; i++) {//
         var target = this.hours[list[i].hour];

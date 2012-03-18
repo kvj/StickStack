@@ -44,10 +44,10 @@ div {
 }
 
 .button_text {
-    height: 100%;
     text-align: center;
     white-space: nowrap;
     -webkit-text-overflow: ellipsis;
+    vertical-align: middle;
 }
 
 .buttons {
@@ -85,12 +85,12 @@ textarea {
 
 #error_dialog {
     position: fixed;
-    width: 500px;
+    width: 250px;
     max-width: 90%;
     margin: 0pt auto;
     top: 60px;
     left: 50%;
-    margin-left: -250px;
+    margin-left: -125px;
     border: 1px solid #777777;
     padding: 0.5em;
     background-color: #ffffff;
@@ -101,12 +101,12 @@ textarea {
 
 #question_dialog {
     position: fixed;
-    width: 500px;
+    width: 250px;
     max-width: 90%;
     margin: 0pt auto;
     top: 60px;
     left: 50%;
-    margin-left: -250px;
+    margin-left: -125px;
     border: 1px solid #777777;
     padding: 0.5em;
     background-color: #ffffff;
@@ -201,7 +201,6 @@ textarea {
 }
 
 .button_text_32 {
-    padding-top: 3.5em;
 }
 
 .button_outer_32 {

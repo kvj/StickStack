@@ -1,5 +1,13 @@
-html {
-    font-size: 2em;
+@media screen and (-webkit-device-pixel-ratio: 1.5) {
+	html {
+	    font-size: 1.6em;
+	}
+}
+
+@media screen and (-webkit-device-pixel-ratio: 2) {
+	html {
+	    font-size: 2em;
+	}
 }
 
 input, textarea {
