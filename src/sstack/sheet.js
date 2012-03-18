@@ -901,12 +901,14 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
             var disp = displays[i];
             if (disp == 'none') {//Hide lines
                 text.find('.note_line').addClass('note_line_hide');
+                div.addClass('note_bottom_bg');
             };
             if (disp== 'notags') {//Hide tags
                 tags.addClass('note_line_hide');
             };
             if (disp == 'title') {//Hide all except first line
                 text.find('.note_line').not(text.find('.note_line').first()).addClass('note_line_hide');
+                div.addClass('note_bottom_bg');
             };        
             if (disp == 'short') {//Small note
                 div.addClass('note_short');
