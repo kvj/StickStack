@@ -25,6 +25,8 @@ var detectPlatform = function() {//Detects on which platform application is runn
     return PLATFORM_WEB;
 };
 
+var ui = {};
+
 var CURRENT_PLATFORM_MOBILE = false;
 var CURRENT_EVENT_CLICK = 'mousedown';
 var CURRENT_EVENT_DOWN = 'mousedown';
@@ -289,3 +291,47 @@ AsyncGrouper.prototype.findError = function() {//Looks for failed and returns er
     };
     return null;
 };
+
+ui.remoteScriptLoader = function (url, object, handler) {
+    if (CURRENT_PLATFORM == PLATFORM_AIR) {
+        //Special case with sandbox
+        log('Loading', url, object);
+        var iframe = $(document.createElement('iframe'));
+        iframe.width(0).height(0).hide();
+        iframe.attr('documentRoot', 'app:/').attr('sandboxRoot', 'http://air/');
+        iframe.bind('load', function (event) {
+            log('DOM loaded', object);
+            var doc = event.target.contentDocument;
+            var s = doc.createElement('script');
+            s.src = url;
+            doc.body.appendChild(s);
+            var bridge = {
+                
+            };
+            bridge['_'+object] = function () {
+                log('Get!', object, _.keys(event.target.contentWindow));
+                return event.target.contentWindow[object] || null;
+            }
+            event.target.contentWindow.childSandboxBridge = bridge;
+        })
+        iframe.appendTo(document.body);
+        // iframe.html('<html><head><script src="'+url+'"></script></head><body></body></html>');
+        window['_'+object] = function () {
+            log('Get object', iframe.get(0).contentWindow.childSandboxBridge);
+            return iframe.get(0).contentWindow[object];
+        }
+    } else {
+        //Use yepnope
+        yepnope({
+            load: [url],
+            complete: function() {
+                if (handler) {
+                    handler();
+                };
+            }
+        });
+        window['_'+object] = function () {
+            return window[object];
+        };
+    }
+}

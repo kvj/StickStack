@@ -83,16 +83,18 @@ textarea {
     background-color: rgba(40, 40, 40, 0.3);
 }
 
-#error_dialog {
+.popup_dialog {
     position: fixed;
     width: 250px;
-    max-width: 90%;
     margin: 0pt auto;
     top: 60px;
     left: 50%;
-    margin-left: -125px;
+    margin-left: -125px;    
     border: 1px solid #777777;
     padding: 0.5em;
+}
+
+#error_dialog {
     background-color: #ffffff;
     -webkit-border-radius: 0.5em;
     text-align: center;
@@ -100,15 +102,6 @@ textarea {
 }
 
 #question_dialog {
-    position: fixed;
-    width: 250px;
-    max-width: 90%;
-    margin: 0pt auto;
-    top: 60px;
-    left: 50%;
-    margin-left: -125px;
-    border: 1px solid #777777;
-    padding: 0.5em;
     background-color: #ffffff;
     -webkit-border-radius: 0.5em;
     text-align: center;

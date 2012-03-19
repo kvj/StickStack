@@ -1,5 +1,5 @@
 (function() {
-  var AirCacheProvider, AirDBProvider, CacheProvider, DBProvider, DataManager, HTML5Provider, PhoneGapCacheProvider, StorageProvider,
+  var AirCacheProvider, AirDBProvider, CacheProvider, ChannelProvider, DBProvider, DataManager, DesktopChannelProvider, HTML5Provider, PhoneGapCacheProvider, StorageProvider,
     __hasProp = Object.prototype.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
@@ -34,6 +34,89 @@
     return DBProvider;
 
   })();
+
+  ChannelProvider = (function() {
+
+    ChannelProvider.prototype.type = 'none';
+
+    function ChannelProvider(oauth) {
+      this.oauth = oauth;
+    }
+
+    ChannelProvider.prototype.is_connected = function() {
+      return false;
+    };
+
+    ChannelProvider.prototype.need_channel = function() {
+      return false;
+    };
+
+    ChannelProvider.prototype.on_channel = function(channel) {};
+
+    ChannelProvider.prototype.on_update = function(message) {};
+
+    ChannelProvider.prototype.on_connected = function() {};
+
+    ChannelProvider.prototype.on_disconnected = function() {};
+
+    return ChannelProvider;
+
+  })();
+
+  DesktopChannelProvider = (function(_super) {
+
+    __extends(DesktopChannelProvider, _super);
+
+    DesktopChannelProvider.prototype.socket = null;
+
+    DesktopChannelProvider.prototype.type = 'desktop';
+
+    function DesktopChannelProvider(oauth) {
+      this.oauth = oauth;
+      ui.remoteScriptLoader(this.oauth.transport.uri + '/_ah/channel/jsapi', 'goog');
+    }
+
+    DesktopChannelProvider.prototype.is_connected = function() {
+      return this.socket;
+    };
+
+    DesktopChannelProvider.prototype.need_channel = function() {
+      log('Need channel:', this.socket, window._goog());
+      if (!this.socket && window._goog() && window._goog().appengine) return true;
+      return false;
+    };
+
+    DesktopChannelProvider.prototype.on_channel = function(channel) {
+      var goog,
+        _this = this;
+      if (!this.need_channel()) return;
+      goog = _goog();
+      this.socket = new goog.appengine.Channel(channel);
+      return this.socket.open({
+        onopen: function() {
+          log('Socket opened');
+          return _this.on_connected();
+        },
+        onmessage: function(message) {
+          log('Message from socket:', message, message.data);
+          return _this.on_update(message);
+        },
+        onerror: function(err) {
+          log('Socket error:', err);
+          _this.socket = null;
+          return _this.on_disconnected();
+        },
+        onclose: function() {
+          log('Socket closed');
+          _this.socket = null;
+          return _this.on_disconnected();
+        }
+      });
+    };
+
+    return DesktopChannelProvider;
+
+  })(ChannelProvider);
 
   CacheProvider = (function() {
 
@@ -519,6 +602,7 @@
 
     function StorageProvider(db) {
       this.db = db;
+      this.on_channel_state = new EventEmitter(this);
     }
 
     StorageProvider.prototype.open = function(handler) {
@@ -571,7 +655,7 @@
     };
 
     StorageProvider.prototype.sync = function(app, oauth, handler, force_clean) {
-      var clean_sync, do_reset_schema, finish_sync, get_last_sync, in_from, in_items, out_from, out_items, receive_out, reset_schema, send_in, upload_file,
+      var clean_sync, do_reset_schema, finish_sync, get_last_sync, in_from, in_items, out_from, out_items, receive_out, reset_schema, schema_uri, send_in, upload_file,
         _this = this;
       log('Starting sync...', app);
       oauth.token = this.token;
@@ -583,6 +667,12 @@
       in_items = 0;
       finish_sync = function(err) {
         if (err) return handler(err);
+        _this.has_update = false;
+        if (_this.channel && _this.channel.is_connected()) {
+          _this.on_channel_state.emit('state', {
+            state: _this.CHANNEL_NO_DATA
+          });
+        }
         return _this.db.query('insert into updates (id, version_in, version_out) values (?, ?, ?)', [_this._id(), in_from, out_from], function() {
           var item, name, _ref;
           _ref = _this.schema;
@@ -782,8 +872,15 @@
           return upload_file(null);
         });
       };
-      return oauth.rest(app, '/rest/schema?', null, function(err, schema) {
+      schema_uri = '/rest/schema?';
+      if (this.channel && this.channel.need_channel()) {
+        schema_uri += 'channel=get&type=' + this.channel.type + '&';
+      }
+      return oauth.rest(app, schema_uri, null, function(err, schema) {
         if (err) return finish_sync(err);
+        if (_this.channel && schema._channel) {
+          _this.channel.on_channel(schema._channel);
+        }
         if (!_this.schema || _this.schema._rev !== schema._rev || force_clean) {
           _this.schema = schema;
           reset_schema = true;
@@ -802,6 +899,39 @@
       }
       this.last_id = id;
       return id;
+    };
+
+    StorageProvider.prototype.CHANNEL_DATA = 1;
+
+    StorageProvider.prototype.CHANNEL_NO_DATA = 2;
+
+    StorageProvider.prototype.CHANNEL_NO_CONNECTION = 3;
+
+    StorageProvider.prototype.set_channel_provider = function(channel) {
+      var _this = this;
+      this.channel = channel;
+      this.channel.on_update = function(message) {
+        _this.has_update = true;
+        return _this.on_channel_state.emit('state', {
+          state: _this.CHANNEL_DATA
+        });
+      };
+      this.channel.on_connected = function() {
+        if (_this.has_update) {
+          return _this.on_channel_state.emit('state', {
+            state: _this.CHANNEL_DATA
+          });
+        } else {
+          return _this.on_channel_state.emit('state', {
+            state: _this.CHANNEL_NO_DATA
+          });
+        }
+      };
+      return this.channel.on_disconnected = function() {
+        return _this.on_channel_state.emit('state', {
+          state: _this.CHANNEL_NO_CONNECTION
+        });
+      };
     };
 
     StorageProvider.prototype.on_change = function(type, stream, id) {};
@@ -1035,9 +1165,14 @@
       this.oauth.on_new_token = function(token) {
         return _this.storage.set_token(token);
       };
+      this.storage.on_channel_state.on('state', function(evt) {
+        return _this.on_channel_state(evt.state);
+      });
     }
 
     DataManager.prototype.sync_timeout = 30;
+
+    DataManager.prototype.channel_timeout = 60 * 15;
 
     DataManager.prototype.timeout_id = null;
 
@@ -1069,6 +1204,17 @@
     };
 
     DataManager.prototype.on_scheduled_sync = function() {};
+
+    DataManager.prototype.on_channel_state = function(state) {
+      var _this = this;
+      if (state === this.storage.CHANNEL_NO_CONNECTION) this.schedule_sync();
+      if (!this.timeout_id && state === this.storage.CHANNEL_DATA) {
+        log('Scheduling sync because of channel');
+        return this.timeout_id = setTimeout(function() {
+          return _this.on_scheduled_sync(null);
+        }, 1000 * this.channel_timeout);
+      }
+    };
 
     DataManager.prototype.findOne = function(stream, id, handler) {
       var _this = this;
@@ -1125,6 +1271,8 @@
   window.AirCacheProvider = AirCacheProvider;
 
   window.PhoneGapCacheProvider = PhoneGapCacheProvider;
+
+  window.DesktopChannelProvider = DesktopChannelProvider;
 
   window.env = {
     mobile: false,

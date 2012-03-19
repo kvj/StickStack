@@ -15,7 +15,7 @@ var _showInfo = function(message, timeout) {//Shows info dialog
 
 var _showError = function(message) {//Shows error
     log('Error:', message);
-    $('#error_dialog').css('top', 50+document.body.scrollTop).html(message || 'No error message provided');
+    $('#error_dialog').css('top', 80+document.body.scrollTop).html(message || 'No error message provided');
     $('#error_dialog_background').show();
 };
 
@@ -60,7 +60,7 @@ var _showQuestion = function(message, handler, buttons, element) {//Shows questi
         }, {handler: handler, div: div})
         btns.addButton(buttons[i]);
     };
-    div.css('top', 20+document.body.scrollTop).show();
+    div.css('top', 70+document.body.scrollTop).show();
     return btns;
 };
 
@@ -133,9 +133,9 @@ var _appEvents = new EventEmitter();
 
 var _initUI = function(storage) {//Creates root UI elements
     var main = $('<div id="main"/>').appendTo(document.body);
-    $('<div id="question_dialog"/>').appendTo(document.body).addClass('question_dialog').hide();
+    $('<div id="question_dialog" class="popup_dialog"/>').appendTo(document.body).addClass('question_dialog').hide();
     var err_bg = $('<div id="error_dialog_background"/>').appendTo(document.body).hide();
-    var err = $('<div id="error_dialog"/>').appendTo(err_bg).addClass('error_dialog');
+    var err = $('<div id="error_dialog" class="popup_dialog"/>').appendTo(err_bg).addClass('error_dialog');
     err.bind(CURRENT_EVENT_CLICK, function(e) {//Hide error dialog
         $('#error_dialog_background').hide();
         return false;
@@ -230,6 +230,10 @@ var _initUI = function(storage) {//Creates root UI elements
     };
     return main;
 };
+
+ui.setDialogWidth = function (width) {
+    $(document.createElement('style')).appendTo(document.head).text('.popup_dialog {width: '+width+'px; margin-left: -'+(width/2)+'px}');
+}
 
 var widgets = {};
 

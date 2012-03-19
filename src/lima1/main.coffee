@@ -16,6 +16,68 @@ class DBProvider
 	set: (name, value) ->
 		null
 
+class ChannelProvider
+
+	type: 'none'
+
+	constructor: (@oauth) ->
+
+	is_connected: ->
+		return no
+
+	need_channel: ->
+		return no
+
+	on_channel: (channel) ->
+
+	on_update: (message) ->
+	on_connected: ->
+	on_disconnected: ->
+
+class DesktopChannelProvider extends ChannelProvider
+
+	socket: null
+	type: 'desktop'
+
+	constructor: (@oauth) ->
+		ui.remoteScriptLoader(@oauth.transport.uri+'/_ah/channel/jsapi', 'goog');
+		# yepnope({
+		# 	# load: ['https://talkgadget.google.com/talkgadget/channel.js']
+		# 	# load: [@oauth.transport.uri+'/_ah/channel/jsapi'],
+		# 	complete: () =>
+		# 		log('Channel API loaded');
+		# })
+
+	is_connected: ->
+		return @socket
+
+	need_channel: ->
+		log 'Need channel:', @socket, window._goog()
+		if not @socket and window._goog() and window._goog().appengine
+			return yes
+		return no
+
+	on_channel: (channel) ->
+		if not @need_channel() then return
+		goog = _goog();
+		@socket = new goog.appengine.Channel channel
+		@socket.open {
+			onopen: () =>
+				log 'Socket opened'
+				@on_connected()
+			onmessage: (message) =>
+				log 'Message from socket:', message, message.data
+				@on_update message
+			onerror: (err) =>
+				log 'Socket error:', err
+				@socket = null
+				@on_disconnected()
+			onclose: =>
+				log 'Socket closed'
+				@socket = null
+				@on_disconnected()
+		}
+
 class CacheProvider
 
 	constructor: (@oauth, @app, @maxwidth) ->
@@ -368,6 +430,7 @@ class StorageProvider
 	data_template: '(id integer primary key, status integer default 0, updated integer default 0, own integer default 1, stream text, data text'
 
 	constructor: (@db) ->
+		@on_channel_state = new EventEmitter this
 
 	open: (handler) ->
 		@db.open false, (err) =>
@@ -415,6 +478,9 @@ class StorageProvider
 		in_items = 0
 		finish_sync = (err) =>
 			if err then return handler err
+			@has_update = no
+			if @channel and @channel.is_connected()
+				@on_channel_state.emit 'state', {state: @CHANNEL_NO_DATA}
 			@db.query 'insert into updates (id, version_in, version_out) values (?, ?, ?)', [@_id(), in_from, out_from], () =>
 				for name, item of @schema
 					if name.charAt(0) == '_' then continue
@@ -553,9 +619,14 @@ class StorageProvider
 					if not clean_sync and out_from>0 then clean_sync = no
 				# log 'Start sync with', in_from, out_from
 				upload_file null
-		oauth.rest app, '/rest/schema?', null, (err, schema) =>
+		schema_uri = '/rest/schema?'
+		if @channel and @channel.need_channel()
+			schema_uri += 'channel=get&type='+@channel.type+'&'
+		oauth.rest app, schema_uri, null, (err, schema) =>
 			# log 'After schema', err, schema
 			if err then return finish_sync err
+			if @channel and schema._channel
+				@channel.on_channel schema._channel
 			if not @schema or @schema._rev isnt schema._rev or force_clean
 				@schema = schema
 				reset_schema = yes
@@ -572,6 +643,23 @@ class StorageProvider
 			id++
 		@last_id = id
 		return id
+
+	CHANNEL_DATA: 1
+	CHANNEL_NO_DATA: 2
+	CHANNEL_NO_CONNECTION: 3
+
+	set_channel_provider: (@channel) ->
+		@channel.on_update = (message) =>
+			@has_update = yes
+			@on_channel_state.emit 'state', {state: @CHANNEL_DATA} 
+		@channel.on_connected = () =>
+			if @has_update
+				@on_channel_state.emit 'state', {state: @CHANNEL_DATA}
+			else
+				@on_channel_state.emit 'state', {state: @CHANNEL_NO_DATA}
+		@channel.on_disconnected = () =>
+			@on_channel_state.emit 'state', {state: @CHANNEL_NO_CONNECTION}
+		# @on_channel_state.emit 'state', {state: @CHANNEL_NO_CONNECTION}
 
 	on_change: (type, stream, id) ->
 
@@ -737,8 +825,12 @@ class DataManager
 	constructor: (@app, @oauth, @storage) ->
 		@oauth.on_new_token = (token) =>
 			@storage.set_token token
+		@storage.on_channel_state.on 'state', (evt) =>
+			@on_channel_state evt.state
+
 		
 	sync_timeout: 30
+	channel_timeout: 60*15
 	timeout_id: null
 
 	open: (handler) ->
@@ -763,6 +855,16 @@ class DataManager
 		, 1000*@sync_timeout
 
 	on_scheduled_sync: () ->
+
+	on_channel_state: (state) ->
+		if state is @storage.CHANNEL_NO_CONNECTION
+			@schedule_sync()
+		if not @timeout_id and state is @storage.CHANNEL_DATA
+			log 'Scheduling sync because of channel'
+			@timeout_id = setTimeout () =>
+				@on_scheduled_sync null
+			, 1000*@channel_timeout
+
 
 	findOne: (stream, id, handler) ->
 		@storage.select stream, ['id', id], (err, data) =>
@@ -799,6 +901,7 @@ window.StorageProvider = StorageProvider
 window.Lima1DataManager = DataManager
 window.AirCacheProvider = AirCacheProvider
 window.PhoneGapCacheProvider = PhoneGapCacheProvider
+window.DesktopChannelProvider = DesktopChannelProvider
 window.env =
 	mobile: no
 	prefix: ''

@@ -20,14 +20,15 @@ yepnope({
             load: ['sstack/sstack.css', 'sstack/datamanager.js', 'sstack/sheet.js'],
             complete: function () {
                 $(function() {//Ready
+                    if (CURRENT_PLATFORM != PLATFORM_AIR) {
+                        ui.remoteScriptLoader('http://maps.googleapis.com/maps/api/js?key=AIzaSyDsX-iJNxBCxisojTuFsdHwkur6EhrUt7g&sensor=true&language=en&callback=_gmapsLoaded', 'google')
+                    };
                     return run();
                 });
             }
         }, {
             test: CURRENT_PLATFORM_MOBILE,
             yep: ['sstack/sstack-android.css']
-        }, {
-            load: ['http://maps.googleapis.com/maps/api/js?key=AIzaSyDsX-iJNxBCxisojTuFsdHwkur6EhrUt7g&sensor=true&language=en&callback=_gmapsLoaded']
         }]);
     }
 })
@@ -46,10 +47,21 @@ var run = function() {
         layout = new Layout({id: 'main'});
     };
     $('<div id="sync_indicator"/>').appendTo($('#main')).hide();
+    $('<div id="channel_indicator"/>').appendTo($('#main'));
     manager = new PanelManager({
         root: $('#main'),
         minColWidth: 300
     });
+    if (CURRENT_PLATFORM == PLATFORM_WEB) {
+        if (CURRENT_PLATFORM_MOBILE) {
+            ui.setDialogWidth($(window).width()-30);
+        } else {
+            ui.setDialogWidth(500);
+        }
+    };
+    if (CURRENT_PLATFORM == PLATFORM_AIR) {
+        ui.setDialogWidth(270);
+    };
     // config = new DBConfig({
     //     goBack: true,
     //     appConfig: {
@@ -154,7 +166,9 @@ var TopManager = function() {//Manages top panel
                 this.android = new MiscPlugin();
             };
             new SheetsManager(this.panel, this.manager);
-            this.sync();
+            setTimeout(_.bind(function () {
+                this.sync();
+            }, this), 5000);
         }, this));
     }, this), 100);
 };
@@ -242,6 +256,23 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
     };
     if (CURRENT_PLATFORM_MOBILE) {
         storage.cache = new PhoneGapCacheProvider(oauth, 'sstack', $(window).width());
+    };
+    $('#channel_indicator').bind('click', _.bind(function () {
+        this.sync();
+    }, this))
+    storage.on_channel_state.on('state', _.bind(function (e) {
+        var div = $('#channel_indicator');
+        div.removeClass('channel_data channel_ok');
+        if (e.state == storage.CHANNEL_DATA) {
+            div.addClass('channel_data');
+        };
+        if (e.state == storage.CHANNEL_NO_DATA) {
+            div.addClass('channel_ok');
+        };
+    }, this));
+    if (!CURRENT_PLATFORM_MOBILE) {
+        // Channel API
+        storage.set_channel_provider(new DesktopChannelProvider(oauth));
     };
     this.syncManager.on_scheduled_sync = _.bind(function () {
         this.sync();
@@ -950,7 +981,12 @@ var MapsEditor = function (datamanager, data, handler) {
         }, this),
     });
     manager.show(this.panel);
-    if (!window.google || !google.maps) {
+    if (!window._google) {
+        _showInfo('Not supported');
+        return;
+    };
+    var google = _google();
+    if (!google || !google.maps) {
         _showInfo('No Google Maps library loaded');
         return;
     };

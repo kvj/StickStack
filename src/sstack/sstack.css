@@ -271,3 +271,27 @@
     padding: 3px;
     color: #efefef;
 }
+
+#channel_indicator {
+    position: absolute;
+    top: 0px;
+    right: 30px;
+    width: 2em;
+    height: 1em;
+    border-bottom-left-radius: 1em;
+    border-bottom-right-radius: 1em;
+    background-color: #aa0000;
+    border: 1px solid #222222;
+    border-top-width: 0px;
+    -webkit-box-shadow: 1px 1px 1px #222222;
+    z-index: 14;
+    cursor: pointer;
+}
+
+.channel_data {
+    background-color: #aaaa00 !important;
+}
+
+.channel_ok {
+    background-color: #00aa00 !important;
+}
