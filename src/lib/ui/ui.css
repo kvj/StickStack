@@ -86,7 +86,6 @@ textarea {
 .popup_dialog {
     position: fixed;
     width: 250px;
-    margin: 0pt auto;
     top: 60px;
     left: 50%;
     margin-left: -125px;    

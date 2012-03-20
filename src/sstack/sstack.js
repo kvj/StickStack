@@ -54,7 +54,10 @@ var run = function() {
     });
     if (CURRENT_PLATFORM == PLATFORM_WEB) {
         if (CURRENT_PLATFORM_MOBILE) {
-            ui.setDialogWidth($(window).width()-30);
+            var w = $(window).width();
+            if (w>300) {
+                ui.setDialogWidth($(window).width()-100);
+            };
         } else {
             ui.setDialogWidth(500);
         }
