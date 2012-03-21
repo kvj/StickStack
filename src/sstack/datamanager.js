@@ -253,6 +253,36 @@ var DataManager = function(database) {//Do DB operations
         return '(nt.type=? and nt.value=?) or n.id=?';
     };
 
+    var LinkTag = function() {
+        this.name = 'link';
+        this.display = 'link';
+    };
+    LinkTag.prototype = new DefaultTag();
+
+    LinkTag.prototype.accept = function(text) {
+        if (_.startsWith(text || '', 'l:')) {
+            return true;
+        };
+        return false;
+    };
+
+    LinkTag.prototype.store = function(text) {//Convert to Date
+        return ['l:', 0];
+    };
+
+    LinkTag.prototype.format = function(text) {
+        return 'link';
+    };
+
+    LinkTag.prototype.select = function(text, values) {//Default 
+        if (text == 'l:*') {
+            values.push('id', this._in(['text', {op: 'like', 'var': 'l:%'}]));
+            return 'like';
+        };
+        values.push('id', this._in(['text', text]));
+        return '(nt.type=? and nt.value=?) or n.id=?';
+    };
+
     var PathTag = function() {
         this.name = 'path';
         this.display = 'path';
@@ -491,6 +521,7 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new NoteTag());
     this.tagControllers.push(new GeoTag());
     this.tagControllers.push(new PathTag());
+    this.tagControllers.push(new LinkTag());
     this.tagControllers.push(new AttachmentTag());
     this.tagControllers.push(new DefaultTag());
 

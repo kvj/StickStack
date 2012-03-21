@@ -543,16 +543,34 @@ Panel.prototype.addKeyHandler = function(key, obj, handler, data) {
 var Buttons = function(config) {//Cool buttons
     this.config = config || {};
     this.element = $('<div/>').addClass('buttons');
+    this.row = $(document.createElement('div')).addClass('buttons_row').appendTo(this.element);
+    this.buttonRows = [];
     if (this.config.root) {//Attach to parent
         this.element.appendTo(this.config.root);
     };
     this.buttons = [];
-    this._clear = $('<div/>').css('clear', 'both').appendTo(this.element);//Float: left fix
+    // this._clear = $('<div/>').css('clear', 'both').appendTo(this.element);//Float: left fix
+};
+
+Buttons.prototype.getRow = function(row) {
+    var r = row || 0;
+    if (!this.buttonRows[r]) {
+        for (var i = this.buttonRows.length; i <= r; i++) {
+            var div = $(document.createElement('div')).addClass('buttons_cell').appendTo(this.row);
+            if (this.config.rows && this.config.rows[r]) {
+                div.width(this.config.rows[r]);
+            };
+            $(document.createElement('div')).css('clear', 'both').appendTo(div);//Float: left fix
+            this.buttonRows.push(div);
+        };
+    };
+    return this.buttonRows[r];
 };
 
 Buttons.prototype.addButton = function(button, before) {//Adds button
     button.delay = this.config.delay || 100;
-    button.element = $('<div/>').addClass('button_outer').insertBefore(before? before.element: this._clear);
+    var row = this.getRow(button.row);
+    button.element = $('<div/>').addClass('button_outer').insertBefore(before? before.element: row.children().last());
     button.innerElement = $('<button/>').addClass('button_inner').appendTo(button.element);
     button.innerElement.bind((this.config.safe | button.safe)?  'click': CURRENT_EVENT_CLICK, {buttons: this, button: button}, function(e) {//Click on button
         if (e.data.button.disabled) {//Ignore click
@@ -651,9 +669,9 @@ Buttons.prototype.updateWidth = function() {//Recalculate width
             this.buttons[i].element.css('width', ''+w+'%');
         };
     };
-    if (this.config.centered) {//Calculate
+    // if (this.config.centered) {//Calculate
 
-    };
+    // };
 };
 
 var TabManager = function(config) {//Wrapper over Buttons

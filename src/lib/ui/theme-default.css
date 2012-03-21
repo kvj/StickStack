@@ -21,11 +21,10 @@
 
 .button_inner {
 	color: #fff !important;
-	-webkit-font-smoothing: antialiased;
 	font-weight: normal;
 	background-color: #424254;
 	border-width: 0px;
-	min-height: 2.4em;
+	min-height: 2.3em;
 }
 
 .button_create {
@@ -33,7 +32,7 @@
 }
 
 .button_outer {
-	min-height: 2.55em;
+	min-height: 2.42em;
 }
 
 .button_list {
@@ -45,9 +44,10 @@
 }
 
 .button_inner:active {
-    left: 2px;
+    left: 1px;
     top: 1px;
     right: 0px;
+    background-color: #351330;
 }
 
 .panel_title {

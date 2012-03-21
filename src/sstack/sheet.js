@@ -17,7 +17,8 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
     var menuDiv = $(document.createElement('div')).addClass('sheet_menu').appendTo(this.root).hide();
     this.menu = new Buttons({
         root: menuDiv,
-        maxElements: 4,
+        rows: [0, '2.5em'],
+        maxElements: 3,
         safe: true,
     });
     this.menu.addButton({
@@ -50,7 +51,9 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
         }, this)
     });
     this.menu.addButton({
-        caption: 'More',
+        caption: '|',
+        width: 3,
+        row: 1,
         handler: _.bind(function() {//
             var items = [];
             if (this.selected.selectedTag) {

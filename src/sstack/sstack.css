@@ -65,6 +65,10 @@
     margin-bottom: 0.3em;
 }
 
+.note_bottom_bg .note_line_show .note_tags  {
+    margin-bottom: 0em;
+}
+
 .note_tag_selected {
     -webkit-box-shadow: 0px 1px 1px #888888;
     font-weight: bold;

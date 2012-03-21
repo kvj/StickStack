@@ -36,7 +36,7 @@ div {
 }
 
 .button_inner {
-    left: 1px;
+    left: 0px;
     right: 1px;
     position: absolute;
     overflow: hidden;
@@ -52,6 +52,15 @@ div {
 
 .buttons {
     width: 100%;
+    display: table;
+}
+
+.buttons_row {
+    display: table-row;
+}
+
+.buttons_cell {
+    display: table-cell;
 }
 
 .input_wrap {

@@ -34,6 +34,7 @@ yepnope({
 })
 
 var run = function() {
+    log('Agent:', navigator.userAgent);
     if (CURRENT_PLATFORM == PLATFORM_AIR) {
         db = new AirDBProvider('sstack');
     } else {
@@ -713,7 +714,7 @@ WindowSheet.prototype.getBounds = function(x, y) {
 
 var openTag = function(tag, panel, manager) {
     if (tag) {
-        newSheet({caption: 'Tag: '+manager.formatTag(tag), tags: tag, autotags: tag, sort: '-'+tag+' -x'}, panel, manager);
+        newSheet({caption: 'Tag: '+manager.formatTag(tag), tags: tag, autotags: tag, sort: '-'+tag+' -x d:* t:*'}, panel, manager);
     };
 };
 
@@ -832,7 +833,8 @@ var copyFileToStorage = function(files) {//
 };
 
 var InlineSheet = function(sheet, panel, datamanager) {//
-    _createEsentials(this, sheet.caption, CURRENT_PLATFORM_MOBILE? 2: 4);
+    _createEsentials(this, sheet.caption, 3);
+    this.topMenu.config.rows = [0, '2.5em'];
     _goBackFactory(this.topMenu, this.panel, '');
     this.manager = datamanager;
     this.topMenu.addButton({
@@ -843,20 +845,22 @@ var InlineSheet = function(sheet, panel, datamanager) {//
         }, this),
     });
     this.topMenu.addButton({
-        caption: 'Expand',
+        caption: 'Reload',
         handler: _.bind(function() {
-            this.sheet.root.find('.note_line_hide').addClass('note_line_show');
-            this.sheet.root.find('.note').addClass('note_selected');
+            this.sheet.reload();
         }, this),
     });
     this.topMenu.addButton({
-        caption: 'More',
+        row: 1,
+        caption: '|',
+        width: 3,
         handler: _.bind(function() {
             var items = [];
             items.push({
-                caption: 'Reload',
+                caption: 'Expand',
                 handler: _.bind(function () {
-                    this.sheet.reload();
+                    this.sheet.root.find('.note_line_hide').addClass('note_line_show');
+                    this.sheet.root.find('.note').addClass('note_selected');
                     return true;
                 }, this)
             });
