@@ -28,6 +28,24 @@
     background-image: none;
 }
 
+.note_selected:after {
+    content: attr(data-content);
+    float: right;
+    font-size: 0.8em;
+    margin-top: 1px;
+    margin-right: -2px;
+    padding: 0 0.3em 0 0.3em;
+    background-color: #efefef;
+    display: block;
+    border: 1px solid #888888;
+    -webkit-box-shadow: 1px 1px 1px #888888;
+    border-bottom-right-radius: 0.7em;
+    border-bottom-left-radius: 0.7em;
+}
+
+.note_after {
+}
+
 .note_menu {
     float: right;
     display: none;
@@ -297,4 +315,8 @@
 
 .channel_ok {
     background-color: #00aa00 !important;
+}
+
+.tag_link {
+    color: #222222;
 }

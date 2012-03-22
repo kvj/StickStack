@@ -728,7 +728,7 @@ var openLink = function(link, reveal) {
         return true;
     };
     if (CURRENT_PLATFORM == PLATFORM_AIR) {//
-        if (_.startsWith(l, 'notes://')) {//Open with notes
+        if (_.startsWith(l.toLowerCase(), 'notes://')) {//Open with notes
             if (!config.appConfig.lotus_path) {//Error
                 _showError('No Lotus Notes configured');
                 return false;

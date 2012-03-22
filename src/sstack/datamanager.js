@@ -93,11 +93,13 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
     if (method == 'addTag') {
         datamanager.getTags(params[0], function(tags, err) {
             if (tags) {
+                log('Add tag', tags, params[1], params[2]);
                 if (params[2]) {
                     tags = datamanager.tagToTag(tags, params[1], params[2]);
                 } else {
                     tags = datamanager.tagToNote(tags, params[1]);
                 };
+                log('Saving', tags);
                 datamanager.updateTags(params[0], tags, function(id, err) {
                     if (id) {
                         handler(id);
@@ -277,6 +279,39 @@ var DataManager = function(database) {//Do DB operations
     LinkTag.prototype.select = function(text, values) {//Default 
         if (text == 'l:*') {
             values.push('id', this._in(['text', {op: 'like', 'var': 'l:%'}]));
+            return 'like';
+        };
+        values.push('id', this._in(['text', text]));
+        return '(nt.type=? and nt.value=?) or n.id=?';
+    };
+
+    var OKTag = function() {
+        this.name = 'ok';
+        this.display = 'ok';
+    };
+    OKTag.prototype = new DefaultTag();
+
+    OKTag.prototype.accept = function(text) {
+        if (_.startsWith(text || '', 'ok:')) {
+            return true;
+        };
+        return false;
+    };
+
+    OKTag.prototype.store = function(text) {//Convert to Date
+        return ['ok:', 0];
+    };
+
+    OKTag.prototype.format = function(text) {
+        if (text == 'ok:') {
+            return '?OK';
+        };
+        return 'OK';
+    };
+
+    OKTag.prototype.select = function(text, values) {//Default 
+        if (text == 'ok:*') {
+            values.push('id', this._in(['text', {op: 'like', 'var': 'ok:%'}]));
             return 'like';
         };
         values.push('id', this._in(['text', text]));
@@ -523,6 +558,7 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new PathTag());
     this.tagControllers.push(new LinkTag());
     this.tagControllers.push(new AttachmentTag());
+    this.tagControllers.push(new OKTag());
     this.tagControllers.push(new DefaultTag());
 
     this.sheetsConfig = {};

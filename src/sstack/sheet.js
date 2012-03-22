@@ -58,6 +58,13 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
             var items = [];
             if (this.selected.selectedTag) {
                 items.push({
+                    caption: 'Edit tag',
+                    handler: _.bind(function() {
+                        this.startTextEdit(this.selected.id, this.selected.div, 'tag', this.selected.selectedTag.id);
+                        return true;
+                    }, this),
+                });                
+                items.push({
                     caption: 'Remove tag',
                     cls: 'button_remove',
                     handler: _.bind(function() {
@@ -252,6 +259,24 @@ Sheet.prototype.tag_unselect_path = function(note, tag) {
     };
 };
 
+Sheet.prototype.tag_build_after_ok = function(note, tag, afterStr) {
+    if (tag.length>3) {
+        afterStr.splice(0, 0, tag.substr(3));
+    };
+};
+
+Sheet.prototype.tag_show_link = function(note, tag, div) {
+    var a = $(document.createElement('a')).addClass('tag_link').appendTo(div.empty()).text('link').attr('href', '#');
+    a.bind('click', _.bind(function (e) {
+        if (e.shiftKey) {
+            return true;
+        };
+        this.proxy('openLink', _.bind(function(res) {
+        }, this), [tag.substr(2), e.ctrlKey]);
+        return false;
+    }, this))
+};
+
 Sheet.prototype.tag_menu_path = function(note, tag, items) {
     items.push({
         caption: 'Edit path',
@@ -336,11 +361,17 @@ Sheet.prototype.editTextDone = function(val) {//Edit tag/link/ref
     if (this.editField == 'tag') {
         method = 'addTag';
         val = _.trim((val || '').toLowerCase());
+        var params = [this.editID];
+        if (this.editValue) {
+            params.push(this.editValue, val);
+        } else {
+            params.push(val);
+        }
         this.proxy(method, _.bind(function(id, err) {//
             if (id) {
                 this.reload();
             };
-        }, this), [this.editID, val]);
+        }, this), params);
     } else {
         val = _.trim(val || '');
         this.proxy('editNoteField', _.bind(function(id, err) {//
@@ -488,12 +519,14 @@ Sheet.prototype.selectNote = function(note) {
         };
         this.launchTagMethod(note, 'select');
     };
+
     this.selected = note;
     note.div.after(this.menu.element.detach().show());
     note.selectedTag = null;
     this.root.find('.note_tag').removeClass('note_tag_selected');
     this.root.find('.note_line_show').removeClass('note_line_show');
     note.div.find('.note_line_hide').addClass('note_line_show');
+    // log('After str', afterStr);
     this.moveNowLine();
     this.updated();
 };
@@ -514,6 +547,7 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
     var tag = $('<div/>').addClass('note_tag draggable').attr('draggable', 'true').appendTo(parent);
     applyColor(tag, t.color, true);
     tag.text(t.caption);
+    this.launchTagMethod(note, 'show', t.id, tag);
     tag.bind('dblclick', {tag: t}, _.bind(function(e) {
         e.preventDefault();
         this.newNote(t.id);
@@ -522,6 +556,10 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
     tag.bind('click', {div: tag, tag: t}, _.bind(function(e) {//
         if (this.selected != note) {
             return true;
+        };
+        if (e.shiftKey) {
+            this.startTextEdit(this.selected.id, this.selected.div, 'tag', t.id);
+            return false;
         };
         //e.data.div.siblings('.note_tag').find('.note_button').hide();
         //e.data.div.find('.note_button').show();
@@ -553,6 +591,7 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
         //         }]
         //     });
         // };
+        log('Click tag:', t);
         note.selectedTag = t;
         note.div.find('.note_tag').removeClass('note_tag_selected');
         e.data.div.addClass('note_tag_selected');
@@ -592,25 +631,32 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
             //e.preventDefault();
         //};
     //}, this));
-    tag.bind('dragover', _.bind(function(e) {
-        //log('tag drag over', dd.hasDDTarget(e, tagDDType));
-        if (dd.hasDDTarget(e, tagDDType)) {
-            e.preventDefault();
-        };
+    this.enableTagDrop(tag, _.bind(function(tag, text) {
+        this.proxy('addTag', _.bind(function(id, err) {//
+            if (id) {
+                this.reload(id);
+            };
+        }, this), [note.id, t.id, tag]);
     }, this));
-    tag.bind('drop', {note: note, tag: t}, _.bind(function(e) {
-        var drop = dd.getDDTarget(e, tagDDType);
-        if (drop) {
-            this.proxy('addTag', _.bind(function(id, err) {//
-                if (id) {
-                    this.reload();
-                };
-            }, this), [e.data.note.id, e.data.tag.id, drop]);
-            e.stopPropagation();
-            e.preventDefault();
-            return false;
-        };
-    }, this));
+    // tag.bind('dragover', _.bind(function(e) {
+    //     //log('tag drag over', dd.hasDDTarget(e, tagDDType));
+    //     if (dd.hasDDTarget(e, tagDDType)) {
+    //         e.preventDefault();
+    //     };
+    // }, this));
+    // tag.bind('drop', {note: note, tag: t}, _.bind(function(e) {
+    //     var drop = dd.getDDTarget(e, tagDDType);
+    //     if (drop) {
+    //         this.proxy('addTag', _.bind(function(id, err) {//
+    //             if (id) {
+    //                 this.reload();
+    //             };
+    //         }, this), [e.data.note.id, e.data.tag.id, drop]);
+    //         e.stopPropagation();
+    //         e.preventDefault();
+    //         return false;
+    //     };
+    // }, this));
 };
 
 Sheet.prototype.editNote = function(note, div) {
@@ -622,30 +668,18 @@ Sheet.prototype.editNote = function(note, div) {
     this.updated();
 };
 
-Sheet.prototype.enableNoteDrop = function(div, handler, id) {//Called when note or text is dropped
-    var filesDD = 'application/x-vnd.adobe.air.file-list';
-    var ctrlKey = false;
+Sheet.prototype.enableTagDrop = function(div, handler, id) {//Called when tag dropped
     div.bind('dragover', _.bind(function(e) {
         ctrlKey = e.ctrlKey;
-        if (dd.hasDDTarget(e, noteDDType)) {
+        if (dd.hasDDTarget(e, tagDDType)) {
             e.preventDefault();
         };
         if (dd.hasDDTarget(e, 'text/uri-list')) {
             e.preventDefault();
         };
-        if (dd.hasDDTarget(e, filesDD)) {
-            e.preventDefault();
-        };
     }, this)).bind('drop', _.bind(function(e) {//Dropped
-        var drop = dd.getDDTarget(e, noteDDType);
-        if (drop) {//Only ID - note drop
-            // log('Dropped note', drop);
-            handler({id: drop});
-            e.stopPropagation();
-            e.preventDefault();
-            return false;
-        };
-        drop = dd.getDDTarget(e, 'text/uri-list');
+        log('Enable tag drop');
+        var drop = dd.getDDTarget(e, 'text/uri-list');
         if (drop) {//URL - new note
             var text = dd.getDDTarget(e, 'text/html');
             if (text) {
@@ -654,8 +688,38 @@ Sheet.prototype.enableNoteDrop = function(div, handler, id) {//Called when note 
             if (!text) {
                 text = dd.getDDTarget(e, 'text/plain') || drop;
             };
-            log('Dropped link', text, drop);
-            handler({text: text, link: drop});
+            handler('l:'+drop, text);
+            e.stopPropagation();
+            e.preventDefault();
+            return false;
+        };
+        var drop = dd.getDDTarget(e, tagDDType);
+        if (drop) {
+            handler(drop);
+            e.stopPropagation();
+            e.preventDefault();
+            return false;
+        };
+    }, this));
+};
+
+Sheet.prototype.enableNoteDrop = function(div, handler, id) {//Called when note or text is dropped
+    var filesDD = 'application/x-vnd.adobe.air.file-list';
+    var ctrlKey = false;
+    div.bind('dragover', _.bind(function(e) {
+        ctrlKey = e.ctrlKey;
+        if (dd.hasDDTarget(e, noteDDType)) {
+            e.preventDefault();
+        };
+        if (dd.hasDDTarget(e, filesDD)) {
+            e.preventDefault();
+        };
+    }, this)).bind('drop', _.bind(function(e) {//Dropped
+        log('Enable note drop');
+        var drop = dd.getDDTarget(e, noteDDType);
+        if (drop) {//Only ID - note drop
+            // log('Dropped note', drop);
+            handler({id: drop});
             e.stopPropagation();
             e.preventDefault();
             return false;
@@ -708,6 +772,13 @@ Sheet.prototype.enableNoteDrop = function(div, handler, id) {//Called when note 
 
 Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     var div = $('<div/>').addClass('note draggable').insertBefore(parent.children('.clear'));
+    
+    var now = new Date();
+    var dt = new Date(note.created || now.getTime());
+    var afterStr = [dt.format('m/d'+(now.getFullYear() != dt.getFullYear()? '/yy': '')+' h:MMt')];
+    this.launchTagMethod(note, 'build_after', null, afterStr);
+    div.attr('data-content', afterStr.join('/'));
+    
     applyColor(div, note.color, false);
     note.div = div;
     div.bind('dblclick', {note: note, div: div}, _.bind(function(e) {
@@ -726,78 +797,23 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
         this.editing = false;
         this.root.find('.note').removeClass('note_selected');
         div.addClass('note_selected');
-        // if (this.selected == note && CURRENT_PLATFORM_MOBILE) {//Show menu
-        //     var items = [{
-        //         caption: 'Edit note',
-        //         handler: _.bind(function() {//
-        //             this.editNote(note, div);
-        //             return true;
-        //         }, this),
-        //     }, {
-        //         caption: 'Remove note',
-        //         handler: _.bind(function() {
-        //             this.proxy('removeNote', _.bind(function(id, err) {//Removed
-        //                 if (id) {
-        //                     this.reload();
-        //                 };
-        //             }, this), [note.id]);
-        //             return true;
-        //         }, this),
-        //     }, {
-        //         caption: 'Add tag',
-        //         handler: _.bind(function() {
-        //             this.startTextEdit(note.id, div, 'tag');
-        //             return true;
-        //         }, this),
-        //     }];
-        //     if (note.link) {
-        //         items.push({
-        //             caption: 'Open link',
-        //             handler: _.bind(function() {
-        //                 this.proxy('openLink', _.bind(function(res) {
-        //                 }, this), [note.link]);
-        //             }, this),
-        //         });
-        //     };
-        //     new PopupMenu({
-        //         element: this.root,
-        //         items: items,
-        //     });
-        // };
         this.selectNote(note);
         return false;
     }, this));
-    div.bind('dragover', {note: note}, _.bind(function(e) {
-        if (dd.hasDDTarget(e, tagDDType)) {
-            e.preventDefault();
-        };
-        //if (dd.hasDDTarget(e, noteDDType)) {
-            //e.preventDefault();
-        //};
-    }, this));
-    div.bind('drop', {note: note}, _.bind(function(e) {
-        var drop = dd.getDDTarget(e, tagDDType);
-        if (drop) {
-            this.proxy('addTag', _.bind(function(id, err) {//
-                if (id) {
-                    this.reload();
-                };
-            }, this), [e.data.note.id, drop]);
-            e.stopPropagation();
-            e.preventDefault();
-            return false;
-        };
-        //var drop = dd.getDDTarget(e, noteDDType);
-        //if (drop) {
-            //this.proxy('addTag', _.bind(function(id, err) {//
-                //if (id) {
-                    //this.reload();
-                //};
-            //}, this), [e.data.note.id, 'n:'+drop]);
-            //e.stopPropagation();
-            //e.preventDefault();
-            //return false;
-        //};
+    // div.bind('dragover', {note: note}, _.bind(function(e) {
+    //     if (dd.hasDDTarget(e, tagDDType)) {
+    //         e.preventDefault();
+    //     };
+    //     //if (dd.hasDDTarget(e, noteDDType)) {
+    //         //e.preventDefault();
+    //     //};
+    // }, this));
+    this.enableTagDrop(div, _.bind(function(tag, text) {
+        this.proxy('addTag', _.bind(function(id, err) {//
+            if (id) {
+                this.reload(note.id);
+            };
+        }, this), [note.id, tag]);
     }, this));
     this.enableNoteDrop(div, _.bind(function(n) {
         if (n.id) {//
@@ -818,6 +834,31 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
             }, this), [n]);
         };
     }, this), note.id);
+    // div.bind('drop', {note: note}, _.bind(function(e) {
+    //     var drop = dd.getDDTarget(e, tagDDType);
+    //     log('Note drop', drop)
+    //     if (drop) {
+    //         this.proxy('addTag', _.bind(function(id, err) {//
+    //             if (id) {
+    //                 this.reload();
+    //             };
+    //         }, this), [e.data.note.id, drop]);
+    //         e.stopPropagation();
+    //         e.preventDefault();
+    //         return false;
+    //     };
+    //     //var drop = dd.getDDTarget(e, noteDDType);
+    //     //if (drop) {
+    //         //this.proxy('addTag', _.bind(function(id, err) {//
+    //             //if (id) {
+    //                 //this.reload();
+    //             //};
+    //         //}, this), [e.data.note.id, 'n:'+drop]);
+    //         //e.stopPropagation();
+    //         //e.preventDefault();
+    //         //return false;
+    //     //};
+    // }, this));
     div.bind('dragstart', {note: note}, _.bind(function(e) {//
         dd.setDDTarget(e, noteDDType, e.data.note.id);
     }, this));
@@ -938,6 +979,16 @@ Sheet.prototype.reload_default = function(list, beforeID) {//
     this.updated();
 };
 
+Sheet.prototype.render_hour = function(hour, div) {
+    this.enableTagDrop(div, _.bind(function(tag, text) {
+        this.proxy('createNote', _.bind(function(id, err) {//
+            if (id) {
+                this.reload(id);
+            };
+        }, this), [text || null, this.data.autotags+' '+tag+' t:'+(hour*100)]);
+    }, this));    
+};
+
 Sheet.prototype.reload_day = function(list, beforeID) {//
     this.startHour = 0;
     this.endHour = 23;
@@ -958,39 +1009,47 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
                     return false;
                 }, this), i);
             };
-            hr.bind('dragover', _.bind(function(e) {
-                if (dd.hasDDTarget(e, tagDDType)) {
-                    e.preventDefault();
-                };
-                //if (dd.hasDDTarget(e, noteDDType)) {
-                    //e.preventDefault();
-                //};
-            }, this));
-            hr.bind('drop', {hour: i}, _.bind(function(e) {
-                var drop = dd.getDDTarget(e, tagDDType);
-                if (drop) {
-                    //this.newNote(drop+' t:'+(e.data.hour*100));
-                    this.proxy('createNote', _.bind(function(id, err) {//
-                        if (id) {
-                            this.reload();
-                        };
-                    }, this), [null, this.data.autotags+' '+drop+' t:'+(e.data.hour*100)]);
-                    e.stopPropagation();
-                    e.preventDefault();
-                    return false;
-                };
-                //drop = dd.getDDTarget(e, noteDDType);
-                //if (drop) {
-                    //this.proxy('moveNote', _.bind(function(id, err) {//
-                        //if (id) {
-                            //this.reload();
-                        //};
-                    //}, this), [drop, this.data.autotags+' -t:* t:'+(e.data.hour*100)]);
-                    //e.stopPropagation();
-                    //e.preventDefault();
-                    //return false;
-                //};
-            }, this));
+            this.render_hour(i, hr);
+            // this.enableTagDrop(hr, _.bind(function(tag, text) {
+            //     this.proxy('createNote', _.bind(function(id, err) {//
+            //         if (id) {
+            //             this.reload(id);
+            //         };
+            //     }, this), [text || null, this.data.autotags+' '+tag+' t:'+(e.data.hour*100)]);
+            // }, this));
+            // hr.bind('dragover', _.bind(function(e) {
+            //     if (dd.hasDDTarget(e, tagDDType)) {
+            //         e.preventDefault();
+            //     };
+            //     //if (dd.hasDDTarget(e, noteDDType)) {
+            //         //e.preventDefault();
+            //     //};
+            // }, this));
+            // hr.bind('drop', {hour: i}, _.bind(function(e) {
+            //     var drop = dd.getDDTarget(e, tagDDType);
+            //     if (drop) {
+            //         //this.newNote(drop+' t:'+(e.data.hour*100));
+            //         this.proxy('createNote', _.bind(function(id, err) {//
+            //             if (id) {
+            //                 this.reload();
+            //             };
+            //         }, this), [null, this.data.autotags+' '+drop+' t:'+(e.data.hour*100)]);
+            //         e.stopPropagation();
+            //         e.preventDefault();
+            //         return false;
+            //     };
+            //     //drop = dd.getDDTarget(e, noteDDType);
+            //     //if (drop) {
+            //         //this.proxy('moveNote', _.bind(function(id, err) {//
+            //             //if (id) {
+            //                 //this.reload();
+            //             //};
+            //         //}, this), [drop, this.data.autotags+' -t:* t:'+(e.data.hour*100)]);
+            //         //e.stopPropagation();
+            //         //e.preventDefault();
+            //         //return false;
+            //     //};
+            // }, this));
             this.enableNoteDrop(hr, _.bind(function(n) {
                 if (n.id) {//Note
                     this.instance.proxy('moveNote', _.bind(function(id, err) {//
@@ -1069,6 +1128,7 @@ Sheet.prototype.startTextEdit = function(id, note, field, value) {//Shows editor
     this.text.val(value || '').focus();
     this.editID = id;
     this.editField = field;
+    this.editValue = value;
     this.updated();
 };
 
