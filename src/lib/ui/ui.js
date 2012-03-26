@@ -235,6 +235,11 @@ ui.setDialogWidth = function (width) {
     $(document.createElement('style')).appendTo(document.head).text('.popup_dialog {width: '+width+'px; margin-left: -'+(width/2)+'px}');
 }
 
+ui.buildIcon = function (name, size) {
+    var result = '<div class="ic'+(size>0? ' ic_'+size: ' ')+' '+name+'"></div>';
+    return result;
+}
+
 var widgets = {};
 
 widgets.widgetConfigDone = function(data) {//Done

@@ -429,6 +429,10 @@ class StorageProvider
 	db_schema: ['create table if not exists updates (id integer primary key, version_in integer, version_out integer, version text)', 'create table if not exists schema (id integer primary key, token text, schema text)', 'create table if not exists uploads (id integer primary key, path text, name text, status integer)']
 	data_template: '(id integer primary key, status integer default 0, updated integer default 0, own integer default 1, stream text, data text'
 
+	SYNC_NETWORK: 0
+	SYNC_READ_DATA: 1
+	SYNC_WRITE_DATA: 2
+
 	constructor: (@db) ->
 		@on_channel_state = new EventEmitter this
 
@@ -467,7 +471,7 @@ class StorageProvider
 		@db.query 'update schema set token=?', [token], (err) =>
 			if handler then handler err
 	
-	sync: (app, oauth, handler, force_clean) ->
+	sync: (app, oauth, handler, force_clean, progress_handler) ->
 		log 'Starting sync...', app
 		oauth.token = @token
 		reset_schema = no
@@ -481,6 +485,7 @@ class StorageProvider
 			@has_update = no
 			if @channel and @channel.is_connected()
 				@on_channel_state.emit 'state', {state: @CHANNEL_NO_DATA}
+			progress_handler @SYNC_WRITE_DATA
 			@db.query 'insert into updates (id, version_in, version_out) values (?, ?, ?)', [@_id(), in_from, out_from], () =>
 				for name, item of @schema
 					if name.charAt(0) == '_' then continue
@@ -492,15 +497,18 @@ class StorageProvider
 		upload_file = () =>
 			if _.indexOf(@db?.tables, 'uploads') is -1 or not @cache
 				return send_in null
+			progress_handler @SYNC_READ_DATA
 			@db.query 'select id, name, status from uploads order by id limit 1', [], (err, data) =>
 				if err then return finish_sync err
 				if data.length is 0 then return send_in null
 				row = data[0]
 				remove_entry = () =>
+					progress_handler @SYNC_WRITE_DATA
 					@cache.remove row.name, () =>
 					@db.query 'delete from uploads where id=?', [row.id], (err, res) =>
 						if err then return finish_sync err
 						upload_file null
+				progress_handler @SYNC_NETWORK
 				if row.status is 3
 					oauth.rest app, '/rest/file/remove?name='+row.name+'&', null, (err, res) =>
 						if err then return finish_sync err
@@ -514,9 +522,11 @@ class StorageProvider
 			url = "/rest/out?from=#{out_from}&"
 			if not clean_sync
 				url += "inc=yes&"
+			progress_handler @SYNC_NETWORK
 			oauth.rest app, url, null, (err, res) =>
 				# log 'After out:', err, res
 				if err then return finish_sync err
+				progress_handler @SYNC_WRITE_DATA
 				arr = res.a
 				if arr.length is 0
 					out_from = res.u
@@ -543,6 +553,7 @@ class StorageProvider
 								internal: yes
 							}
 		send_in = () =>
+			progress_handler @SYNC_READ_DATA
 			if force_clean then return do_reset_schema null
 			slots = @schema._slots ? 10
 			sql = []
@@ -574,11 +585,13 @@ class StorageProvider
 				if result.length is 0
 					if reset_schema then do_reset_schema null else receive_out null
 					return
+				progress_handler @SYNC_NETWORK
 				oauth.rest app, '/rest/in?', JSON.stringify({a: result}), (err, res) =>
 					# log 'After in:', err, res
 					if err then return finish_sync err
 					send_in null
 		do_reset_schema = () =>
+			progress_handler @SYNC_WRITE_DATA
 			@db.clean = true
 			new_schema = []
 			for item in @db_schema
@@ -609,6 +622,7 @@ class StorageProvider
 					if err then return handler err
 					receive_out null
 		get_last_sync = () =>
+			progress_handler @SYNC_READ_DATA
 			if _.indexOf(@db?.tables, 'updates') is -1
 				return upload_file null
 			@db.query 'select * from updates order by id desc', [], (err, data) =>
@@ -622,6 +636,7 @@ class StorageProvider
 		schema_uri = '/rest/schema?'
 		if @channel and @channel.need_channel()
 			schema_uri += 'channel=get&type='+@channel.type+'&'
+		progress_handler @SYNC_NETWORK
 		oauth.rest app, schema_uri, null, (err, schema) =>
 			# log 'After schema', err, schema
 			if err then return finish_sync err
@@ -888,12 +903,12 @@ class DataManager
 	set: (name, value) ->
 		return @storage.db.set name, value
 
-	sync: (handler, force_clean) ->
+	sync: (handler, force_clean, progress_handler = () ->) ->
 		return @storage.sync @app, @oauth, (err, data) =>
 			if not err and @timeout_id
 				@unschedule_sync null
 			handler err, data
-		, force_clean
+		, force_clean, progress_handler
 
 window.HTML5Provider = HTML5Provider
 window.AirDBProvider = AirDBProvider

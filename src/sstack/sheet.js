@@ -232,7 +232,13 @@ Sheet.prototype.tag_select_geo = function(note, tag) {
             var width = note.div.innerWidth()-2*this.mediaGap;
             var height = Math.floor(width*0.75);
             var frame = $(document.createElement('div')).addClass('geo note_frame note_line_hide').appendTo(note.div);
-            var img = $(document.createElement('img')).addClass('geo_image note_image').appendTo(frame);
+            var anchor = $(document.createElement('a')).addClass('geo_link').appendTo(frame);
+            if (CURRENT_PLATFORM_MOBILE) {
+                anchor.attr('href', 'geo:'+point.lat+','+point.lon);                
+            } else {
+                anchor.attr('href', 'http://maps.google.com/maps?q='+point.lat+','+point.lon+'&z=18').attr('target', '_blank');
+            };
+            var img = $(document.createElement('img')).addClass('geo_image note_image').appendTo(anchor);
             img.attr('src', 'http://maps.google.com/maps/api/staticmap?center='+point.lat+','+point.lon+'&zoom=15&size='+width+'x'+height+'&sensor=true&markers=color:red|size:mid|'+point.lat+','+point.lon);
             img.width(width).height(height);
         };
@@ -864,7 +870,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     }, this));
     var tags = $('<div/>').addClass('note_tags');
     if (note.subnotes>1) {
-        $(_buildIcon('notes')).appendTo(tags).addClass('left_icon').bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
+        $(ui.buildIcon('ic_notes')).appendTo(tags).addClass('left_icon').bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
             this.proxy('openTag', null, ['n:'+note.id]);
             return false;
         }, this));
@@ -921,7 +927,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
             if (word.type == 'text') {//Add word
                 $('<div/>').addClass('note_word').appendTo(line_div).text(word.text);
             } else if (word.type == 'checkbox') {
-                var cbox = $(_buildIcon(word.checked? 'check_yes': 'check_no')).appendTo(line_div).css('float', 'left');
+                var cbox = $(ui.buildIcon(word.checked? 'ic_check_yes': 'ic_check_no')).appendTo(line_div).css('float', 'left');
                 cbox.bind('click', {note: note, box: word}, _.bind(function(e) {
                     var new_text = e.data.note.text.substr(0, e.data.box.at)+(e.data.box.checked? '[ ]': '[X]')+e.data.note.text.substr(e.data.box.at+3);
                     this.proxy('editNoteField', _.bind(function(id, err) {//

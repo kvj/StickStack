@@ -600,6 +600,12 @@
 
     StorageProvider.prototype.data_template = '(id integer primary key, status integer default 0, updated integer default 0, own integer default 1, stream text, data text';
 
+    StorageProvider.prototype.SYNC_NETWORK = 0;
+
+    StorageProvider.prototype.SYNC_READ_DATA = 1;
+
+    StorageProvider.prototype.SYNC_WRITE_DATA = 2;
+
     function StorageProvider(db) {
       this.db = db;
       this.on_channel_state = new EventEmitter(this);
@@ -654,7 +660,7 @@
       });
     };
 
-    StorageProvider.prototype.sync = function(app, oauth, handler, force_clean) {
+    StorageProvider.prototype.sync = function(app, oauth, handler, force_clean, progress_handler) {
       var clean_sync, do_reset_schema, finish_sync, get_last_sync, in_from, in_items, out_from, out_items, receive_out, reset_schema, schema_uri, send_in, upload_file,
         _this = this;
       log('Starting sync...', app);
@@ -673,6 +679,7 @@
             state: _this.CHANNEL_NO_DATA
           });
         }
+        progress_handler(_this.SYNC_WRITE_DATA);
         return _this.db.query('insert into updates (id, version_in, version_out) values (?, ?, ?)', [_this._id(), in_from, out_from], function() {
           var item, name, _ref;
           _ref = _this.schema;
@@ -692,18 +699,21 @@
         if (_.indexOf((_ref = _this.db) != null ? _ref.tables : void 0, 'uploads') === -1 || !_this.cache) {
           return send_in(null);
         }
+        progress_handler(_this.SYNC_READ_DATA);
         return _this.db.query('select id, name, status from uploads order by id limit 1', [], function(err, data) {
           var remove_entry, row;
           if (err) return finish_sync(err);
           if (data.length === 0) return send_in(null);
           row = data[0];
           remove_entry = function() {
+            progress_handler(_this.SYNC_WRITE_DATA);
             _this.cache.remove(row.name, function() {});
             return _this.db.query('delete from uploads where id=?', [row.id], function(err, res) {
               if (err) return finish_sync(err);
               return upload_file(null);
             });
           };
+          progress_handler(_this.SYNC_NETWORK);
           if (row.status === 3) {
             return oauth.rest(app, '/rest/file/remove?name=' + row.name + '&', null, function(err, res) {
               if (err) return finish_sync(err);
@@ -721,9 +731,11 @@
         var url;
         url = "/rest/out?from=" + out_from + "&";
         if (!clean_sync) url += "inc=yes&";
+        progress_handler(_this.SYNC_NETWORK);
         return oauth.rest(app, url, null, function(err, res) {
           var arr, i, item, last, object, _results;
           if (err) return finish_sync(err);
+          progress_handler(_this.SYNC_WRITE_DATA);
           arr = res.a;
           if (arr.length === 0) {
             out_from = res.u;
@@ -758,6 +770,7 @@
       };
       send_in = function() {
         var item, name, slots, sql, vars, _ref, _ref2;
+        progress_handler(_this.SYNC_READ_DATA);
         if (force_clean) return do_reset_schema(null);
         slots = (_ref = _this.schema._slots) != null ? _ref : 10;
         sql = [];
@@ -800,6 +813,7 @@
             }
             return;
           }
+          progress_handler(_this.SYNC_NETWORK);
           return oauth.rest(app, '/rest/in?', JSON.stringify({
             a: result
           }), function(err, res) {
@@ -810,6 +824,7 @@
       };
       do_reset_schema = function() {
         var field, fields, index, index_field, index_idx, index_sql, indexes, item, name, new_schema, numbers, sql, texts, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _m, _ref, _ref2, _ref3, _ref4, _ref5;
+        progress_handler(_this.SYNC_WRITE_DATA);
         _this.db.clean = true;
         new_schema = [];
         _ref = _this.db_schema;
@@ -859,6 +874,7 @@
       };
       get_last_sync = function() {
         var _ref;
+        progress_handler(_this.SYNC_READ_DATA);
         if (_.indexOf((_ref = _this.db) != null ? _ref.tables : void 0, 'updates') === -1) {
           return upload_file(null);
         }
@@ -876,6 +892,7 @@
       if (this.channel && this.channel.need_channel()) {
         schema_uri += 'channel=get&type=' + this.channel.type + '&';
       }
+      progress_handler(this.SYNC_NETWORK);
       return oauth.rest(app, schema_uri, null, function(err, schema) {
         if (err) return finish_sync(err);
         if (_this.channel && schema._channel) {
@@ -1248,12 +1265,13 @@
       return this.storage.db.set(name, value);
     };
 
-    DataManager.prototype.sync = function(handler, force_clean) {
+    DataManager.prototype.sync = function(handler, force_clean, progress_handler) {
       var _this = this;
+      if (progress_handler == null) progress_handler = function() {};
       return this.storage.sync(this.app, this.oauth, function(err, data) {
         if (!err && _this.timeout_id) _this.unschedule_sync(null);
         return handler(err, data);
-      }, force_clean);
+      }, force_clean, progress_handler);
     };
 
     return DataManager;

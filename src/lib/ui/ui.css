@@ -195,6 +195,15 @@ textarea {
     display: inline-block;
 }
 
+.ic {
+    width: 1.5em;
+    height: 1.5em;
+    vertical-align: text-bottom;
+    background-repeat: no-repeat;
+    background-position: center;
+    display: inline-block;
+}
+
 .icon32 {
     margin: 0px;
     width: 34px;

@@ -11,7 +11,7 @@ yepnope({
             load: ['lib/common-web/jquery.autogrow.js', 'lib/common-web/jquery.mousewheel.js']
         }, {
             test: CURRENT_PLATFORM == PLATFORM_AIR,
-            yep: ['lib/air/AIRAliases.js', 'lib/air/AIRIntrospector.js']
+            yep: ['lib/air/AIRAliases.js'] //, 'lib/air/AIRIntrospector.js'
         }, {
             test: CURRENT_PLATFORM_MOBILE,
             yep: ['lib/ui/android.css', 'lib/ui/theme-default-android.css', 'lib/common-web/phonegap-1.4.1.js'],
@@ -192,7 +192,19 @@ TopManager.prototype.sync = function(force_clean) {//Run sync
             } else {//Sync done
                 $('#info_dialog').hide();
             };
-        }, this), force_clean);
+        }, this), force_clean, _.bind(function (type) {
+            var w = 100;
+            if (type == 0) {
+                w = 25;
+            };
+            if (type == 1) {
+                w = 50;
+            };
+            if (type == 2) {
+                w = 75;
+            };
+            $('#sync_indicator').width(''+w+'%');
+        }, this));
     };
 };
 

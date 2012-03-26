@@ -242,7 +242,6 @@
     position: absolute;
     top: 0px;
     height: 4px;
-    width: 100%;
     z-index: 11;
     background-color: #ff0000;
 }
@@ -320,3 +319,16 @@
 .tag_link {
     color: #222222;
 }
+
+.ic_check_yes {
+    background-image: url(img/check_yes.png);
+}
+
+.ic_check_no {
+    background-image: url(img/check_no.png);
+}
+
+.ic_notes {
+    background-image: url(img/notes.png);
+}
+
