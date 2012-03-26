@@ -525,8 +525,8 @@ Sheet.prototype.selectNote = function(note) {
         };
         this.launchTagMethod(note, 'select');
     };
-
     this.selected = note;
+    note.div.addClass('note_selected');
     note.div.after(this.menu.element.detach().show());
     note.selectedTag = null;
     this.root.find('.note_tag').removeClass('note_tag_selected');
@@ -802,7 +802,6 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
         this.textPanel.hide();
         this.editing = false;
         this.root.find('.note').removeClass('note_selected');
-        div.addClass('note_selected');
         this.selectNote(note);
         return false;
     }, this));
@@ -1117,6 +1116,7 @@ Sheet.prototype.reload = function(beforeID) {//Asks for items
     this.textPanel.hide();
     this.menu.element.hide();
     this.editing = false;
+    this.selected = null;
     this.proxy('loadNotes', _.bind(function(list, err) {//
         if (list) {//Display list
             var mode = this.data.display || 'default';

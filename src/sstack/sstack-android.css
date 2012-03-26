@@ -24,3 +24,22 @@ body {
 .note_word {
     font-size: 1.1em;
 }
+
+@media screen and (-webkit-device-pixel-ratio: 2) {
+    .ic_check_yes {
+        background-image: url(img/x2/check_yes.png);
+    }
+
+    .ic_check_no {
+        background-image: url(img/x2/check_no.png);
+    }
+
+    .ic_notes {
+        background-image: url(img/x2/notes.png);
+    }
+
+    .note_bottom_bg {
+        background-image: url(img/x2/note_bottom.png);
+    }
+
+}

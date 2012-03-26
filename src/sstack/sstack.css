@@ -25,7 +25,7 @@
     float: inherit;
     width: inherit;
     clear: both;
-    background-image: none;
+    background-image: none !important;
 }
 
 .note_selected:after {
