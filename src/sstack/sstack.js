@@ -44,6 +44,7 @@ var run = function() {
     if (CURRENT_PLATFORM_MOBILE) {//Empty layout
         PhoneGap.onDOMContentLoaded.fire();
         layout = new Layout({});
+        // layout = new Layout({id: 'main'});
     } else {//Simple layout
         layout = new Layout({id: 'main'});
     };
@@ -51,14 +52,18 @@ var run = function() {
     $('<div id="channel_indicator"/>').appendTo($('#main'));
     manager = new PanelManager({
         root: $('#main'),
-        minColWidth: 300
+        minColWidth: CURRENT_PLATFORM_MOBILE? 450: 300
     });
     if (CURRENT_PLATFORM == PLATFORM_WEB) {
         if (CURRENT_PLATFORM_MOBILE) {
             var w = $(window).width();
             if (w>300) {
-                ui.setDialogWidth($(window).width()-100);
+                w -= 100;
+                if (w>1000) {
+                    w = 900;
+                };
             };
+            ui.setDialogWidth(w);
         } else {
             ui.setDialogWidth(500);
         }
@@ -271,7 +276,7 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
         storage.cache = new AirCacheProvider(oauth, 'sstack', 600);
     };
     if (CURRENT_PLATFORM_MOBILE) {
-        storage.cache = new PhoneGapCacheProvider(oauth, 'sstack', $(window).width());
+        storage.cache = new PhoneGapCacheProvider(oauth, 'sstack', 900);
     };
     $('#channel_indicator').bind('click', _.bind(function () {
         this.sync();

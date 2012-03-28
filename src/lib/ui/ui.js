@@ -323,68 +323,68 @@ var _getManager = function() {//Returns manager
     return window.manager? window.manager: null;
 };
 
-if (CURRENT_PLATFORM_MOBILE) {
+// if (CURRENT_PLATFORM_MOBILE) {
 
-    PanelManager = function(config) {
-        this.config = config || {};
-        this.title = this.config.title || 'No title';
-        this.element = $('<div/>').addClass('panel_manager').appendTo(this.config.root || document.body);
-        this.panels = [];
-        this.buttonDelay = this.config.buttonDelay || 300;
-    };
+//     PanelManager = function(config) {
+//         this.config = config || {};
+//         this.title = this.config.title || 'No title';
+//         this.element = $('<div/>').addClass('panel_manager').appendTo(this.config.root || document.body);
+//         this.panels = [];
+//         this.buttonDelay = this.config.buttonDelay || 300;
+//     };
 
-    //PanelManager.prototype.show = function(panel) {
-        //setTimeout(function(instance, panel) {
-            //instance._show(panel);
-        //}, this.buttonDelay, this, panel);
-    //};
+//     //PanelManager.prototype.show = function(panel) {
+//         //setTimeout(function(instance, panel) {
+//             //instance._show(panel);
+//         //}, this.buttonDelay, this, panel);
+//     //};
 
-    PanelManager.prototype.show = function(panel) {
-        if (this.panels.length>0) {
-            this.panels[this.panels.length-1].scrollTop = document.body.scrollTop;
-        }
-        this.element.find('.panel').hide();
-        this.panels.push(panel);
-        panel.element.appendTo(this.element);
-        panel.element.show();
-        this.setTitle(panel);
-        this.panel = panel;
-        if (panel.onSwitch) {//Switch handler
-            panel.onSwitch(panel);
-        };
-    };
+//     PanelManager.prototype.show = function(panel) {
+//         if (this.panels.length>0) {
+//             this.panels[this.panels.length-1].scrollTop = document.body.scrollTop;
+//         }
+//         this.element.find('.panel').hide();
+//         this.panels.push(panel);
+//         panel.element.appendTo(this.element);
+//         panel.element.show();
+//         this.setTitle(panel);
+//         this.panel = panel;
+//         if (panel.onSwitch) {//Switch handler
+//             panel.onSwitch(panel);
+//         };
+//     };
 
-    PanelManager.prototype.goBack = function() {
-        if (this.panels.length<2) {//Work only for more than 2 panels in stack
-            return false;
-        }
-        var p = this.panels.pop();
-        this.element.find('.panel').hide();
-        p.element.hide();
-        var panel = this.panels[this.panels.length-1]; 
-        panel.element.show();
-        if(panel.scrollTop) {
-            document.body.scrollTop = panel.scrollTop;
-            //log('Restore scroll top', panel.scrollTop);
-        }
-        this.setTitle(panel);
-        this.panel = panel;
-        if (panel.onSwitch) {//Switch handler
-            panel.onSwitch(panel);
-        };
-        return true;
-    };
+//     PanelManager.prototype.goBack = function() {
+//         if (this.panels.length<2) {//Work only for more than 2 panels in stack
+//             return false;
+//         }
+//         var p = this.panels.pop();
+//         this.element.find('.panel').hide();
+//         p.element.hide();
+//         var panel = this.panels[this.panels.length-1]; 
+//         panel.element.show();
+//         if(panel.scrollTop) {
+//             document.body.scrollTop = panel.scrollTop;
+//             //log('Restore scroll top', panel.scrollTop);
+//         }
+//         this.setTitle(panel);
+//         this.panel = panel;
+//         if (panel.onSwitch) {//Switch handler
+//             panel.onSwitch(panel);
+//         };
+//         return true;
+//     };
 
-    PanelManager.prototype.setTitle = function(panel) {
-        var prefix = this.config.titlePrefix || '';
-        if (panel.title) {
-            document.title = prefix + panel.title;
-        } else {
-            document.title = prefix + this.title;
-        }
-    };
+//     PanelManager.prototype.setTitle = function(panel) {
+//         var prefix = this.config.titlePrefix || '';
+//         if (panel.title) {
+//             document.title = prefix + panel.title;
+//         } else {
+//             document.title = prefix + this.title;
+//         }
+//     };
 
-} else {//Desktop version
+// } else {//Desktop version
     PanelManager = function(config) {
         this.config = config || {};
         this.title = this.config.title || 'No title';
@@ -523,7 +523,7 @@ if (CURRENT_PLATFORM_MOBILE) {
         }
     };
 
-};
+//};
 
 var Panel = function(title) {
     this.element = $('<div/>').addClass('panel');
