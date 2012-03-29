@@ -1193,6 +1193,8 @@
 
     DataManager.prototype.timeout_id = null;
 
+    DataManager.prototype.in_sync = false;
+
     DataManager.prototype.open = function(handler) {
       var _this = this;
       return this.storage.open(function(err) {
@@ -1268,7 +1270,10 @@
     DataManager.prototype.sync = function(handler, force_clean, progress_handler) {
       var _this = this;
       if (progress_handler == null) progress_handler = function() {};
+      if (this.in_sync) return false;
+      this.in_sync = true;
       return this.storage.sync(this.app, this.oauth, function(err, data) {
+        _this.in_sync = false;
         if (!err && _this.timeout_id) _this.unschedule_sync(null);
         return handler(err, data);
       }, force_clean, progress_handler);

@@ -13,7 +13,7 @@
  */
 
 var dateFormat = function () {
-    var token = /d{1,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\1?|[LloSZ]|"[^"]*"|'[^']*'/g,
+    var token = /d{1,4}|m{1,4}|w{1,2}|yy(?:yy)?|([HhMsTt])\1?|[LloSZ]|"[^"]*"|'[^']*'/g,
         timezone = /\b(?:[PMCEA][SDP]T|(?:Pacific|Mountain|Central|Eastern|Atlantic) (?:Standard|Daylight|Prevailing) Time|(?:GMT|UTC)(?:[-+]\d{4})?)\b/g,
         timezoneClip = /[^-+\dA-Z]/g,
         pad = function (val, len) {
@@ -48,6 +48,7 @@ var dateFormat = function () {
         var _ = utc ? "getUTC" : "get",
             d = date[_ + "Date"](),
             D = date[_ + "Day"](),
+            w = date[_ + "Week"](),
             m = date[_ + "Month"](),
             y = date[_ + "FullYear"](),
             H = date[_ + "Hours"](),
@@ -60,6 +61,8 @@ var dateFormat = function () {
                 dd:   pad(d),
                 ddd:  dF.i18n.dayNames[D],
                 dddd: dF.i18n.dayNames[D + 7],
+                w:    w,
+                ww:   pad(w),
                 m:    m + 1,
                 mm:   pad(m + 1),
                 mmm:  dF.i18n.monthNames[m],
@@ -133,3 +136,30 @@ Date.prototype.isSameDate = function(dt){
     return this.getFullYear() == dt.getFullYear() && this.getMonth() == dt.getMonth() && this.getDate() == dt.getDate();
 }
 
+Date.prototype.getWeek = function (dowOffset) {
+/*getWeek() was developed by Nick Baicoianu at MeanFreePath: http://www.meanfreepath.com */
+
+    dowOffset = typeof(dowOffset) == 'int' ? dowOffset : 0; //default dowOffset to zero
+    var newYear = new Date(this.getFullYear(),0,1);
+    var day = newYear.getDay() - dowOffset; //the day of week the year begins on
+    day = (day >= 0 ? day : day + 7);
+    var daynum = Math.floor((this.getTime() - newYear.getTime() - 
+    (this.getTimezoneOffset()-newYear.getTimezoneOffset())*60000)/86400000) + 1;
+    var weeknum;
+    //if the year starts before the middle of a week
+    if(day < 4) {
+        weeknum = Math.floor((daynum+day-1)/7) + 1;
+        if(weeknum > 52) {
+            nYear = new Date(this.getFullYear() + 1,0,1);
+            nday = nYear.getDay() - dowOffset;
+            nday = nday >= 0 ? nday : nday + 7;
+            /*if the next year starts before the middle of
+              the week, it is week #1 of that year*/
+            weeknum = nday < 4 ? 1 : 53;
+        }
+    }
+    else {
+        weeknum = Math.floor((daynum+day-1)/7);
+    }
+    return weeknum;
+};

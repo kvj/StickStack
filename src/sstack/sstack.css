@@ -180,6 +180,15 @@
     background-color: #000000;
 }
 
+.week_name {
+    background-color: #000000;
+}
+
+.week_day {
+    background-color: #351330;
+    cursor: pointer;
+}
+
 .disabled {
     opacity: 0.5;
 }

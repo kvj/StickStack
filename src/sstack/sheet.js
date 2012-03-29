@@ -7,6 +7,10 @@ var _buildIcon = function(name, cl) {//Builds img html
 
 var Sheet = function(sheet, element, proxy, menuPlace) {//
     this.data = sheet;
+    this.autotags = this.data.autotags;
+    if (!this.autotags && this.data.id) {
+        this.autotags = 's:'+this.data.id+' ';
+    };
     this.root = element;
     this.proxy = proxy;
     this.mediaGap = 8;
@@ -216,6 +220,17 @@ Sheet.prototype.tag_menu_geo = function(note, tag, items) {
     })
 };
 
+Sheet.prototype.tag_menu_sheet = function(note, tag, items) {
+    items.push({
+        caption: 'Open sheet',
+        handler: _.bind(function () {
+            this.proxy('openMap', _.bind(function () {
+            }, this), [tag.substr(2)]);
+            return true;
+        }, this)
+    })
+};
+
 Sheet.prototype.tag_unselect_geo = function(note, tag) {
     if (note.geoCreated) {
         note.div.find('.geo').remove();
@@ -232,14 +247,19 @@ Sheet.prototype.tag_select_geo = function(note, tag) {
             var width = note.div.innerWidth()-2*this.mediaGap;
             var height = Math.floor(width*0.75);
             var frame = $(document.createElement('div')).addClass('geo note_frame note_line_hide').appendTo(note.div);
-            var anchor = $(document.createElement('a')).addClass('geo_link').appendTo(frame);
-            if (CURRENT_PLATFORM_MOBILE) {
-                anchor.attr('href', 'geo:'+point.lat+','+point.lon);                
-            } else {
-                anchor.attr('href', 'http://maps.google.com/maps?q='+point.lat+','+point.lon+'&z=18').attr('target', '_blank');
-            };
-            var img = $(document.createElement('img')).addClass('geo_image note_image').appendTo(anchor);
+            var img = $(document.createElement('img')).addClass('geo_image note_image').appendTo(frame);
             img.attr('src', 'http://maps.google.com/maps/api/staticmap?center='+point.lat+','+point.lon+'&zoom=15&size='+width+'x'+height+'&sensor=true&markers=color:red|size:mid|'+point.lat+','+point.lon);
+            img.bind('click', _.bind(function (e) {
+                this.proxy('openLink', _.bind(function(res) {
+                    var link = '';
+                    if (CURRENT_PLATFORM_MOBILE) {
+                        link = 'geo:'+point.lat+','+point.lon;
+                    } else {
+                        link = 'http://maps.google.com/maps?q='+point.lat+','+point.lon+'&z=18';
+                    };
+                }, this), [link, e.ctrlKey]);
+                return false;
+            }, this))
             img.width(width).height(height);
         };
     };
@@ -427,7 +447,7 @@ Sheet.prototype.importNotes = function(provider) {
                     if (err) {
                         return _showError(err);
                     };
-                    var tags = this.data.autotags;
+                    var tags = this.autotags;
                     // log('Task', task, _.keys(task));
                     if (task.created>0) {
                         var dt = new Date(task.created);
@@ -501,7 +521,7 @@ Sheet.prototype.editAreaDone = function(val) {//Creates new note
             if (id) {
                 this.reload(id);
             };
-        }, this), [val, this.data.autotags+(this.newTags? ' '+this.newTags: '')]);
+        }, this), [val, this.autotags+(this.newTags? ' '+this.newTags: '')]);
     };
 };
 
@@ -990,7 +1010,7 @@ Sheet.prototype.render_hour = function(hour, div) {
             if (id) {
                 this.reload(id);
             };
-        }, this), [text || null, this.data.autotags+' '+tag+' t:'+(hour*100)]);
+        }, this), [text || null, this.autotags+' '+tag+' t:'+(hour*100)]);
     }, this));    
 };
 
@@ -1015,46 +1035,6 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
                 }, this), i);
             };
             this.render_hour(i, hr);
-            // this.enableTagDrop(hr, _.bind(function(tag, text) {
-            //     this.proxy('createNote', _.bind(function(id, err) {//
-            //         if (id) {
-            //             this.reload(id);
-            //         };
-            //     }, this), [text || null, this.data.autotags+' '+tag+' t:'+(e.data.hour*100)]);
-            // }, this));
-            // hr.bind('dragover', _.bind(function(e) {
-            //     if (dd.hasDDTarget(e, tagDDType)) {
-            //         e.preventDefault();
-            //     };
-            //     //if (dd.hasDDTarget(e, noteDDType)) {
-            //         //e.preventDefault();
-            //     //};
-            // }, this));
-            // hr.bind('drop', {hour: i}, _.bind(function(e) {
-            //     var drop = dd.getDDTarget(e, tagDDType);
-            //     if (drop) {
-            //         //this.newNote(drop+' t:'+(e.data.hour*100));
-            //         this.proxy('createNote', _.bind(function(id, err) {//
-            //             if (id) {
-            //                 this.reload();
-            //             };
-            //         }, this), [null, this.data.autotags+' '+drop+' t:'+(e.data.hour*100)]);
-            //         e.stopPropagation();
-            //         e.preventDefault();
-            //         return false;
-            //     };
-            //     //drop = dd.getDDTarget(e, noteDDType);
-            //     //if (drop) {
-            //         //this.proxy('moveNote', _.bind(function(id, err) {//
-            //             //if (id) {
-            //                 //this.reload();
-            //             //};
-            //         //}, this), [drop, this.data.autotags+' -t:* t:'+(e.data.hour*100)]);
-            //         //e.stopPropagation();
-            //         //e.preventDefault();
-            //         //return false;
-            //     //};
-            // }, this));
             this.enableNoteDrop(hr, _.bind(function(n) {
                 if (n.id) {//Note
                     this.instance.proxy('moveNote', _.bind(function(id, err) {//
@@ -1117,6 +1097,14 @@ Sheet.prototype.reload = function(beforeID) {//Asks for items
     this.menu.element.hide();
     this.editing = false;
     this.selected = null;
+    var tags = this.data.tags || '';
+    var sort = this.data.sort || '';
+    if (this.data.id) {
+        tags = 's:'+this.data.id+'|'+tags;
+        if (!sort) {
+            sort = 's:'+this.data.id;
+        };
+    };
     this.proxy('loadNotes', _.bind(function(list, err) {//
         if (list) {//Display list
             var mode = this.data.display || 'default';
@@ -1124,7 +1112,7 @@ Sheet.prototype.reload = function(beforeID) {//Asks for items
                 this['reload_'+mode].call(this, list, beforeID);
             };
         };
-    }, this), [this.data.tags, this.data.sort]);
+    }, this), [tags, sort]);
 };
 
 Sheet.prototype.startTextEdit = function(id, note, field, value) {//Shows editor

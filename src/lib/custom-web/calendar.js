@@ -3,6 +3,7 @@ var Calendar = function(config){
     this.days = ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'];
     this.months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     this.weekends = ['su', 'sa'];
+    this.wk = 'wk';
     this.startWeek = this.config.startWeek || 0;
     this.date = this.config.forDate || new Date();
     this.renderTo = this.config.renderTo;
@@ -58,6 +59,9 @@ Calendar.prototype.render = function(){
     //Render day names
     var grid = $(document.createElement('div')).addClass('calendar_grid').appendTo(this.renderTo);
     var daynames = $('<div/>').appendTo(grid).addClass('daynames days_row');
+    if (this.config.week == 'left') {
+        $('<div>'+this.wk+'</div>').appendTo(daynames).addClass('day week_name')
+    };
     for(var i = 0; i<7; i++){
         //log('render week day '+i+', '+this.startWeek+', '+((i+this.startWeek) % 7));
         var div = $('<div>'+this.days[(i+this.startWeek) % 7]+'</div>').appendTo(daynames).addClass('day day_name');
@@ -70,16 +74,22 @@ Calendar.prototype.render = function(){
             div.addClass('weekend');
         }
     }
+    if (this.config.week == 'right') {
+        $('<div>'+this.wk+'</div>').appendTo(daynames).addClass('day week_name')
+    };
     $('<div/>').addClass('clear').appendTo(daynames);
     var week = null;
     for(var i = startDay; i<=endDay; i++){
+        var dt = new Date(this.date.getFullYear(), this.date.getMonth(), i);
         if(wd == 0){
             if(week){
                 $('<div/>').addClass('clear').appendTo(week);
             }
             week = $('<div/>').appendTo(grid).addClass('week days_row');
+            if (this.config.week == 'left') {
+                $('<div>'+dt.format('ww')+'</div>').appendTo(week).addClass('day week_day')
+            };
         }
-        var dt = new Date(this.date.getFullYear(), this.date.getMonth(), i);
         var div = $('<div>'+dt.getDate()+'</div>').appendTo(week).addClass('day');
         var isWeekend = false;
         for(id in this.weekends){
@@ -123,6 +133,9 @@ Calendar.prototype.render = function(){
         }
         if(wd == 6){
             wd = 0;
+            if (this.config.week == 'right') {
+                $('<div>'+dt.format('ww')+'</div>').appendTo(week).addClass('day week_day')
+            };
         } else {
             wd++;
         }

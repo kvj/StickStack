@@ -285,6 +285,32 @@ var DataManager = function(database) {//Do DB operations
         return '(nt.type=? and nt.value=?) or n.id=?';
     };
 
+    var SheetTag = function() {
+        this.name = 'sheet';
+        this.display = 'sheet';
+    };
+    SheetTag.prototype = new DefaultTag();
+
+    SheetTag.prototype.accept = function(text) {
+        if (_.startsWith(text || '', 's:')) {
+            return true;
+        };
+        return false;
+    };
+
+    SheetTag.prototype.store = function(text) {//Convert to Date
+        return ['s:', 0];
+    };
+
+    SheetTag.prototype.format = function(text) {
+        return 'sheet';
+    };
+
+    SheetTag.prototype.select = function(text, values) {//Default 
+        values.push('id', this._in(['text', text]));
+        return '';
+    };
+
     var OKTag = function() {
         this.name = 'ok';
         this.display = 'ok';
@@ -559,6 +585,7 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new LinkTag());
     this.tagControllers.push(new AttachmentTag());
     this.tagControllers.push(new OKTag());
+    this.tagControllers.push(new SheetTag());
     this.tagControllers.push(new DefaultTag());
 
     this.sheetsConfig = {};
@@ -1322,7 +1349,7 @@ DataManager.prototype.selectNotes = function(tags, handler, parse) {//Selects an
             };
         }
     };
-    // log('Select', tags, values);
+    log('Select', tags, values);
     this.db.storage.select('notes', values, _.bind(function (err, data) {
         if (err) {
             return handler(null, err);

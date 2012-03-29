@@ -403,6 +403,7 @@ var SheetsManager = function(panel, datamanager) {
     this.calendar = new Calendar({
         renderTo: this.calendarPlace,
         startWeek: 1,
+        week: 'left',
         // leftArrow: _buildIcon('a_left', 'icon_center'),
         // rightArrow: _buildIcon('a_right', 'icon_center'),
         leftArrowClass: 'button_inner',
@@ -445,7 +446,7 @@ SheetsManager.prototype.showSheets = function(group) {//
     this.sheetList.clear();
     for (var i = 0; i < this.sheets.length; i++) {//Create buttons
         if (this.sheets[i].type == 'group') {//Group btn
-            this.sheetList.addButton({
+            var div = this.sheetList.addButton({
                 caption: this.sheets[i].caption,
                 width: 2,
                 sheet: this.sheets[i],
@@ -463,7 +464,7 @@ SheetsManager.prototype.showSheets = function(group) {//
             //win.window.nativeWindow.close();
             //newSheet(this.sheets[i], this.panel, this.manager);
         //};
-        this.sheetList.addButton({
+        var div = this.sheetList.addButton({
             caption: this.sheets[i].caption,
             className: 'button_left',
             classNameInner: 'button_list',
@@ -472,6 +473,9 @@ SheetsManager.prototype.showSheets = function(group) {//
                 //new InlineSheet(btn.sheet, this.panel, this.manager);
                 newSheet(btn.sheet, this.panel, this.manager, e.ctrlKey);
             }, this),
+        }).element;
+        div.addClass('draggable').bind('dragstart', this.sheets[i], function(e) {
+            dd.setDDTarget(e, tagDDType, 's:'+e.data.id);
         });
         this.sheetList.addButton({
             caption: 'Edit',

@@ -847,6 +847,7 @@ class DataManager
 	sync_timeout: 30
 	channel_timeout: 60*15
 	timeout_id: null
+	in_sync: no
 
 	open: (handler) ->
 		@storage.open (err) =>
@@ -904,7 +905,10 @@ class DataManager
 		return @storage.db.set name, value
 
 	sync: (handler, force_clean, progress_handler = () ->) ->
+		if @in_sync then return no
+		@in_sync = yes
 		return @storage.sync @app, @oauth, (err, data) =>
+			@in_sync = no
 			if not err and @timeout_id
 				@unschedule_sync null
 			handler err, data
