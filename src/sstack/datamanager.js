@@ -6,6 +6,10 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
         new MapsEditor(datamanager, params[0], handler);
         return true;
     };
+    if (method == 'editContact') {
+        new ContactEditor(datamanager, params[0], params[1], handler);
+        return true;
+    };
     if (method == 'createAttachment') {
         datamanager.createAttachment(params[0], params[1], function (err) {
             handler(err);
@@ -207,6 +211,10 @@ var DataManager = function(database) {//Do DB operations
     };
 
     NoteTag.prototype.select = function(text, values) {//Default 
+        if (_.startsWith(text, 'n:!')) {
+            values.push('id', this._in(['type', 'n:', 'value', text.substr(3)]));
+            return '';
+        };
         var id = parseInt(text.substr(2), 10);
         // values.push('n:');
         // values.push(id);
@@ -307,6 +315,43 @@ var DataManager = function(database) {//Do DB operations
     };
 
     SheetTag.prototype.select = function(text, values) {//Default 
+        values.push('id', this._in(['text', text]));
+        return '';
+    };
+
+    var MarkTag = function(config) {
+        this.config = config;
+        this.name = config.name;
+        this.display = config.name;
+    };
+    MarkTag.prototype = new DefaultTag();
+
+    MarkTag.prototype.accept = function(text) {
+        if (_.startsWith(text || '', this.name+':')) {
+            return true;
+        };
+        return false;
+    };
+
+    MarkTag.prototype.store = function(text) {
+        return [this.name+':', 0];
+    };
+
+    MarkTag.prototype.format = function(text) {
+        if (this.config.format) {
+            return this.config.format;
+        };
+        if (text.length>this.name.length+1) {
+            return text.substr(this.name.length+1);
+        };
+        return this.name;
+    };
+
+    MarkTag.prototype.select = function(text, values) {//Default 
+        if (text == this.name+':*') {
+            values.push('id', this._in(['type', this.name+':']));
+            return 'like';
+        };
         values.push('id', this._in(['text', text]));
         return '';
     };
@@ -586,6 +631,8 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new AttachmentTag());
     this.tagControllers.push(new OKTag());
     this.tagControllers.push(new SheetTag());
+    this.tagControllers.push(new MarkTag({name: 'contact', format: 'contact'}));
+    this.tagControllers.push(new MarkTag({name: 'sort', format: 'sort'}));
     this.tagControllers.push(new DefaultTag());
 
     this.sheetsConfig = {};
@@ -1126,60 +1173,40 @@ DataManager.prototype.hasTag = function(tags, tag, last) {//Searches tag in arra
 DataManager.prototype.sortNotes = function(list, sort) {
     var arr = (sort || '').split(' ');
     var asc = [];
-    var desc = [];
     for (var i = 0; i < arr.length; i++) {//
         if (!arr[i]) {
             continue;
         };
         if (_.startsWith(arr[i], '-')) {//desc
-            desc.push(arr[i].substr(1));
+            asc.push({desc: true, tag: arr[i].substr(1)});
             continue;
         };
         if (_.startsWith(arr[i], '+')) {//desc
-            asc.push(arr[i].substr(1));
+            asc.push({desc: false, tag: arr[i].substr(1)});
             continue;
         };
-        asc.push(arr[i]);
+        asc.push({desc: false, tag: arr[i]});
     };
-    //log('sortNotes asc', asc, 'desc', desc, sort);
+    // log('sortNotes asc', asc, 'desc', desc, sort);
     return list.sort(_.bind(function(a, b) {//Sort by tags
         for (var i = 0; i < asc.length; i++) {
-            var ta = this.hasTag(a.tags || [], asc[i]);
-            var tb = this.hasTag(b.tags || [], asc[i]);
+            var ta = this.hasTag(a.tags || [], asc[i].tag);
+            var tb = this.hasTag(b.tags || [], asc[i].tag);
+            var mul = asc[i].desc? -1: 1;
             //log('asc', a.text, b.text, ta, tb, a.tags, b.tags);
             if (ta && tb) {//Both have
                 if (ta>tb) {
-                    return 1;
+                    return mul;
                 };
                 if (ta<tb) {
-                    return -1;
+                    return -1*mul;
                 };
             } else {//
                 if (ta) {
-                    return -1;
+                    return -1*mul;
                 };
                 if (tb) {
-                    return 1;
-                };
-            };
-        };
-        for (var i = 0; i < desc.length; i++) {
-            var ta = this.hasTag(a.tags || [], desc[i]);
-            var tb = this.hasTag(b.tags || [], desc[i]);
-            //log('desc', a.text, b.text, ta, tb);
-            if (ta && tb) {//Both have
-                if (ta>tb) {
-                    return 1;
-                };
-                if (ta<tb) {
-                    return -1;
-                };
-            } else {//
-                if (ta) {
-                    return 1;
-                };
-                if (tb) {
-                    return -1;
+                    return mul;
                 };
             };
         };
@@ -1240,6 +1267,7 @@ DataManager.prototype.loadTags = function(list, handler) {//Loads tags to this
                 };
                 tag_info.config = this.findTagConfig(tag_info.id);
                 tag_info.color = tag_info.config.tag_color;
+                tag_info.tag_display = tag_info.config.tag_display;
                 tag_display.push(tag_info);
             };
             list[i].tags_captions = tag_display.sort(_.bind(function(a, b) {//Default sorting - by name
@@ -1290,6 +1318,7 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
         };
         var parts = [];
         var words = line.split(' ');
+        var schemas = ['http://', 'https://', 'geo:', 'tel:', 'sms:', 'mailto:'];
         for (var j = 0; j < words.length; j++) {//Add words
             if (words[j] == '[X]') {//Checked
                 parts.push({type: 'checkbox', checked: true, at: chars});
@@ -1302,7 +1331,22 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
                 var conf = this.findTagConfig(tag);
                 parts.push({type: 'tag', at: chars, tag: {id: tag, caption: this.formatTag(tag), color: conf.tag_color}});
             } else {
-                parts.push({type: 'text', at: chars, text: words[j]});
+                var schemafound = false;
+                for (var k = 0; k < schemas.length; k++) {
+                    var sch = schemas[k];
+                    if (_.startsWith(words[j], sch)) {
+                        var caption = words[j].substr(sch.length);
+                        if (caption.length>20) {
+                            caption = caption.substr(0, 18)+'...';
+                        };
+                        parts.push({type: 'link', at: chars, text: caption, link: words[j]});
+                        schemafound = true;
+                        break;
+                    };
+                };
+                if (!schemafound) {
+                    parts.push({type: 'text', at: chars, text: words[j]});
+                };
             }
             chars++;
             chars += words[j].length;

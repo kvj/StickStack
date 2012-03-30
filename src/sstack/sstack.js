@@ -423,7 +423,7 @@ var SheetsManager = function(panel, datamanager) {
         if (e.which == 13) {//Enter
             var val = this.text.val();
             if (val) {
-                openTag(val, this.panel, datamanager, e.ctrlKey);
+                openTag(val, this.panel, datamanager);
             };
             return false;
         };
@@ -647,6 +647,7 @@ var TagsEditor = function(config, panel, datamanager) {
         text: {label: 'Pattern:'},
         weight: {label: 'Weight:'},
         display: {label: 'Display:'},
+        tag_display: {label: 'Tag display:'},
         tag_color: {label: 'Tag color:', type: 'color'},
         note_color: {label: 'Note color:', type: 'color'},
     }, 'tag', config);
@@ -696,7 +697,7 @@ var WindowSheet = function(sheet, panel, datamanager) {//Open window
             return true;
         };
         if (method == 'openTag') {//Handle here
-            openTag(params[0], panel, datamanager);
+            openTag(params[0], panel, datamanager, params[1]);
             return true;
         };
         if (method == 'copyFile') {
@@ -733,9 +734,16 @@ WindowSheet.prototype.getBounds = function(x, y) {
     return positions[1];
 };
 
-var openTag = function(tag, panel, manager) {
+var openTag = function(tag, panel, manager, sort) {
     if (tag) {
-        newSheet({caption: 'Tag: '+manager.formatTag(tag), tags: tag, autotags: tag, sort: '-'+tag+' -x d:* t:*'}, panel, manager);
+        var sorting = '-'+tag;
+        if (sort) {
+            sorting += ' '+sort;
+        } else {
+            sorting += ' d:* t:*';
+        }
+        // log('openTag', tag, sort, sorting);
+        newSheet({caption: 'Tag: '+manager.formatTag(tag), tags: tag, autotags: tag, sort: sorting}, panel, manager);
     };
 };
 
@@ -911,7 +919,7 @@ var InlineSheet = function(sheet, panel, datamanager) {//
     var root = $('<div/>').addClass('inline_sheet').appendTo(this.panel.element);
     this.sheet = new Sheet(sheet, root, _.bind(function(method, handler, params) {//
         if (method == 'openTag') {//Handle here
-            openTag(params[0], this.panel, datamanager);
+            openTag(params[0], this.panel, datamanager, params[1]);
             return true;
         };
         if (method == 'copyFile') {
@@ -978,6 +986,119 @@ Quebec4Plugin.prototype.done = function(id) {
 var _gmapsLoaded = function () {
     log('Maps loaded');
 }
+
+var ContactEditor = function (datamanager, note, tag, handler) {
+    _createEsentials(this, 'Contact editor', 2);
+    _goBackFactory(this.topMenu, this.panel, '');
+    this.topMenu.addButton({
+        caption: 'Save',
+        handler: _.bind(function() {
+            var result = [];
+            var items = saveEditor();
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                result.push(item.name+': '+item.value);
+            };
+            handler(result.join('\n'), _.trim(nameInput.val()));
+            manager.goBack(this.panel);
+        }, this),
+    });
+    var nameInput = _addInput('Name', 'text', this.panel.element).val(tag.substr('contact:'.length));
+    var forPlace = $(document.createElement('div')).appendTo(this.panel.element).css('display', 'table').css('width', '100%');
+    var data = [];
+    var emptyItem = {};
+    var lines = (note.text || '').split('\n');
+    // log('Edit contact', note, lines);
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (!line || line.indexOf(':') == -1) {
+            continue;
+        };
+        data.push({name: line.substr(0, line.indexOf(':')), value: _.trim(line.substr(line.indexOf(':')+1))});
+    };
+    var saveEditor = function () {
+        var saveRow = function (item) {
+            var nameValue = _.trim(item.nameField.val());
+            var valueValue = _.trim(item.valueField.val());
+            if (nameValue && valueValue) {
+                return {name: nameValue, value: valueValue};
+            };
+            return null;
+        }
+        var result = [];
+        for (var i = 0; i < data.length; i++) {
+            var item = saveRow(data[i]);
+            if (item) {
+                result.push(item);
+            };
+        };
+        var item = saveRow(emptyItem);
+        if (item) {
+            result.push(item);
+        };
+        return result;
+    };
+    var renderEditor = function () {
+        forPlace.empty();
+        var renderRow = function (item, candrag, index) {
+            var row = $(document.createElement('div')).css('display', 'table-row').appendTo(forPlace);
+            var dragCell = $(document.createElement('div')).css('display', 'table-cell').appendTo(row).css('width', '5%');
+            var nameCell = $(document.createElement('div')).css('display', 'table-cell').appendTo(row).css('width', '30%');
+            var valueCell = $(document.createElement('div')).css('display', 'table-cell').appendTo(row).css('width', '65%');
+            item.nameField = _addInput('', 'text', nameCell).val(item.name);
+            item.valueField = _addInput('', 'text', valueCell).val(item.value);
+            item.valueField.bind('keydown', _.bind(function(e) {
+                if (e.which == 13) {//Enter
+                    data = saveEditor();
+                    renderEditor();
+                    return false;
+                };
+                return true;
+            }, this));
+
+            if (candrag) {
+                row.addClass('draggable').attr('draggable', 'true');
+                var ddType = 'sstack/contact-row';
+                row.bind('dragstart', _.bind(function(e) {//
+                    dd.setDDTarget(e, ddType, index);
+                    e.stopPropagation();
+                    return true;
+                }, this));
+                dragCell.bind('dragover', _.bind(function(e) {
+                    if (dd.hasDDTarget(e, ddType)) {
+                        e.preventDefault();
+                    };
+                }, this)).bind('drop', _.bind(function(e) {//Dropped
+                    var drop = dd.getDDTarget(e, ddType);
+                    // log('Row drop', drop);
+                    if ((drop || drop == 0) && drop != index) {//URL - new note
+                        e.stopPropagation();
+                        e.preventDefault();
+                        var item = data[drop];
+                        if (index>drop) {
+                            data.splice(index, 0, item);
+                            data.splice(drop, 1);
+                        } else {
+                            data.splice(drop, 1)
+                            data.splice(index, 0, item);
+                        }
+                        // log('Edit', item, index>drop, data.length);
+                        renderEditor();
+                        return false;
+                    };
+                }, this));
+            };
+        };
+        for (var i = 0; i < data.length; i++) {
+            var item = data[i];
+            renderRow(item, true, i);
+        };
+        emptyItem = {name: '', value: ''};
+        renderRow(emptyItem);
+    };
+    renderEditor();
+    manager.show(this.panel);
+};
 
 var MapsEditor = function (datamanager, data, handler) {
     _createEsentials(this, 'Maps editor', 2);

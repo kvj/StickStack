@@ -57,6 +57,7 @@
 
 .note_tags {
     float: right;
+    min-height: 1.2em;
 }
 
 .tag_button {
@@ -260,6 +261,14 @@
     padding-bottom: 2px;
 }
 
+.note_inline_notes {
+    background-color: #E8CAA4;
+    margin: 0.2em;
+    margin-left: 1em;
+    padding: 0.2em;
+    border: 1px dotted #888888;
+}
+
 .note_word {
     float: left;
     padding-right: 0.4em;
@@ -325,7 +334,7 @@
     background-color: #00aa00 !important;
 }
 
-.tag_link {
+.tag_link, .note_link {
     color: #222222;
 }
 
@@ -341,3 +350,19 @@
     background-image: url(img/notes.png);
 }
 
+.note_contact_table {
+    width: 100%;
+}
+
+.note_contact_name_cell .note_word {
+    float: right;
+    font-weight: bold;
+}
+
+.note_tag_display_selected {
+    display: none;
+}
+
+.note_selected .note_tag_display_selected {
+    display: block;
+}

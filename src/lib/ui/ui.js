@@ -27,11 +27,16 @@ var __id = 0;
 
 var _addInput = function (title, type, parent) {
     var id = 'inp'+(++__id);
-    var label = $('<label/>').addClass('form_label').attr('for', id).text(title);
-    var wr = $('<div/>').addClass('input_wrap');
-    var control = $('<input/>').attr('type', type).addClass('form_control').attr('id', id).appendTo(wr);
+    var label = null;
+    if (title) {
+        label = $(document.createElement('label')).addClass('form_label').attr('for', id).text(title);
+    };
+    var wr = $(document.createElement('div')).addClass('input_wrap');
+    var control = $(document.createElement('input')).attr('type', type).addClass('form_control').attr('id', id).appendTo(wr);
     if (parent) {
-        label.appendTo(parent);
+        if (label) {
+            label.appendTo(parent);
+        };
         wr.appendTo(parent);
     }
     return control;
