@@ -522,8 +522,9 @@ var DataManager = function(database) {//Do DB operations
         return DefaultTag.prototype.select(this.adopt(text), values);
     };
 
-    var TimeTag = function() {//Date starts d:
-        this.reg = /^t:(((\d{1,2})(:(\d{2}))?(a|p))|(\d{1,4}))$/;
+    var TimeTag = function() {//Time starts with t:
+        var timePart = '(((\\d{1,2})(:(\\d{2}))?(a|p))|(\\d{1,4}))';
+        this.reg = new RegExp('^t:'+timePart+'(\\-'+timePart+')?$');
         this.name = 'time';
     };
     TimeTag.prototype = new DefaultTag();
@@ -541,72 +542,120 @@ var DataManager = function(database) {//Do DB operations
         if (!m) {
             return dt.getHours()*100;
         };
-        //for (var i = 0; i < m.length; i++) {
-            //log('m', i, m[i]);
-        //};
-        var hrs = 0;
-        var mins = 0;
-        if (m[7]) {//Number
-            hrs = Math.floor(parseInt(m[7], 10)/100);
-            mins = parseInt(m[7], 10) % 100;
-        } else {//3 5 6
-            hrs = parseInt(m[3], 10);
-            mins = parseInt(m[5], 10) || 0;
-            var ap = m[6] || 'a';
-            if (hrs == 12 && ap == 'p') {
-                hrs = 0;
-                ap = 'a';
+        var regToMins = function (start) {
+            var hrs = 0;
+            var mins = 0;
+            if (m[start+7]) {//Number
+                hrs = Math.floor(parseInt(m[start+7], 10)/100);
+                mins = parseInt(m[start+7], 10) % 100;
+            } else {//3 5 6
+                hrs = parseInt(m[start+3], 10);
+                mins = parseInt(m[start+5], 10) || 0;
+                var ap = m[start+6] || 'a';
+                if (hrs == 12 && ap == 'p') {
+                    hrs = 0;
+                    ap = 'a';
+                };
+                if (ap == 'p') {
+                    hrs += 12;
+                };
             };
-            if (ap == 'p') {
-                hrs += 12;
+            if (hrs>23) {
+                hrs = 23;
+            };
+            if (mins>59) {
+                mins = 59;
+            };
+            return hrs*100+mins;            
+        };
+        // for (var i = 0; i < m.length; i++) {
+        //     log('_toTime', i, m[i]);
+        // };
+        var tstart = regToMins(0);
+        if (m[8]) {
+            var tend = regToMins(8);
+            if (tend>tstart) {
+                return [tstart, tend];
             };
         };
-        if (hrs>23) {
-            hrs = 23;
-        };
-        if (mins>59) {
-            mins = 59;
-        };
-        return hrs*100+mins;
+        return [tstart];
+        // var hrs = 0;
+        // var mins = 0;
+        // if (m[7]) {//Number
+        //     hrs = Math.floor(parseInt(m[7], 10)/100);
+        //     mins = parseInt(m[7], 10) % 100;
+        // } else {//3 5 6
+        //     hrs = parseInt(m[3], 10);
+        //     mins = parseInt(m[5], 10) || 0;
+        //     var ap = m[6] || 'a';
+        //     if (hrs == 12 && ap == 'p') {
+        //         hrs = 0;
+        //         ap = 'a';
+        //     };
+        //     if (ap == 'p') {
+        //         hrs += 12;
+        //     };
+        // };
+        // if (hrs>23) {
+        //     hrs = 23;
+        // };
+        // if (mins>59) {
+        //     mins = 59;
+        // };
+        // return hrs*100+mins;
     };
 
     TimeTag.prototype.adopt = function(text) {//Convert to Date and format
-        return 't:'+this._toTime(text);
+        var times = this._toTime(text);
+        if (times.length == 2) {
+            return 't:'+times[0]+'-'+times[1];
+        };
+        return 't:'+times[0];
     };
 
     TimeTag.prototype.store = function(text) {//Convert to Date
-        return ['t:', this._toTime(text)];
+        return ['t:', this._toTime(text)[0]];
     };
 
     TimeTag.prototype.format = function(text) {//Convert to Date and format
         var tm = this._toTime(text);
-        var hr = Math.floor(tm/100);
-        var mins = tm % 100;
-        var ap = 'a';
-        if (hr==12) {//pm
-            ap = 'p';
-        };
-        if (hr>12) {//1pm
-            ap = 'p';
-            hr -= 12;
-        };
-        if (hr == 0) {//12am
-            ap = 'a';
-            hr = 12;
-        };
-        var res = ''+hr;
-        if (mins>0) {
-            res += ':'+mins;
-        };
-        res += ap;
+        var toStr = function (tm) {
+            var hr = Math.floor(tm/100);
+            var mins = tm % 100;
+            var ap = 'a';
+            if (hr==12) {//pm
+                ap = 'p';
+            };
+            if (hr>12) {//1pm
+                ap = 'p';
+                hr -= 12;
+            };
+            if (hr == 0) {//12am
+                ap = 'a';
+                hr = 12;
+            };
+            var res = ''+hr;
+            if (mins>0) {
+                res += ':'+mins;
+            };
+            res += ap;
 
-        return res;
+            return res;
+        };
+        if (tm.length == 2) {
+            return toStr(tm[0])+'-'+toStr(tm[1]);
+        };
+        return toStr(tm[0]);
+
     };
 
     TimeTag.prototype.formatNote = function(text, note) {//Default
         var tm = this._toTime(text);
-        var hr = Math.floor(tm/100);
+        var hr = Math.floor(tm[0]/100);
         note.hour = hr;
+        if (tm.length == 2) {
+            note.hours = [Math.floor(tm[0]/100), Math.floor(tm[1]/100)];
+        };
     };
 
     //TimeTag.prototype.select = function(text, values) {//Default 
@@ -1334,7 +1383,7 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
                 var schemafound = false;
                 for (var k = 0; k < schemas.length; k++) {
                     var sch = schemas[k];
-                    if (_.startsWith(words[j], sch)) {
+                    if (_.startsWith(words[j], sch) && words[j].length>sch.length) {
                         var caption = words[j].substr(sch.length);
                         if (caption.length>20) {
                             caption = caption.substr(0, 18)+'...';
@@ -1393,7 +1442,7 @@ DataManager.prototype.selectNotes = function(tags, handler, parse) {//Selects an
             };
         }
     };
-    log('Select', tags, values);
+    // log('Select', tags, values);
     this.db.storage.select('notes', values, _.bind(function (err, data) {
         if (err) {
             return handler(null, err);

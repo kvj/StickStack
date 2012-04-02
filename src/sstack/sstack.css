@@ -5,6 +5,7 @@
     cursor: pointer;
     min-height: 0.6em;
     clear: both;
+    position: relative;
 }
 
 .note_bottom_bg {
@@ -143,6 +144,10 @@
     background-color: #424254;
 }
 
+.day:active {
+    background-color: #CC2A41;    
+}
+
 .navigation {
     width: 100%;
     text-align: center;
@@ -256,9 +261,16 @@
     background-color: #ff0000;
 }
 
-.sheet_root, .inline_sheet {
+.sheet_root, .inline_sheet, .note_inline_hours {
     background-color: #E8CAA4;
     padding-bottom: 2px;
+}
+
+.note_inline_hours {
+    border: 1px dotted #888888;
+    margin: 0.3em;
+    padding: 0;
+    border-bottom-width: 0;
 }
 
 .note_inline_notes {
@@ -350,6 +362,10 @@
     background-image: url(img/notes.png);
 }
 
+.ic_time_down {
+    background-image: url(img/time_down.png);
+}
+
 .note_contact_table {
     width: 100%;
 }
@@ -364,5 +380,18 @@
 }
 
 .note_selected .note_tag_display_selected {
+    display: block;
+}
+
+.note_contact_cell {
+    vertical-align: top;
+}
+
+.note_time_down {
+    display: none;
+    float: right;
+}
+
+.note_selected .note_time_down {
     display: block;
 }

@@ -1,5 +1,6 @@
 var tagDDType = 'sstack/tag';
 var noteDDType = 'sstack/note';
+var timeDDType = 'sstack/time';
 
 var _buildIcon = function(name, cl) {//Builds img html
     return '<div class="icon'+(cl? ' '+cl: '')+'" style="background-image: url(\'img/icons/'+name+'.png\');"/>';
@@ -367,8 +368,8 @@ Sheet.prototype.tag_show_note_contact = function(note, tag, text, lines) {
             }
         };
         var row = $(document.createElement('div')).addClass('note_contact_row').css('display', 'table-row').appendTo(table);
-        var nameCell = $(document.createElement('div')).addClass('note_contact_name_cell').css('display', 'table-cell').appendTo(row);
-        var valueCell = $(document.createElement('div')).addClass('note_contact_value_cell').css('display', 'table-cell').appendTo(row);
+        var nameCell = $(document.createElement('div')).addClass('note_contact_cell note_contact_name_cell').css('display', 'table-cell').appendTo(row);
+        var valueCell = $(document.createElement('div')).addClass('note_contact_cell note_contact_value_cell').css('display', 'table-cell').appendTo(row);
         this.renderLine(note, nameWords, nameCell);
         this.renderLine(note, valueWords, valueCell);
     };
@@ -599,8 +600,15 @@ Sheet.prototype.selectNote = function(note) {
     note.selectedTag = null;
     this.root.find('.note_tag').removeClass('note_tag_selected');
     this.root.find('.note_line_show').removeClass('note_line_show');
-    note.div.find('.note_line_hide').addClass('note_line_show');
-    log('Select note', note.tags);
+    var note_inline = note.note_inline;
+    if (note_inline) {
+        note_inline.detach();
+    };
+    note.div.children('.note_line_hide').add(note.div.children('.note_text').find('.note_line_hide')).addClass('note_line_show');
+    if (note_inline) {
+        note_inline.appendTo(note.div);
+    };
+    // log('Select note', note.tags);
     this.moveNowLine();
     this.updated();
 };
@@ -785,7 +793,7 @@ Sheet.prototype.enableTagDrop = function(div, handler, id) {//Called when tag dr
     }, this));
 };
 
-Sheet.prototype.enableNoteDrop = function(div, handler, id) {//Called when note or text is dropped
+Sheet.prototype.enableNoteDrop = function(div, handler, id, special_drop_handler) {//Called when note or text is dropped
     var filesDD = 'application/x-vnd.adobe.air.file-list';
     var ctrlKey = false;
     div.bind('dragover', _.bind(function(e) {
@@ -875,6 +883,9 @@ Sheet.prototype.openNote = function(note, inline) {
                     this.updated();
                 };
             }, this), ['n:!'+note.id, sort || 'd* t*']);
+        } else {
+            note.inline_notes.remove();
+            note.inline_notes = null;
         };
         return;
     };
@@ -947,6 +958,8 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     }, this), note.id);
     div.bind('dragstart', {note: note}, _.bind(function(e) {//
         dd.setDDTarget(e, noteDDType, e.data.note.id);
+        e.stopPropagation();
+        return true;
     }, this));
     var tags = $('<div/>').addClass('note_tags');
     if (note.subnotes>1) {
@@ -1009,6 +1022,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     };
     $('<div style="clear: both;"/>').appendTo(tags);
     $('<div style="clear: both;"/>').appendTo(div);
+    return div;
 };
 
 Sheet.prototype.renderLine = function(note, line, line_div) {
@@ -1066,7 +1080,6 @@ Sheet.prototype.render_hour = function(hour, div) {
 Sheet.prototype.reload_day = function(list, beforeID) {//
     this.startHour = 0;
     this.endHour = 23;
-    this.root.find('.note').remove();
     if (!this.hours) {//Create hours
         this.hours = [];
         this.noHour = $('<div/>').appendTo(this.root);
@@ -1084,6 +1097,24 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
                 }, this), i);
             };
             this.render_hour(i, hr);
+            hr.bind('dragover', _.bind(function(e) {
+                if (dd.hasDDTarget(e, timeDDType)) {
+                    e.preventDefault();
+                };
+            }, this)).bind('drop', {hour: i},  _.bind(function(e) {//Dropped
+                var drop = dd.getDDTarget(e, timeDDType);
+                if (drop && this.selected) {//Only ID - note drop
+                    log('Dropped time', drop);
+                    this.proxy('moveNote', _.bind(function(id, err) {//
+                        if (id) {
+                            this.reload(id);
+                        };
+                    }, this), [this.selected.id, '-t:* t:'+(drop*100)+'-'+(e.data.hour*100)]);
+                    e.stopPropagation();
+                    e.preventDefault();
+                    return false;
+                };
+            }, this));
             this.enableNoteDrop(hr, _.bind(function(n) {
                 if (n.id) {//Note
                     this.instance.proxy('moveNote', _.bind(function(id, err) {//
@@ -1115,11 +1146,55 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
             }, this));
         };
         this.nowLine = $('<div/>').appendTo(this.root).addClass('now_line');
-        setInterval(_.bind(this.moveNowLine, this), 3*60*1000);
+        if (this.moveNowLineID) {
+            cancelInterval(this.moveNowLineID);
+        };
+        if (!CURRENT_PLATFORM_MOBILE) {
+            this.moveNowLineID = setInterval(_.bind(this.moveNowLine, this), 3*60*1000);
+        };
+    } else {
+        for (var i = this.hours.length-1; i >=0 ; i--) {
+            var hr = this.hours[i];
+            hr.detach().insertAfter(this.noHour);
+        };
+        this.root.find('.note').remove();
+    };
+    var hrPlaces = [];
+    for (var i = this.startHour; i <= this.endHour; i++) {
+        hrPlaces.push(null);
     };
     for (var i = 0; i < list.length; i++) {//
         var target = this.hours[list[i].hour];
-        this.showNote(list[i], target? target.children('.day_hour_notes'): this.noHour, list[i].id == beforeID);
+        // target? target.children('.day_hour_notes'): 
+        var div = this.showNote(list[i], this.noHour, list[i].id == beforeID);
+        if (target) {
+            var timeDown = $(ui.buildIcon('ic_time_down')).addClass('note_time_down');
+            div.find('.note_tags').prepend(timeDown);
+            timeDown.addClass('draggable').attr('draggable', 'true').bind('dragstart', {hour: list[i].hour}, _.bind(function(e) {//
+                dd.setDDTarget(e, timeDDType, e.data.hour);
+                e.stopPropagation();
+                return true;
+            }, this));
+        };
+        if (!list[i].hours) {
+            if (target) {
+                div.detach().appendTo(target.children('.day_hour_notes'));
+            };
+        } else {
+            var hstart = list[i].hours[0];
+            var hend = list[i].hours[1];
+            var hrsPlace = $(document.createElement('div')).addClass('note_inline_hours').appendTo(div);
+            if (!hrPlaces[hstart]) {
+                //Not detached
+                div.detach().insertBefore(this.hours[hstart]);
+            } else {
+                div.detach().insertAfter(hrPlaces[hstart]);
+            }
+            for (var j = hstart; j <= hend; j++) {
+                this.hours[j].detach().appendTo(hrsPlace);
+                hrPlaces[j] = div;
+            };
+        }
     };
     this.moveNowLine();
     this.updated();
