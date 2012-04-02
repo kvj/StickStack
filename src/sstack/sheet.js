@@ -1104,7 +1104,7 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
             }, this)).bind('drop', {hour: i},  _.bind(function(e) {//Dropped
                 var drop = dd.getDDTarget(e, timeDDType);
                 if (drop && this.selected) {//Only ID - note drop
-                    log('Dropped time', drop);
+                    // log('Dropped time', drop);
                     this.proxy('moveNote', _.bind(function(id, err) {//
                         if (id) {
                             this.reload(id);
@@ -1178,7 +1178,7 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
         };
         if (!list[i].hours) {
             if (target) {
-                div.detach().appendTo(target.children('.day_hour_notes'));
+                div.detach().insertBefore(target.children('.day_hour_notes').children('.clear'));
             };
         } else {
             var hstart = list[i].hours[0];
