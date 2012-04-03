@@ -540,7 +540,7 @@ var DataManager = function(database) {//Do DB operations
         var dt = new Date();
         var m = text.match(this.reg);
         if (!m) {
-            return dt.getHours()*100;
+            return [dt.getHours()*100];
         };
         var regToMins = function (start) {
             var hrs = 0;

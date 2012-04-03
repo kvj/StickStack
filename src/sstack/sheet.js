@@ -43,15 +43,27 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
         caption: 'Remove',
         classNameInner: 'button_remove',
         handler: _.bind(function() {//
-            _showQuestion('Remove note?', _.bind(function (index) {
-                if (0 == index) {
-                    this.proxy('removeNote', _.bind(function(id, err) {//Removed
-                        if (id) {
-                            this.reload();
-                        };
-                    }, this), [this.selected.id]);
-                };
-            }, this))
+            if (this.selected.selectedTag) {
+                _showQuestion('Remove tag?', _.bind(function (index) {
+                    if (0 == index) {
+                        this.proxy('removeTag', _.bind(function(id, err) {//
+                            if (id) {
+                                this.reload();
+                            };
+                        }, this), [this.selected.id, this.selected.selectedTag.id]);
+                    };
+                }, this))
+            } else {
+                _showQuestion('Remove note?', _.bind(function (index) {
+                    if (0 == index) {
+                        this.proxy('removeNote', _.bind(function(id, err) {//Removed
+                            if (id) {
+                                this.reload();
+                            };
+                        }, this), [this.selected.id]);
+                    };
+                }, this));                
+            }
             this.updated();
         }, this)
     });
@@ -69,23 +81,23 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
                         return true;
                     }, this),
                 });                
-                items.push({
-                    caption: 'Remove tag',
-                    cls: 'button_remove',
-                    handler: _.bind(function() {
-                        _showQuestion('Remove tag?', _.bind(function (index) {
-                            if (0 == index) {
-                                this.proxy('removeTag', _.bind(function(id, err) {//
-                                    if (id) {
-                                        this.reload();
-                                    };
-                                }, this), [this.selected.id, this.selected.selectedTag.id]);
-                            };
-                        }, this))
-                        this.updated();
-                        return true;
-                    }, this),
-                });                
+                // items.push({
+                //     caption: 'Remove tag',
+                //     cls: 'button_remove',
+                //     handler: _.bind(function() {
+                //         _showQuestion('Remove tag?', _.bind(function (index) {
+                //             if (0 == index) {
+                //                 this.proxy('removeTag', _.bind(function(id, err) {//
+                //                     if (id) {
+                //                         this.reload();
+                //                     };
+                //                 }, this), [this.selected.id, this.selected.selectedTag.id]);
+                //             };
+                //         }, this))
+                //         this.updated();
+                //         return true;
+                //     }, this),
+                // });                
                 items.push({
                     caption: 'Select tag',
                     handler: _.bind(function() {
