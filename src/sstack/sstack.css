@@ -132,7 +132,7 @@
     right: 0px;
 }
 
-.day {
+.day, .month, .year, .arrow {
     display: table-cell;
     text-align: center;
     border-left: #000000 solid 3px;
@@ -164,21 +164,22 @@
 }
 
 .arrow {
-    margin: 3px;
-    padding: 0.4em;
-    background-color: #424254;
-    overflow: hidden;
+    padding: 0.5em;
     min-width: 2em;
-    text-align: center;
 }
 
 .icon_center {
     margin: 0px;
 }
 
-.month {
+.month_year {
     text-align: center;
-    padding-top: 0.3em;
+}
+
+.month, .year {
+    display: inline-block;
+    padding: 0.5em;
+    cursor: pointer;
 }
 
 .day_name {

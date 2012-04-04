@@ -15,7 +15,10 @@ var Calendar = function(config){
         });
     }
     this.selected = this.config.selected || null;
-    this.render()
+    var instance = this;
+    setTimeout(function () {
+        instance.render();
+    }, 0)
 }
 
 Calendar.prototype.reset = function(){
@@ -49,12 +52,20 @@ Calendar.prototype.render = function(){
     //Render arrows and month name
     $('<div>'+(this.config.leftArrow || '&lt;')+'</div>').appendTo(nav).addClass('arrow leftArrow').bind('click', {origin: this}, this.onLeftArrow).css('cursor', 'pointer');
     $('<div>'+(this.config.rightArrow || '&gt;')+'</div>').appendTo(nav).addClass('arrow rightArrow').bind('click', {origin: this}, this.onRightArrow).css('cursor', 'pointer');
-    $('<div>'+this.months[this.date.getMonth()]+' '+this.date.getFullYear()+'</div>').appendTo(nav).addClass('month').bind('dblclick', {instance: this}, function(e){
+    var monthDiv = $(document.createElement('div')).addClass('month').text(this.months[this.date.getMonth()]);
+    if (this.config.onMonthRender) {
+        this.config.onMonthRender(monthDiv);
+    };
+    var yearDiv = $(document.createElement('div')).addClass('month').text(''+this.date.getFullYear());
+    if (this.config.onYearRender) {
+        this.config.onYearRender(yearDiv);
+    };
+    $(document.createElement('div')).appendTo(nav).addClass('month_year').bind('dblclick', {instance: this}, function(e){
         e.data.instance.date = new Date();
         e.data.instance.render();
         e.preventDefault();
         return false;
-    });
+    }).append(monthDiv).append(yearDiv);
     $('<div/>').addClass('clear').appendTo(nav);
     //Render day names
     var grid = $(document.createElement('div')).addClass('calendar_grid').appendTo(this.renderTo);
@@ -87,7 +98,10 @@ Calendar.prototype.render = function(){
             }
             week = $('<div/>').appendTo(grid).addClass('week days_row');
             if (this.config.week == 'left') {
-                $('<div>'+dt.format('ww')+'</div>').appendTo(week).addClass('day week_day')
+                var weekDiv = $('<div>'+dt.format('ww')+'</div>').appendTo(week).addClass('day week_day')
+                if (this.config.onWeekRender) {
+                    this.config.onWeekRender(weekDiv, dt.getWeek());
+                };
             };
         }
         var div = $('<div>'+dt.getDate()+'</div>').appendTo(week).addClass('day');
@@ -134,7 +148,10 @@ Calendar.prototype.render = function(){
         if(wd == 6){
             wd = 0;
             if (this.config.week == 'right') {
-                $('<div>'+dt.format('ww')+'</div>').appendTo(week).addClass('day week_day')
+                var weekDiv = $('<div>'+dt.format('ww')+'</div>').appendTo(week).addClass('day week_day')
+                if (this.config.onWeekRender) {
+                    this.config.onWeekRender(weekDiv, dt.getWeek());
+                };
             };
         } else {
             wd++;

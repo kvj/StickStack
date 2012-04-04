@@ -80,24 +80,7 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
                         this.startTextEdit(this.selected.id, this.selected.div, 'tag', this.selected.selectedTag.id);
                         return true;
                     }, this),
-                });                
-                // items.push({
-                //     caption: 'Remove tag',
-                //     cls: 'button_remove',
-                //     handler: _.bind(function() {
-                //         _showQuestion('Remove tag?', _.bind(function (index) {
-                //             if (0 == index) {
-                //                 this.proxy('removeTag', _.bind(function(id, err) {//
-                //                     if (id) {
-                //                         this.reload();
-                //                     };
-                //                 }, this), [this.selected.id, this.selected.selectedTag.id]);
-                //             };
-                //         }, this))
-                //         this.updated();
-                //         return true;
-                //     }, this),
-                // });                
+                });
                 items.push({
                     caption: 'Select tag',
                     handler: _.bind(function() {
@@ -107,14 +90,6 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
                 });
                 this.launchTagMethod(this.selected, 'menu', this.selected.selectedTag.id, items);       
             };
-            // items.push({
-            //     caption: 'Link',
-            //     cls: 'button_create',
-            //     handler: _.bind(function() {
-            //         this.startTextEdit(this.selected.id, this.selected.div, 'link', this.selected.link);
-            //         return true;
-            //     }, this),
-            // });
             items.push({
                 caption: 'Open note',
                 handler: _.bind(function() {
@@ -157,6 +132,9 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
     this.editing = false;
     this.selected = null;
     $(document.createElement('div')).addClass('clear').appendTo(this.root);
+    if (this.data.display && this['prepare_'+this.data.display]) {
+        this['prepare_'+this.data.display].call(this);
+    };
     this.reload();
 };
 
@@ -1088,6 +1066,25 @@ Sheet.prototype.render_hour = function(hour, div) {
         }, this), [text || null, this.autotags+' '+tag+' t:'+(hour*100)]);
     }, this));    
 };
+
+Sheet.prototype._prepare_days = function(dstart, dend) {
+    this.days = [];
+    this.daystart = dstart;
+    this.noDays = $(document.createElement('div')).addClass('no_days').appendTo(this.root);
+
+};
+
+Sheet.prototype.prepare_week = function() {
+    //Create divs
+    var dinfo = this.proxy('tagInfo', null, [this.data.tags]);
+    log('dinfo', dinfo, this.data.tags);
+    if (dinfo) {
+        this._prepare_days(dinfo.dstart, dinfo.dend);
+    };
+};
+
+// Sheet.prototype.reload_week = function(list, beforeID) {//
+// };
 
 Sheet.prototype.reload_day = function(list, beforeID) {//
     this.startHour = 0;

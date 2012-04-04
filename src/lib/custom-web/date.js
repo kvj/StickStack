@@ -163,3 +163,10 @@ Date.prototype.getWeek = function (dowOffset) {
     }
     return weeknum;
 };
+
+Date.prototype.setWeek = function (wn, dayNb) {
+    var j10 = new Date( this.getFullYear(), 0, 10, 0, 0, 0),
+        j4 = new Date( this.getFullYear() ,0 ,4 , 0, 0, 0),
+        mon1 = j4.getTime() - j10.getDay() * 86400000;
+    this.setTime(mon1 + ((wn - 1)  * 7  + dayNb) * 86400000);
+};

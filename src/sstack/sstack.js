@@ -35,6 +35,7 @@ yepnope({
 
 var run = function() {
     log('Agent:', navigator.userAgent);
+    Date.prototype.startWeek = 1;
     if (CURRENT_PLATFORM == PLATFORM_AIR) {
         db = new AirDBProvider('sstack');
     } else {
@@ -338,7 +339,7 @@ var DateTimeSheet = function(panel, datamanager) {//
     this.calendarPlace = $('<div/>').addClass('calendar_place').appendTo(this.panel.element);
     this.calendar = new Calendar({
         renderTo: this.calendarPlace,
-        startWeek: 1,
+        startWeek: Date.prototype.startWeek,
         // leftArrow: _buildIcon('a_left', 'icon_center'),
         // rightArrow: _buildIcon('a_right', 'icon_center'),
         handleDay: _.bind(function(div, date) {//Process date
@@ -402,7 +403,7 @@ var SheetsManager = function(panel, datamanager) {
     this.calendarPlace = $('<div/>').addClass('calendar_place').appendTo(this.panel.element);
     this.calendar = new Calendar({
         renderTo: this.calendarPlace,
-        startWeek: 1,
+        startWeek: Date.prototype.startWeek,
         week: 'left',
         // leftArrow: _buildIcon('a_left', 'icon_center'),
         // rightArrow: _buildIcon('a_right', 'icon_center'),
@@ -413,8 +414,33 @@ var SheetsManager = function(panel, datamanager) {
                 dd.setDDTarget(e, tagDDType, 'd:'+date.format('yyyymmdd'));
             });
         }, this),
+        onWeekRender: _.bind(function (div, week) {
+            var tag = 'd:w'+week+'y'+this.calendar.date.getFullYear();
+            div.addClass('draggable').bind('dragstart', _.bind(function(e) {
+                dd.setDDTarget(e, tagDDType, tag);
+            }, this)).bind('click', _.bind(function (e) {
+                newSheet({caption: datamanager.formatTag(tag), tags: tag, autotags: tag, display: 'week', sort: tag+' d:* t:*'}, this.panel, datamanager, e.ctrlKey);
+            }, this));
+        }, this),
+        onMonthRender: _.bind(function (div) {
+            var tag = 'd:m'+(this.calendar.date.getMonth()+1)+'y'+this.calendar.date.getFullYear();
+            div.addClass('draggable').bind('dragstart', _.bind(function(e) {
+                dd.setDDTarget(e, tagDDType, tag);
+            }, this)).bind('click', _.bind(function (e) {
+                newSheet({caption: datamanager.formatTag(tag), tags: tag, autotags: tag, display: null, sort: tag+' d:* t:*'}, this.panel, datamanager, e.ctrlKey);
+            }, this));
+        }, this),
+        onYearRender: _.bind(function (div) {
+            var tag = 'd:y'+this.calendar.date.getFullYear();
+            div.addClass('draggable').bind('dragstart', _.bind(function(e) {
+                dd.setDDTarget(e, tagDDType, tag);
+            }, this)).bind('click', _.bind(function (e) {
+                newSheet({caption: datamanager.formatTag(tag), tags: tag, autotags: tag, display: null, sort: tag+' d:* t:*'}, this.panel, datamanager, e.ctrlKey);
+            }, this));
+        }, this),
         daySelected: _.bind(function(date, e) {//Click on date
-            newSheet({caption: date.format('m/d/yy'), tags: 'd:'+date.format('yyyymmdd'), autotags: 'd:'+date.format('yyyymmdd'), display: 'day', sort: 't:*'}, this.panel, datamanager, e.ctrlKey);
+            var tag = 'd:'+date.format('yyyymmdd')
+            newSheet({caption: datamanager.formatTag(tag), tags: tag, autotags: tag, display: 'day', sort: 't:*'}, this.panel, datamanager, e.ctrlKey);
         }, this)
     });
     this.textPanel = $('<div/>').addClass('input_wrap').appendTo(this.panel.element);
@@ -929,7 +955,7 @@ var InlineSheet = function(sheet, panel, datamanager) {//
             handler(openLink(params[0], params[1]));
             return true;
         };
-        _proxy(this.manager, method, handler || function() {}, params || []);
+        return _proxy(this.manager, method, handler || function() {}, params || []);
     }, this));
     manager.show(this.panel, panel);
 };

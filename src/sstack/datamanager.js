@@ -2,6 +2,9 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
     if (!params) {
         params = [];
     };
+    if (method == 'tagInfo') {
+        return datamanager.tagInfo(params[0]);
+    };
     if (method == 'editMap') {
         new MapsEditor(datamanager, params[0], handler);
         return true;
@@ -170,6 +173,9 @@ var DataManager = function(database) {//Do DB operations
     };
     DefaultTag.prototype.format = function(text) {//Default - no change
         return text;
+    };
+    DefaultTag.prototype.info = function(text) {//Default - no change
+        return null;
     };
     DefaultTag.prototype.store = function(text) {//Default - no change
         return ['', 0];
@@ -445,7 +451,7 @@ var DataManager = function(database) {//Do DB operations
     };
 
     var DateTag = function() {//Date starts d:
-        this.reg = /^d:(((\d{4})(\d{2})(\d{2}))|((\+|\-)(\d+)(d|w|m|y)))$/;
+        this.reg = /^d:(((\d{4})(\d{2})(\d{2}))|((\+|\-)(\d+)(d|w|m|y))|(((w(\+|\-)?(\d{1,2}))|(m(\+|\-)?(\d{1,2})))?(y(\+|\-)?(\d{1,4}))?))$/;
         this.rangeReg = /^d:(.+):(.+)$/;
         this.name = 'date';
     };
@@ -461,19 +467,22 @@ var DataManager = function(database) {//Do DB operations
     DateTag.prototype._toDate = function(text) {
         var m = text.match(this.reg);
         if (!m) {
-            return new Date();
+            return {dt: new Date()};
         };
-        //for (var i = 0; i < m.length; i++) {
-            //log('m', i, m[i]);
-        //};
+        // for (var i = 0; i < m.length; i++) {
+        //     log('to date:', i, m[i]);
+        // };
         var dt = new Date();
+        var _sign = function (val) {
+            return m[7] == '-'? -1: 1;
+        };
         if (m[2]) {//
             dt.setDate(1);
             dt.setFullYear(parseInt(m[3], 10));
             dt.setMonth(parseInt(m[4], 10)-1);
             dt.setDate(parseInt(m[5], 10));
-        } else {//+-
-            var sign = m[7] == '-'? -1: 1;
+        } else if (m[7]) {//+-
+            var sign = _sign(m[7]);
             if (m[9] == 'd') {//Add date
                 dt.setDate(dt.getDate()+sign*m[8]);
             };
@@ -486,23 +495,111 @@ var DataManager = function(database) {//Do DB operations
             if (m[9] == 'y') {//Add date
                 dt.setFullYear(dt.getFullYear()+sign*m[8]);
             };
-        };
+        } else {
+            // 3rd group
+            var result = {};
+            var type = 'y';
+            var nowDay = dt.getDate();
+            var nowMonth = dt.getMonth();
+            dt = new Date(dt.getFullYear(), 0, 1);
+            if (m[18]) { // Have year
+                if(m[19]) { // Have sign
+                    dt.setFullYear(dt.getFullYear()+_sign(m[19])*m[20]);
+                } else {
+                    dt.setFullYear(m[20]);
+                }
+            };
+            if (m[12]) { // Have week
+                var wk = new Date().getWeek();
+                if (m[13]) {
+                    wk += _sign(m[13])*m[14];
+                } else {
+                    wk = m[14];
+                }
+                type = 'w';
+                dt.setWeek(wk, 0);
+            };
+            if (m[15]) { // Have month
+                var mn = new Date().getMonth();
+                if (m[16]) {
+                    mn += _sign(m[16])*m[17];
+                } else {
+                    mn = +m[17]-1;
+                }
+                type = 'm';
+                dt.setMonth(mn);
+            };
+            return {dt: dt, type: type};
+        }
         //log('_toDate', text, dt);
-        return dt;
+        return {dt: dt};
+    };
+    DateTag.prototype.info = function(text) {//Get tag info
+        var dt = this._toDate(text);
+        if (dt.type) {
+            var dtstart = dt.dt;
+            var dtend = new Date(dtstart.getTime());
+            if (dt.type == 'w') {
+                dtend.setDate(dtstart.getDate()+6);
+            };
+            if (dt.type == 'm') {
+                dtend.setMonth(dtstart.getMonth()+1);
+                dtend.setDate(0);
+            };
+            if (dt.type == 'y') {
+                dtend.setFullYear(dtstart.getFullYear()+1);
+                dtend.setDate(0);
+            };
+            return {dstart: dtstart, dend: dtend};
+        };
+        return null;
     };
 
     DateTag.prototype.adopt = function(text) {//Convert to Date and format
-        return 'd:'+this._toDate(text).format('yyyymmdd');
+        var dt = this._toDate(text);
+        if (dt.type) {
+            var result = '';
+            if (dt.type == 'w') {
+                result += 'w'+dt.dt.getWeek();
+            };
+            if (dt.type == 'm') {
+                result += 'm'+(dt.dt.getMonth()+1);
+            };
+            result += 'y'+dt.dt.getFullYear();
+            return 'd:'+result;
+        };
+        return 'd:'+dt.dt.format('yyyymmdd');
     };
 
     DateTag.prototype.store = function(text) {//Convert to Date
-        return ['d:', parseInt(this._toDate(text).format('yyyymmdd'), 10)];
+        var dt = this._toDate(text);
+        if (dt.type) {
+            return ['d:', 0];
+        };
+        return ['d:', parseInt(this._toDate(text).dt.format('yyyymmdd'), 10)];
     };
 
     DateTag.prototype.format = function(text) {//Convert to Date and format
         var now = new Date();
         var dt = this._toDate(text);
-        return dt.format('m/d'+(now.getFullYear() != dt.getFullYear()? '/yy': ''));
+        if (dt.type) {
+            result = '';
+            if (dt.type == 'w') {
+                result += 'Week '+dt.dt.getWeek();
+            };
+            if (dt.type == 'm') {
+                result += dt.dt.format('mmm');
+            };
+            if (dt.type == 'y') {
+                result += dt.dt.getFullYear();
+            } else {
+                if (now.getFullYear() != dt.dt.getFullYear()) {
+                    result +='/'+dt.dt.format('yy');
+                };
+            }
+            return result;
+        };
+        return dt.dt.format('m/d'+(now.getFullYear() != dt.dt.getFullYear()? '/yy': ''));
     };
 
     DateTag.prototype.select = function(text, values) {//Default 
@@ -514,10 +611,25 @@ var DataManager = function(database) {//Do DB operations
             // values.push(dtstart.format('yyyymmdd'));
             // values.push(dtend.format('yyyymmdd'));
             values.push('id', this._in(['type', 'd:', 
-                'value', {op: '>=', 'var': dtstart.format('yyyymmdd')}, 
-                'value', {op: '<=', 'var': dtend.format('yyyymmdd')}
+                'value', {op: '>=', 'var': dtstart.dt.format('yyyymmdd')}, 
+                'value', {op: '<=', 'var': dtend.dt.format('yyyymmdd')}
             ]));
             return 'nt.type=? and nt.value>=? and nt.value<=?';
+        };
+        var dt = this._toDate(text);
+        var dinfo = this.info(text);
+        if (dinfo) {
+            var dtstart = dinfo.dstart;
+            var dtend = dinfo.dend;
+            values.push({
+                op: 'or', 
+                'var': [
+                    'id', this._in(['type', 'd:', 
+                        'value', {op: '>=', 'var': dtstart.format('yyyymmdd')}, 
+                        'value', {op: '<=', 'var': dtend.format('yyyymmdd')}
+                    ]), 'id', this._in(['type', 'd:', 'text', this.adopt(text)])
+                ]
+            })
         };
         return DefaultTag.prototype.select(this.adopt(text), values);
     };
@@ -754,6 +866,15 @@ DataManager.prototype.formatTag = function(text) {
         };
     };
     return text;
+};
+
+DataManager.prototype.tagInfo = function(text) {
+    for (var i = 0; i < this.tagControllers.length; i++) {
+        if (this.tagControllers[i].accept(text)) {
+            return this.tagControllers[i].info(text);
+        };
+    };
+    return null;
 };
 
 DataManager.prototype.storeTag = function(text) {
