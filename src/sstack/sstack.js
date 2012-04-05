@@ -95,6 +95,9 @@ var run = function() {
 
 var TopManager = function() {//Manages top panel
     _createEsentials(this, 'Welcome:', 2);
+    this.panel.keypress = _.bind(function (e) {
+        return this.topMenu.keypress(e);
+    }, this);
     this.syncButton = this.topMenu.addButton({
         caption: 'Sync',
         classNameInner: 'button_inner_32',
@@ -419,7 +422,7 @@ var SheetsManager = function(panel, datamanager) {
             div.addClass('draggable').bind('dragstart', _.bind(function(e) {
                 dd.setDDTarget(e, tagDDType, tag);
             }, this)).bind('click', _.bind(function (e) {
-                newSheet({caption: datamanager.formatTag(tag), tags: tag, autotags: tag, display: 'week', sort: tag+' d:* t:*'}, this.panel, datamanager, e.ctrlKey);
+                newSheet({caption: datamanager.formatTag(tag), tags: tag, autotags: tag, display: 'week', sort: tag+' d:* -t:*'}, this.panel, datamanager, e.ctrlKey);
             }, this));
         }, this),
         onMonthRender: _.bind(function (div) {
@@ -427,7 +430,7 @@ var SheetsManager = function(panel, datamanager) {
             div.addClass('draggable').bind('dragstart', _.bind(function(e) {
                 dd.setDDTarget(e, tagDDType, tag);
             }, this)).bind('click', _.bind(function (e) {
-                newSheet({caption: datamanager.formatTag(tag), tags: tag, autotags: tag, display: null, sort: tag+' d:* t:*'}, this.panel, datamanager, e.ctrlKey);
+                newSheet({caption: datamanager.formatTag(tag), tags: tag, autotags: tag, display: 'month', sort: tag+' d:* -t:*'}, this.panel, datamanager, e.ctrlKey);
             }, this));
         }, this),
         onYearRender: _.bind(function (div) {
@@ -465,6 +468,15 @@ var SheetsManager = function(panel, datamanager) {
     this.panel.onSwitch = _.bind(function() {
         this.reload();
     }, this);
+    this.panel.keypress = _.bind(function (e) {
+        log('key', e.keyCode);
+        if (e.keyCode == 82) { // Reload - r
+            this.group = null;
+            this.reload();
+            return false;            
+        };
+        return this.sheetList.keypress(e);
+    }, this)
     manager.show(this.panel, panel);
 };
 
@@ -475,6 +487,7 @@ SheetsManager.prototype.showSheets = function(group) {//
             var div = this.sheetList.addButton({
                 caption: this.sheets[i].caption,
                 width: 2,
+                id: this.sheets[i].caption,
                 sheet: this.sheets[i],
                 handler: _.bind(function(btns, btn) {
                     this.group = btn.sheet.caption;
@@ -493,6 +506,7 @@ SheetsManager.prototype.showSheets = function(group) {//
         var div = this.sheetList.addButton({
             caption: this.sheets[i].caption,
             className: 'button_left',
+            id: 'sh'+this.sheets[i].id,
             classNameInner: 'button_list',
             sheet: this.sheets[i],
             handler: _.bind(function(btns, btn, e) {
@@ -505,6 +519,7 @@ SheetsManager.prototype.showSheets = function(group) {//
         });
         this.sheetList.addButton({
             caption: 'Edit',
+            id: 'e'+this.sheets[i].id,
             sheet: this.sheets[i],
             handler: _.bind(function(btns, btn) {
                 new SheetEditor(btn.sheet, this.panel, this.manager);
@@ -595,6 +610,9 @@ var TagsManager = function(panel, datamanager) {
         maxElements: 1,
         safe: true,
     });
+    this.panel.keypress = _.bind(function (e) {
+        return this.list.keypress(e);
+    }, this)
     this.panel.onSwitch = _.bind(function() {
         this.reload();
     }, this);
@@ -957,6 +975,9 @@ var InlineSheet = function(sheet, panel, datamanager) {//
         };
         return _proxy(this.manager, method, handler || function() {}, params || []);
     }, this));
+    this.panel.keypress = _.bind(function (e) {
+        return this.sheet.keypress(e);
+    }, this);
     manager.show(this.panel, panel);
 };
 

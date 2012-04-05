@@ -1,5 +1,9 @@
 .panel_column {
-	border-color: #351330 !important;
+	border-color: #351330;
+}
+
+.panel_focused.panel_column {
+    border-color: #CC2A41 !important;
 }
 
 .popup_menu {
@@ -43,6 +47,22 @@
 	background-color: #CC2A41;
 }
 
+.panel_focused .focus_indicator {
+    width: 0;
+    height: 0;
+    position: absolute;
+    border: 0.5em solid #CC2A41;
+    border-bottom-color: transparent;
+    border-right-color: transparent;
+    left: 0;
+    top: 0;
+}
+
+.button_list .focus_indicator, .button_create .focus_indicator {
+    border-top-color: #424254;
+    border-left-color: #424254;    
+}
+
 .button_inner:active {
     left: 1px;
     top: 1px;
@@ -55,6 +75,7 @@
     font-weight: bold;
     color: #dddddd;
     background-color: #351330;
+    position: relative;
 }
 
 .form_label {

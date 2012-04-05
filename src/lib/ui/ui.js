@@ -399,6 +399,8 @@ var _getManager = function() {//Returns manager
         this.columns = [];
         this.minColWidth = this.config.minColWidth || 280;
         this.colGap = 5;
+        this.focusDiv = $(document.createElement('div')).addClass('focus_indicator');
+        this.focused = -1;
         $(window).resize(_.bind(this.resize, this));
         //$(document).keypress({instance: this}, function(e) {
             ////log('Key', e.which);
@@ -413,7 +415,28 @@ var _getManager = function() {//Returns manager
             ////103 - g
             ////return e.data.instance.keyHandler(e);
         //});
+        $(document.body).bind('keydown', _.bind(this.keyHandler, this));
         this.resize();
+    };
+
+    PanelManager.prototype.farRight = function() {
+        return Math.min(this.panels.length, this.columns.length);
+    };
+
+    PanelManager.prototype.focus = function(col) {
+        if (!col || col<0) {
+            col = 0;
+        };
+        var panels_displayed = this.farRight();
+        if (col>=panels_displayed) {
+            col = panels_displayed-1;
+        };
+        this.element.children('.panel_column').removeClass('panel_focused');
+        this.focused = col;
+        if (col>=0) {
+            this.columns[col].children().children('.panel_title').append(this.focusDiv);
+            this.columns[col].addClass('panel_focused');
+        };
     };
 
     PanelManager.prototype.resize = function() {//Change layout
@@ -444,6 +467,7 @@ var _getManager = function() {//Returns manager
             this.columns[i].css('left', left).width(w);
             left += w+this.colGap;
         };
+        this.focus(this.focused);
     };
 
     PanelManager.prototype.putPanels = function() {//Put panels into columns
@@ -455,7 +479,7 @@ var _getManager = function() {//Returns manager
         if (skipPanels<0) {//Fix
             skipPanels = 0;
         };
-        for (var i = 0; i < Math.min(this.panels.length, this.columns.length); i++) {//Put panels
+        for (var i = 0; i < this.farRight(); i++) {//Put panels
             var panel = this.panels[i+skipPanels];
             panel.element.appendTo(this.columns[i]);
             if (panel.scroll || panel.scroll == 0) {//Restore
@@ -492,10 +516,11 @@ var _getManager = function() {//Returns manager
         if (panel.onSwitch) {//Switch handler
             panel.onSwitch(panel);
         };
+        this.focus(this.farRight()-1);
     };
 
     PanelManager.prototype.goBack = function(current) {
-        if (this.panels.length<2) {//Work only for more than 2 panels in stack
+        if (this.panels.length<2 || current == this.panels[0]) {//Work only for more than 2 panels in stack
             return false;
         }
         this.clearRightPanels(current);
@@ -507,6 +532,7 @@ var _getManager = function() {//Returns manager
         if (panel.onSwitch) {//Switch handler
             panel.onSwitch(panel);
         };
+        this.focus(this.farRight()-1);
         return true;
     };
 
@@ -519,13 +545,45 @@ var _getManager = function() {//Returns manager
         }
     };
 
+    PanelManager.prototype.getFocused = function() {
+        var skipPanels = this.panels.length - this.columns.length;
+        if (skipPanels<0) {//Fix
+            skipPanels = 0;
+        };
+        return this.panels[skipPanels+this.focused];        
+    };
+
     PanelManager.prototype.keyHandler = function(e) {
-        if (this.panel && this.panel.keys[e.which]) {
-            var obj = this.panel.keys[e.which].obj;
-            var handler = this.panel.keys[e.which].handler;
-            e.data = this.panel.keys[e.which].data;
-            return handler.call(obj, e);
-        }
+        if (e.ctrlKey) {
+            log('Key down', e.keyCode);
+            // 39 ->
+            // 37 <-
+            // 38 ^
+            switch (e.keyCode) {
+                case 39:
+                    this.focus(this.focused+1);
+                    return false;
+                case 37:
+                    this.focus(this.focused-1);
+                    return false;
+                case 38:
+                    this.goBack(this.getFocused());
+                    return false;
+            };
+        };
+        var panel = this.getFocused();
+        if (panel && panel.keypress) {
+            if (false === panel.keypress(e)) {
+                return false;
+            };
+        };
+        // if (this.panel && this.panel.keys[e.which]) {
+        //     var obj = this.panel.keys[e.which].obj;
+        //     var handler = this.panel.keys[e.which].handler;
+        //     e.data = this.panel.keys[e.which].data;
+        //     return handler.call(obj, e);
+        // }
+        return true;
     };
 
 //};
@@ -553,6 +611,8 @@ Panel.prototype.addKeyHandler = function(key, obj, handler, data) {
 var Buttons = function(config) {//Cool buttons
     this.config = config || {};
     this.element = $('<div/>').addClass('buttons');
+    this.focusDiv = $(document.createElement('div')).addClass('focus_indicator');
+    this.focused = -1;
     this.row = $(document.createElement('div')).addClass('buttons_row').appendTo(this.element);
     this.buttonRows = [];
     if (this.config.root) {//Attach to parent
@@ -560,6 +620,28 @@ var Buttons = function(config) {//Cool buttons
     };
     this.buttons = [];
     // this._clear = $('<div/>').css('clear', 'both').appendTo(this.element);//Float: left fix
+};
+
+Buttons.prototype.keypress = function(e) {
+    switch (e.keyCode) {
+        case 38: // up
+            if (this.focus(this.focused-1)) {
+                return false;
+            };
+            return true;
+        case 40: // down
+            if (this.focus(this.focused+1)) {
+                return false;
+            };
+            return true;
+        case 13: // enter - open
+            if (this.buttons[this.focused]) {
+                this.click(this.buttons[this.focused]);
+                return false;
+            };
+            return true;
+    }
+    return true;
 };
 
 Buttons.prototype.getRow = function(row) {
@@ -582,7 +664,7 @@ Buttons.prototype.addButton = function(button, before) {//Adds button
     var row = this.getRow(button.row);
     button.element = $('<div/>').addClass('button_outer').insertBefore(before? before.element: row.children().last());
     button.innerElement = $('<button/>').addClass('button_inner').appendTo(button.element);
-    button.innerElement.bind((this.config.safe | button.safe)?  'click': CURRENT_EVENT_CLICK, {buttons: this, button: button}, function(e) {//Click on button
+    button.innerElement.bind((this.config.safe | button.safe)?  'click': CURRENT_EVENT_CLICK, {buttons: this, button: button, index: this.buttons.length}, function(e) {//Click on button
         if (e.data.button.disabled) {//Ignore click
             return false;
         };
@@ -593,6 +675,7 @@ Buttons.prototype.addButton = function(button, before) {//Adds button
         //         return this.data.button.handler(this, this.data.button, this);
         //     };
         // }, e), e.data.button.delay);
+        e.data.buttons.focus(e.data.index);
         if (e.data.button.handler) {//We have handler
             e.data.button.handler(e, e.data.button, e);
             return false;
@@ -620,7 +703,29 @@ Buttons.prototype.addButton = function(button, before) {//Adds button
         button.innerElement.css(button.css);
     };
     this.updateWidth();
+    if (button.id && button.id == this.focusedID) {
+        this.focus(this.buttons.length-1);
+    };
     return button;
+};
+
+Buttons.prototype.focus = function(item) {
+    var result = true;
+    if (!item || item<0) {
+        result = false;
+        item = 0;
+    };
+    if (item>=this.buttons.length) {
+        result = false;
+        item = this.buttons.length-1;
+    };
+    this.focused = item;
+    if (!this.buttons[item]) {
+        return false;
+    };
+    this.focusDiv.appendTo(this.buttons[item].innerElement);
+    this.buttons[item].innerElement.focus();
+    return true;
 };
 
 Buttons.prototype.click = function(button) {//Simulate click
@@ -643,6 +748,9 @@ Buttons.prototype.setDisabled = function(button, disabled) {//Changes disabled s
 Buttons.prototype.removeButton = function(button) {//Removes button
     for (var i = 0; i < this.buttons.length; i++) {
         if (this.buttons[i] == button) {//Found
+            if (i == this.focused) {
+                this.focusDiv.detach();
+            };
             button.element.remove();
             this.buttons.splice(i, 1);
             this.updateWidth();
@@ -653,6 +761,12 @@ Buttons.prototype.removeButton = function(button) {//Removes button
 };
 
 Buttons.prototype.clear = function() {//Removes all buttons
+    this.focusDiv.detach();
+    this.focusedID = null;
+    if (this.buttons[this.focused] && this.buttons[this.focused].id) {
+        this.focusedID = this.buttons[this.focused].id;
+    };
+    this.focused = -1;
     this.buttons = [];
     this.element.find('.button_outer').remove();
     this.updateWidth();

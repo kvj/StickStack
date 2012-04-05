@@ -72,36 +72,8 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
         width: 3,
         row: 1,
         handler: _.bind(function() {//
-            var items = [];
-            if (this.selected.selectedTag) {
-                items.push({
-                    caption: 'Edit tag',
-                    handler: _.bind(function() {
-                        this.startTextEdit(this.selected.id, this.selected.div, 'tag', this.selected.selectedTag.id);
-                        return true;
-                    }, this),
-                });
-                items.push({
-                    caption: 'Select tag',
-                    handler: _.bind(function() {
-                        this.proxy('openTag', null, [this.selected.selectedTag.id]);
-                        return true;
-                    }, this),
-                });
-                this.launchTagMethod(this.selected, 'menu', this.selected.selectedTag.id, items);       
-            };
-            items.push({
-                caption: 'Open note',
-                handler: _.bind(function() {
-                    this.openNote(this.selected);
-                    return true;
-                }, this),
-            });
-            new PopupMenu({
-                element: menuPlace || this.root,
-                items: items,
-            });
-            this.updated();
+            this.showNoteMenu();
+            return true;
         }, this)
     });
     this.area.bind('keydown', _.bind(function(e) {
@@ -136,6 +108,168 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
         this['prepare_'+this.data.display].call(this);
     };
     this.reload();
+};
+
+Sheet.prototype.showNoteMenu = function() {
+    var items = [];
+    if (this.selected && this.selected.selectedTag) {
+        items.push({
+            caption: 'Edit tag',
+            handler: _.bind(function() {
+                this.startTextEdit(this.selected.id, this.selected.div, 'tag', this.selected.selectedTag.id);
+                return true;
+            }, this),
+        });
+        items.push({
+            caption: 'Select tag',
+            handler: _.bind(function() {
+                this.proxy('openTag', null, [this.selected.selectedTag.id]);
+                return true;
+            }, this),
+        });
+        this.launchTagMethod(this.selected, 'menu', this.selected.selectedTag.id, items);       
+    };
+    items.push({
+        caption: 'Open note',
+        handler: _.bind(function() {
+            this.openNote(this.selected);
+            return true;
+        }, this),
+    });
+    new PopupMenu({
+        element: this.menuPlace || this.root,
+        items: items,
+    });
+    this.updated();
+};
+
+Sheet.prototype.keypress = function(e) {
+    if (this.editing) {
+        return true;
+    };
+    switch (e.keyCode) {
+        case 36:
+            this.moveSelection(-2);
+            return false;
+        case 35:
+            this.moveSelection(2);
+            return false;
+        case 38:
+            this.moveSelection(-1);
+            return false;
+        case 40:
+            this.moveSelection(1);
+            return false;
+        case 37:
+            this.moveTagSelection(-1);
+            return false;
+        case 39:
+            this.moveTagSelection(1);
+            return false;
+        case 45:
+            this.newNote();
+            return false;
+        case 32:
+            if (this.selected) {
+                if (this.selected.selectedTag) {
+                    this.startTextEdit(this.selected.id, this.selected.div, 'tag', this.selected.selectedTag.id);
+                } else {
+                    this.editNote(this.selected, this.selected.div);                    
+                }
+            };
+            return false;
+        case 82: //r
+            if (!e.ctrlKey) {
+                this.reload(this.selected? this.selected.id: null);
+                return false;
+            };
+            break;
+        case 84: //t
+            if (!e.ctrlKey && this.selected) {
+                this.startTextEdit(this.selected.id, this.selected.div, 'tag');
+                return false;
+            };
+            break;
+        case 77: //m
+            if (!e.ctrlKey && this.selected) {
+                this.showNoteMenu();
+                return false;
+            };
+            break;
+        case 13:
+            if (this.selected) {
+                if (this.selected.selectedTag) {
+                    this.proxy('openTag', null, [this.selected.selectedTag.id]);
+                } else {
+                    this.openNote(this.selected, e.ctrlKey? false: true);
+                }
+            };
+            return false;
+    }
+    log('keypress', e.keyCode);
+};
+
+Sheet.prototype.moveTagSelection = function(dir) {
+    if (!this.selected || this.selected.tags.length == 0) {
+        return false;
+    };
+    for (var i = 0; i < this.selected.tag_objects.length; i++) {
+        var t = this.selected.tag_objects[i];
+        if (t == this.selected.selectedTag) {
+            if (dir == 1 && i<this.selected.tags.length-1) {
+                this.selectTag(this.selected.tag_objects[i+1]);
+                return true;
+            };
+            if (dir == -1 && i>0) {
+                this.selectTag(this.selected.tag_objects[i-1]);
+                return true;
+            };
+        };
+    };
+    if (dir == -1) {
+        this.selectTag(this.selected.tag_objects[this.selected.tag_objects.length-1]);
+    };
+    if (dir == 1) {
+        this.selectTag(this.selected.tag_objects[0]);        
+    };
+};
+
+Sheet.prototype.moveSelection = function(dir) {
+    var notes = this.root.find('.note');
+    if (!this.selected) {
+        if (notes.size()>0) {
+            this.selectNote(this.notes[notes.eq(0).attr('id')]);
+            return true;
+        } else {
+            return false;
+        }
+    };
+    if (notes.size()>0) {
+        if (dir == 2) {
+            // Last
+            this.selectNote(this.notes[notes.eq(notes.size()-1).attr('id')]);
+            return false;
+        };
+        if (dir == -2) {
+            // First
+            this.selectNote(this.notes[notes.eq(0).attr('id')]);
+            return false;
+        };
+    };
+    notes.each(_.bind(function (index, item) {
+        if ($(item).attr('id') == this.selected.divID) {
+            // Found
+            if (dir == -1 && index>0) {
+                // Move up
+                this.selectNote(this.notes[notes.eq(index-1).attr('id')]);
+            };
+            if (dir == 1 && index<notes.size()-1) {
+                // Move down
+                this.selectNote(this.notes[notes.eq(index+1).attr('id')]);
+            };
+            return false;
+        };
+    }, this))
 };
 
 Sheet.prototype.launchTagMethod = function(note, method, tag) {
@@ -560,7 +694,7 @@ Sheet.prototype.editAreaDone = function(val) {//Creates new note
             if (id) {
                 this.reload(id);
             };
-        }, this), [val, this.autotags+(this.newTags? ' '+this.newTags: '')]);
+        }, this), [val, (this.ignoreAutoTags? '': this.autotags)+(this.newTags? ' '+this.newTags: '')]);
     };
 };
 
@@ -579,6 +713,7 @@ var applyColor = function (div, color, gradient) {
 
 Sheet.prototype.selectNote = function(note) {
     if (this.selected != note) {
+        this.root.find('.note_selected').removeClass('note_selected');
         if (this.selected) {
             this.launchTagMethod(this.selected, 'unselect');
         };
@@ -587,6 +722,7 @@ Sheet.prototype.selectNote = function(note) {
     this.selected = note;
     note.div.addClass('note_selected');
     note.div.after(this.menu.element.detach().show());
+    note.div.focus();
     note.selectedTag = null;
     this.root.find('.note_tag').removeClass('note_tag_selected');
     this.root.find('.note_line_show').removeClass('note_line_show');
@@ -605,7 +741,6 @@ Sheet.prototype.selectNote = function(note) {
 
 Sheet.prototype.unselectNote = function() {
     this.root.find('.note_line_show').removeClass('note_line_show');
-    this.root.find('.note_selected').removeClass('note_selected');
     if (this.selected) {
         this.selected.div.find('.note_tag').removeClass('note_tag_selected');
         this.selected.selectedTag = null;
@@ -615,12 +750,21 @@ Sheet.prototype.unselectNote = function() {
     this.updated();
 };
 
+Sheet.prototype.selectTag = function(t) {
+    log('Click tag:', t);
+    this.selected.selectedTag = t;
+    this.selected.div.find('.note_tag').removeClass('note_tag_selected');
+    t.div.addClass('note_tag_selected');
+    this.updated();    
+};
+
 Sheet.prototype.showTag = function(note, t, parent, remove) {//
     var tag = $('<div/>').addClass('note_tag draggable').attr('draggable', 'true').appendTo(parent);
     if (t.tag_display) {
         tag.addClass('note_tag_display_'+t.tag_display);
     };
     applyColor(tag, t.color, true);
+    t.div = tag;
     tag.text(t.caption);
     this.launchTagMethod(note, 'show', t.id, tag);
     tag.bind('dblclick', {tag: t}, _.bind(function(e) {
@@ -667,11 +811,7 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
         //         }]
         //     });
         // };
-        log('Click tag:', t);
-        note.selectedTag = t;
-        note.div.find('.note_tag').removeClass('note_tag_selected');
-        e.data.div.addClass('note_tag_selected');
-        this.updated();
+        this.selectTag(t);
         if (e.ctrlKey) {
             this.proxy('openTag', null, [e.data.tag.id]);
         };
@@ -867,7 +1007,7 @@ Sheet.prototype.openNote = function(note, inline) {
                 // log('Notes loaded:', list, err);
                 if (list) {//Display list
                     for (var i = 0; i < list.length; i++) {//
-                        log('Show note', list[i]);
+                        // log('Show note', list[i]);
                         this.showNote(list[i], div, false);
                     };
                     this.updated();
@@ -885,6 +1025,9 @@ Sheet.prototype.openNote = function(note, inline) {
 
 Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     var div = $('<div/>').addClass('note draggable').insertBefore(parent.children('.clear'));
+    note.divID = 'note'+(this.noteIndex++);
+    div.attr('tabindex', 0).attr('id', note.divID);
+    this.notes[note.divID] = note;
     
     var now = new Date();
     var dt = new Date(note.created || now.getTime());
@@ -1002,8 +1145,10 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
             };        
         };
     };
+    note.tag_objects = [];
     for (var j = 0; j < note.tags_captions.length; j++) {//Display tags
         var t = _.clone(note.tags_captions[j]);
+        note.tag_objects.push(t);
         this.showTag(note, t, tags, true);
 
     };
@@ -1068,23 +1213,91 @@ Sheet.prototype.render_hour = function(hour, div) {
 };
 
 Sheet.prototype._prepare_days = function(dstart, dend) {
-    this.days = [];
+    this.days = {};
     this.daystart = dstart;
     this.noDays = $(document.createElement('div')).addClass('no_days').appendTo(this.root);
-
+    $(document.createElement('div')).addClass('clear').appendTo(this.noDays);
+    var lastDate = dend.format('yyyymmdd');
+    var dt = dstart;
+    var now = new Date();
+    do {
+        var done = lastDate == dt.format('yyyymmdd');
+        var tag = 'd:'+dt.format('yyyymmdd');
+        var div = $(document.createElement('div')).addClass('days_day').appendTo(this.root);
+        $(document.createElement('div')).addClass('days_caption').appendTo(div).text(dt.format('m/d/yy'));
+        $(document.createElement('div')).addClass('clear').appendTo(div);
+        this.days[tag] = {
+            div: div,
+            dt: dt.format('yyyymmdd')
+        };
+        div.bind('click', _.bind(function(e) {//
+            if (this.editing) {//
+                return true;
+            };
+            this.unselectNote();
+        }, this));
+        div.bind('dblclick', {tag: tag}, _.bind(function(e) {
+            this.newNote(e.data.tag, true);
+            e.preventDefault();
+            return false;
+        }, this));
+        this.enableNoteDrop(div, _.bind(function(n) {
+            if (n.id) {//Note
+                this.instance.proxy('moveNote', _.bind(function(id, err) {//
+                    if (id) {
+                        this.reload();
+                    };
+                }, this.instance), [n.id, '-d:* '+this.tag]);
+            } else {
+                this.instance.proxy('putNote', _.bind(function(id, err) {//
+                    if (id) {
+                        this.reload();
+                    };
+                }, this.instance), [n, this.tag]);
+            };
+        }, {instance: this, tag: tag}));
+        dt.setDate(dt.getDate()+1);
+    } while (!done);
 };
 
 Sheet.prototype.prepare_week = function() {
     //Create divs
     var dinfo = this.proxy('tagInfo', null, [this.data.tags]);
-    log('dinfo', dinfo, this.data.tags);
     if (dinfo) {
         this._prepare_days(dinfo.dstart, dinfo.dend);
     };
 };
 
-// Sheet.prototype.reload_week = function(list, beforeID) {//
-// };
+Sheet.prototype.prepare_month = function() {
+    //Create divs
+    var dinfo = this.proxy('tagInfo', null, [this.data.tags]);
+    if (dinfo) {
+        this._prepare_days(dinfo.dstart, dinfo.dend);
+    };
+};
+
+Sheet.prototype._reload_days = function(list, beforeID) {
+    this.root.find('.note').remove();
+    for (var i = 0; i < list.length; i++) {//
+        var dtTag = null;
+        for (var j = 0; j < list[i].tags.length; j++) {
+            var tag = list[i].tags[j];
+            if (_.startsWith(tag, 'd:')) {
+                dtTag = tag;
+            };
+        };
+        var div = this.showNote(list[i], this.days[dtTag]? this.days[dtTag].div: this.noDays, list[i].id == beforeID);
+    };
+    this.updated();
+};
+
+Sheet.prototype.reload_week = function(list, beforeID) {//
+    this._reload_days(list, beforeID);
+};
+
+Sheet.prototype.reload_month = function(list, beforeID) {//
+    this._reload_days(list, beforeID);
+};
 
 Sheet.prototype.reload_day = function(list, beforeID) {//
     this.startHour = 0;
@@ -1232,6 +1445,8 @@ Sheet.prototype.reload = function(beforeID) {//Asks for items
     this.selected = null;
     var tags = this.data.tags || '';
     var sort = this.data.sort || '';
+    this.noteIndex = 0;
+    this.notes = {};
     if (this.data.id) {
         tags = 's:'+this.data.id+'|'+tags;
         if (!sort) {
@@ -1259,9 +1474,10 @@ Sheet.prototype.startTextEdit = function(id, note, field, value) {//Shows editor
     this.updated();
 };
 
-Sheet.prototype.newNote = function(tags) {//Starts new note
+Sheet.prototype.newNote = function(tags, ignoreAutoTags) {//Starts new note
     this.editing = true;
     this.newTags = tags;
+    this.ignoreAutoTags = ignoreAutoTags;
     this.root.prepend(this.areaPanel.detach());
     this.areaPanel.show();
     this.area.val('').focus();

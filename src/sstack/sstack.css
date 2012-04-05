@@ -118,6 +118,7 @@
 
 .calendar_place {
     position: relative;
+    margin-top: 0.2em;
 }
 
 .calendar_grid {
@@ -212,11 +213,17 @@
 .time_place {
 }
 
-.day_hour {
+.day_hour, .days_day {
     position: relative;
     min-height: 0.8em;
     border-bottom: 1px dotted #888888;
     clear: both;
+}
+
+.days_caption {
+    font-size: 0.7em;
+    color: #222222;
+    text-align: center;
 }
 
 .day_hour_caption {

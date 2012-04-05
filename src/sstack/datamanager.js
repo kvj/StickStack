@@ -537,16 +537,21 @@ var DataManager = function(database) {//Do DB operations
     DateTag.prototype.info = function(text) {//Get tag info
         var dt = this._toDate(text);
         if (dt.type) {
-            var dtstart = dt.dt;
+            var dtstart = new Date(dt.dt.getTime());
             var dtend = new Date(dtstart.getTime());
             if (dt.type == 'w') {
                 dtend.setDate(dtstart.getDate()+6);
             };
             if (dt.type == 'm') {
                 dtend.setMonth(dtstart.getMonth()+1);
+                dtstart.setDate(1);
                 dtend.setDate(0);
             };
             if (dt.type == 'y') {
+                dtstart.setMonth(0);
+                dtstart.setDate(1);
+                dtend.setDate(1);
+                dtend.setMonth(0);
                 dtend.setFullYear(dtstart.getFullYear()+1);
                 dtend.setDate(0);
             };
