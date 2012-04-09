@@ -171,6 +171,7 @@ Sheet.prototype.keypress = function(e) {
         case 39:
             this.moveTagSelection(1);
             return false;
+        case 78:
         case 45:
             this.newNote();
             return false;
@@ -1063,6 +1064,9 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
             return false;
         };
         // log('Note', note);
+        if (this.selected == note) {
+            this.openNote(note, true);
+        };
         this.areaPanel.hide();
         this.textPanel.hide();
         this.editing = false;

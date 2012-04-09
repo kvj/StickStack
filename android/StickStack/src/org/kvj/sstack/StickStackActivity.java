@@ -2,6 +2,7 @@ package org.kvj.sstack;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
 import android.webkit.WebView;
 
 import com.phonegap.DroidGap;
@@ -25,4 +26,7 @@ public class StickStackActivity extends DroidGap {
 		super.loadUrl("file:///android_asset/client/sstack.html");
 	}
 
+	View getRoot() {
+		return this.appView;
+	}
 }

@@ -571,6 +571,7 @@ var __panelManager = null;
                     return true;
                 };
             };
+            return false;
         };
         if (e.shiftKey) {
             // log('Key down', e.keyCode);

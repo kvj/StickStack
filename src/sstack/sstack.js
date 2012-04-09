@@ -177,6 +177,10 @@ var TopManager = function() {//Manages top panel
             if (CURRENT_PLATFORM_MOBILE) {
                 this.manager.quebec4 = new Quebec4Plugin();
                 this.android = new MiscPlugin();
+                this.androidKeyboard = new KeyboardPlugin(_.bind(function (e) {
+                    // log('KB', e.ctrlKey, e.keyCode);
+                    manager.keyListener.emit('keydown', e);
+                }, this));
             };
             new SheetsManager(this.panel, this.manager);
             setTimeout(_.bind(function () {
@@ -993,6 +997,17 @@ var MiscPlugin = function () {
     PhoneGap.addConstructor(function() {
         PhoneGap.addPlugin("Misc", this);
     });
+};
+
+var KeyboardPlugin = function (handler) {
+    PhoneGap.addConstructor(function() {
+        PhoneGap.addPlugin("Keyboard", this);
+    });
+    PhoneGap.exec(function (e) {
+        handler(e);
+    }, function (err) {
+        log('Error', err);
+    }, 'Keyboard', 'subscribe', []);
 };
 
 MiscPlugin.prototype.setOrientation = function(landscape) {

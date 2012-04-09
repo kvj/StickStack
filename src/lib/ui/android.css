@@ -1,7 +1,13 @@
-@media screen and (-webkit-device-pixel-ratio: 1.5) {
+@media screen and (-webkit-device-pixel-ratio: 1) {
 	html {
-	    font-size: 1.6em;
+	    font-size: 1.1em;
 	}
+}
+
+@media screen and (-webkit-device-pixel-ratio: 1.5) {
+    html {
+        font-size: 1.6em;
+    }
 }
 
 @media screen and (-webkit-device-pixel-ratio: 2) {
@@ -29,6 +35,7 @@ input, textarea {
 
 #main {
     display: table;
+    height: 100%;
 }
 
 .panel_manager {
@@ -40,5 +47,6 @@ input, textarea {
     box-sizing: border-box;
     float: left;
     display: table-cell;
+    height: 100%;
 }
 
