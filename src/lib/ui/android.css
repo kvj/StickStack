@@ -26,3 +26,19 @@ input, textarea {
 .popup_menu {
     max-width: 500px;
 }
+
+#main {
+    display: table;
+}
+
+.panel_manager {
+    display: table-row;
+    height: 100%;
+}
+
+.panel_column {
+    box-sizing: border-box;
+    float: left;
+    display: table-cell;
+}
+

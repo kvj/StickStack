@@ -43,28 +43,7 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
         caption: 'Remove',
         classNameInner: 'button_remove',
         handler: _.bind(function() {//
-            if (this.selected.selectedTag) {
-                _showQuestion('Remove tag?', _.bind(function (index) {
-                    if (0 == index) {
-                        this.proxy('removeTag', _.bind(function(id, err) {//
-                            if (id) {
-                                this.reload();
-                            };
-                        }, this), [this.selected.id, this.selected.selectedTag.id]);
-                    };
-                }, this))
-            } else {
-                _showQuestion('Remove note?', _.bind(function (index) {
-                    if (0 == index) {
-                        this.proxy('removeNote', _.bind(function(id, err) {//Removed
-                            if (id) {
-                                this.reload();
-                            };
-                        }, this), [this.selected.id]);
-                    };
-                }, this));                
-            }
-            this.updated();
+            this.removeNote(this.selected);
         }, this)
     });
     this.menu.addButton({
@@ -103,11 +82,37 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
     }, this))
     this.editing = false;
     this.selected = null;
+    this.expandedNotes = {};
     $(document.createElement('div')).addClass('clear').appendTo(this.root);
     if (this.data.display && this['prepare_'+this.data.display]) {
         this['prepare_'+this.data.display].call(this);
     };
     this.reload();
+};
+
+Sheet.prototype.removeNote = function(note) {
+    if (note.selectedTag) {
+        _showQuestion('Remove tag?', _.bind(function (index) {
+            if (0 == index) {
+                this.proxy('removeTag', _.bind(function(id, err) {//
+                    if (id) {
+                        this.reload();
+                    };
+                }, this), [note.id, note.selectedTag.id]);
+            };
+        }, this))
+    } else {
+        _showQuestion('Remove note?', _.bind(function (index) {
+            if (0 == index) {
+                this.proxy('removeNote', _.bind(function(id, err) {//Removed
+                    if (id) {
+                        this.reload();
+                    };
+                }, this), [note.id]);
+            };
+        }, this));                
+    }
+    this.updated();    
 };
 
 Sheet.prototype.showNoteMenu = function() {
@@ -169,7 +174,8 @@ Sheet.prototype.keypress = function(e) {
         case 45:
             this.newNote();
             return false;
-        case 32:
+        case 32: // space
+        case 113: // F2
             if (this.selected) {
                 if (this.selected.selectedTag) {
                     this.startTextEdit(this.selected.id, this.selected.div, 'tag', this.selected.selectedTag.id);
@@ -181,6 +187,12 @@ Sheet.prototype.keypress = function(e) {
         case 82: //r
             if (!e.ctrlKey) {
                 this.reload(this.selected? this.selected.id: null);
+                return false;
+            };
+            break;
+        case 68: // d
+            if (this.selected) {
+                this.removeNote(this.selected);
                 return false;
             };
             break;
@@ -743,6 +755,7 @@ Sheet.prototype.unselectNote = function() {
     this.root.find('.note_line_show').removeClass('note_line_show');
     if (this.selected) {
         this.selected.div.find('.note_tag').removeClass('note_tag_selected');
+        this.selected.div.removeClass('note_selected');
         this.selected.selectedTag = null;
     };
     this.selected = null;
@@ -1000,6 +1013,7 @@ Sheet.prototype.openNote = function(note, inline) {
     };
     if (inline) {
         if (!note.inline_notes) {
+            this.expandedNotes[note.id] = true;
             var div = $(document.createElement('div')).addClass('note_inline_notes').appendTo(note.div);
             $(document.createElement('div')).addClass('clear').appendTo(div);
             note.inline_notes = div;
@@ -1014,6 +1028,7 @@ Sheet.prototype.openNote = function(note, inline) {
                 };
             }, this), ['n:!'+note.id, sort || 'd* t*']);
         } else {
+            delete this.expandedNotes[note.id];
             note.inline_notes.remove();
             note.inline_notes = null;
         };
@@ -1157,6 +1172,9 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
     };
     $('<div style="clear: both;"/>').appendTo(tags);
     $('<div style="clear: both;"/>').appendTo(div);
+    if (this.expandedNotes[note.id]) {
+        this.openNote(note, true);
+    };
     return div;
 };
 

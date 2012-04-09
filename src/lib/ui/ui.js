@@ -55,10 +55,24 @@ var _showQuestion = function(message, handler, buttons, element) {//Shows questi
         root: div,
         maxElements: buttons.length
     });
+    var _keyHandler = function (e) {
+        switch (e.keyCode) {
+            case 13:
+                btns.click(buttons[0]);
+                return false;
+            case 27: // esc
+            case -10: // back button
+                btns.click(buttons[buttons.length-1]);
+                return false;
+        }
+        return true;
+    };
+    _getManager().keyListener.on('keydown', _keyHandler, true);
     for (var i = 0; i < buttons.length; i++) {//Add index and handler
         buttons[i].index = i;
         buttons[i].handler = _.bind(function(e, btn) {//Click on button
             this.div.hide();
+            _getManager().keyListener.off('keydown', _keyHandler);
             if (this.handler) {//Have handler
                 this.handler(btn.index, btn);
             };
@@ -145,26 +159,11 @@ var _initUI = function(storage) {//Creates root UI elements
         $('#error_dialog_background').hide();
         return false;
     });
-    var warningShown = false;
     if (CURRENT_PLATFORM_MOBILE) {//Add back handler
         document.addEventListener('backbutton', function() {//Back button
-            if (__visiblePopupMenu) {//Have visible menu
-                if (__visiblePopupMenu.hide()) {//Was hidden menu
-                    return false;
-                };
-            };
-            var m = _getManager();
-            if (m && m.goBack()) {//Have go back
-                warningShown = false;
-            } else {//Exit app
-                if (!warningShown) {//Show warning
-                    warningShown = true;
-                    _showInfo('Press again to exit');
-                } else {//Exit
-                    navigator.app.exitApp();
-                    return true;
-                };
-            };
+            var e = {};
+            e.keyCode = -10;// Back button
+            return _getManager().keyListener.emit('keydown', e);
         }, true);
     };
     $('<div id="info_dialog"/>').appendTo(document.body).hide();
@@ -224,7 +223,7 @@ var _initUI = function(storage) {//Creates root UI elements
                 _appEvents.emit('invoke', {args: args});
             };
         });
-        log('OS:', air.Capabilities.os);
+        // log('OS:', air.Capabilities.os);
         $(document.body).bind('keydown', _.bind(function(e) {//Fix handler
             //log('UI keydown');
             if (_fixKeyEvent(this, 'fix', e)) {//Ignore
@@ -325,8 +324,10 @@ widgets.getConfig = function(id) {
 };
 
 var _getManager = function() {//Returns manager
-    return window.manager? window.manager: null;
+    return __panelManager;
 };
+
+var __panelManager = null;
 
 // if (CURRENT_PLATFORM_MOBILE) {
 
@@ -391,9 +392,11 @@ var _getManager = function() {//Returns manager
 
 // } else {//Desktop version
     PanelManager = function(config) {
+        __panelManager = this;
         this.config = config || {};
         this.title = this.config.title || 'No title';
-        this.element = $('<div/>').addClass('panel_manager').appendTo(this.config.root || document.body);
+        this.element = $('<div/>').addClass('panel_manager').attr('id', 'panel_manager').appendTo(this.config.root || document.body);
+        this.clear = $(document.createElement('div')).addClass('clear').appendTo(this.element);
         this.panels = [];
         this.buttonDelay = this.config.buttonDelay || 300;
         this.columns = [];
@@ -416,6 +419,8 @@ var _getManager = function() {//Returns manager
             ////return e.data.instance.keyHandler(e);
         //});
         $(document.body).bind('keydown', _.bind(this.keyHandler, this));
+        this.keyListener = new EventEmitter(this);
+        this.keyListener.on('keydown', _.bind(this.onKeyDown, this))
         this.resize();
     };
 
@@ -451,21 +456,20 @@ var _getManager = function() {//Returns manager
             this.element.children('.panel_column').remove();//Remove columns
             this.columns = [];
             for (var i = 0; i < newcolcount; i++) {//Create columns
-                var col = $('<div/>').addClass('panel_column').appendTo(this.element);
+                var col = $('<div/>').addClass('panel_column').insertBefore(this.clear);
                 this.columns.push(col);
-                col.css('position', 'absolute').css('top', this.colGap).css('bottom', this.colGap);
             };
             this.putPanels();
         };
-        var left = this.colGap;
+        var left = 0;
         var colWidth = Math.floor($(window).width() / newcolcount);
         for (var i = 0; i < this.columns.length; i++) {//Resize columns
             var w = colWidth;
             if (i == newcolcount-1) {//Last column - fix width
-                w = $(window).width() - left - this.colGap;
+                w = $(window).width() - left;
             };
-            this.columns[i].css('left', left).width(w);
-            left += w+this.colGap;
+            this.columns[i].width(w).height($(window).height()-2);
+            left += w;
         };
         this.focus(this.focused);
     };
@@ -553,9 +557,23 @@ var _getManager = function() {//Returns manager
         return this.panels[skipPanels+this.focused];        
     };
 
-    PanelManager.prototype.keyHandler = function(e) {
-        if (e.ctrlKey) {
-            log('Key down', e.keyCode);
+    PanelManager.prototype.onKeyDown = function(e) {
+        if (e.keyCode == -10) {
+            //Back button
+            if (this.goBack(this.getFocused())) {//Have go back
+                this.warningShown = false;
+            } else {//Exit app
+                if (!this.warningShown) {//Show warning
+                    this.warningShown = true;
+                    _showInfo('Press again to exit');
+                } else {//Exit
+                    navigator.app.exitApp();
+                    return true;
+                };
+            };
+        };
+        if (e.shiftKey) {
+            // log('Key down', e.keyCode);
             // 39 ->
             // 37 <-
             // 38 ^
@@ -584,6 +602,10 @@ var _getManager = function() {//Returns manager
         //     return handler.call(obj, e);
         // }
         return true;
+    };
+
+    PanelManager.prototype.keyHandler = function(e) {
+        return this.keyListener.emit('keydown', e);
     };
 
 //};
@@ -905,6 +927,7 @@ var PopupMenu = function(config) {//Shows popup menu
         };
         mitem.bind('click', {item: this.items[i], index: i, element: mitem, instance: this}, _.bind(function(e) {//Click on item
             e.stopPropagation();
+            e.preventDefault();
             if (e.data.index == e.data.instance.items.length-1) {//Last item - hide menu
                 e.data.instance.hide();
                 return false;
@@ -932,7 +955,7 @@ var PopupMenu = function(config) {//Shows popup menu
     this.visible = true;
     __visiblePopupMenu = this;
     this.keyHandler = _.bind(this.keyPressed, this);
-    $(document.body).bind('keydown', this.keyHandler);
+    _getManager().keyListener.on('keydown', this.keyHandler, true);
 };
 
 PopupMenu.prototype.keyPressed = function(e) {//
@@ -942,7 +965,7 @@ PopupMenu.prototype.keyPressed = function(e) {//
         this.menu.children('.popup_menu_item').eq(index).click();
         return false;
     };
-    if (e.which == 27) {//Esc
+    if (e.which == 27 || e.which == -10) {//Esc or back
         this.menu.children('.popup_menu_item').last().click();
         return false;
     };
@@ -953,7 +976,7 @@ PopupMenu.prototype.hide = function() {//Hides menu
     if (!this.visible) {
         return false;
     };
-    $(document.body).unbind('keydown', this.keyHandler);
+    _getManager().keyListener.off('keydown', this.keyHandler);
     this.menu.remove();
     this.visible = false;
     if (__visiblePopupMenu == this) {//

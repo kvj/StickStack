@@ -47,7 +47,7 @@ var run = function() {
         layout = new Layout({});
         // layout = new Layout({id: 'main'});
     } else {//Simple layout
-        layout = new Layout({id: 'main'});
+        layout = new Layout({id: 'main', children: [{id: 'panel_manager', stretch: true}]});
     };
     $('<div id="sync_indicator"/>').appendTo($('#main')).hide();
     $('<div id="channel_indicator"/>').appendTo($('#main'));
@@ -470,7 +470,7 @@ var SheetsManager = function(panel, datamanager) {
     }, this);
     this.panel.keypress = _.bind(function (e) {
         log('key', e.keyCode);
-        if (e.keyCode == 82) { // Reload - r
+        if (e.keyCode == 82 && !e.ctrlKey) { // Reload - r
             this.group = null;
             this.reload();
             return false;            

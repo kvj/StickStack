@@ -91,7 +91,7 @@ var EventEmitter = function(emitter) {//Creates new event emitter
     this.emitter = emitter;
 };
 
-EventEmitter.prototype.on = function(type, handler) {//Adds new handler
+EventEmitter.prototype.on = function(type, handler, top) {//Adds new handler
     if (!type || !handler) {//Invalid params
         return false;
     };
@@ -102,11 +102,15 @@ EventEmitter.prototype.on = function(type, handler) {//Adds new handler
         arr = this.events[type];
     };
     for (var i = 0; i < arr.length; i++) {//Check for duplicate
-        if (arr[i] == handler) {//Alread here
+        if (arr[i] == handler) {//Already here
             return false;
         };
     };
-    arr.push(handler);
+    if (top) {
+        arr.splice(0, 0, handler);
+    } else {
+        arr.push(handler);
+    }
     return true;
 };
 
