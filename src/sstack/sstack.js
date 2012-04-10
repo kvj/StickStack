@@ -909,7 +909,7 @@ var copyFileToStorage = function(files) {//
     return res;
 };
 
-var InlineSheet = function(sheet, panel, datamanager) {//
+var InlineSheet = function(sheet, panel, datamanager, forcenew) {//
     _createEsentials(this, sheet.caption, 3);
     this.topMenu.config.rows = [0, '2.5em'];
     _goBackFactory(this.topMenu, this.panel, '');
@@ -982,14 +982,14 @@ var InlineSheet = function(sheet, panel, datamanager) {//
     this.panel.keypress = _.bind(function (e) {
         return this.sheet.keypress(e);
     }, this);
-    manager.show(this.panel, panel);
+    manager.show(this.panel, forcenew? null: panel);
 };
 
 var newSheet = function(sheet, panel, datamanager, forceinline) {//Creates new sheet
     if (CURRENT_PLATFORM == PLATFORM_AIR && !forceinline) {
         return new WindowSheet(sheet, panel, datamanager);
     } else {
-        return new InlineSheet(sheet, panel, datamanager);
+        return new InlineSheet(sheet, panel, datamanager, forceinline);
     };
 };
 
