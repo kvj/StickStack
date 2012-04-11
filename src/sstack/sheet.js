@@ -1236,7 +1236,7 @@ Sheet.prototype.render_hour = function(hour, div) {
 };
 
 Sheet.prototype.prepare_timeline = function() {
-    this.loadNotes = 10;
+    this.loadNotes = 20;
     this.page = 0;
     this.extra.limit = ''+this.loadNotes+' offset '+this.page;
     this.extra.order = ['!id'];

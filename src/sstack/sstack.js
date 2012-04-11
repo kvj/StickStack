@@ -34,7 +34,7 @@ yepnope({
 })
 
 var run = function() {
-    log('Agent:', navigator.userAgent);
+    // log('Agent:', navigator.userAgent);
     Date.prototype.startWeek = 1;
     if (CURRENT_PLATFORM == PLATFORM_AIR) {
         db = new AirDBProvider('sstack');
@@ -197,7 +197,7 @@ var TopManager = function() {//Manages top panel
     }, this), 100);
 
     manager.keyListener.on('keydown', _.bind(function (e) {
-        if (e.keyCode == 120) {
+        if (e.keyCode == 120 || (e.ctrlKey && e.keyCode == 76)) {
             this.showLogAdd();
             return false;
         };

@@ -80,6 +80,9 @@ public class KeyboardPlugin extends Plugin {
 			case KeyEvent.KEYCODE_MOVE_END:
 				sendEvent(obj, 35);
 				break;
+			case KeyEvent.KEYCODE_L:
+				sendEvent(obj, 76);
+				break;
 			}
 		} catch (JSONException e) {
 			e.printStackTrace();
