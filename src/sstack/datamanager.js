@@ -38,7 +38,7 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
             } else {
                 handler(null, err);
             };
-        }, true);
+        }, true, params[2]);
         return true;
     };
     if (method == 'createNote') {
@@ -1531,7 +1531,7 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
     return result;
 };
 
-DataManager.prototype.selectNotes = function(tags, handler, parse) {//Selects and sorts notes
+DataManager.prototype.selectNotes = function(tags, handler, parse, extra) {//Selects and sorts notes
     var queries = [];
     var arr = (tags || '').split(' ');
     var values = [];
@@ -1568,7 +1568,7 @@ DataManager.prototype.selectNotes = function(tags, handler, parse) {//Selects an
             };
         }
     };
-    // log('Select', tags, values);
+    log('Select', tags, values, extra);
     this.db.storage.select('notes', values, _.bind(function (err, data) {
         if (err) {
             return handler(null, err);
@@ -1584,6 +1584,6 @@ DataManager.prototype.selectNotes = function(tags, handler, parse) {//Selects an
             result.push(note);
         };
         handler(result);
-    }, this));
+    }, this), extra);
 };
 

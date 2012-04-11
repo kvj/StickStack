@@ -220,6 +220,16 @@
     clear: both;
 }
 
+.timeline_header {
+    clear: both;
+    font-size: 0.7em;
+    color: #222222;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    border-top: 1px dotted #888888;
+}
+
 .days_caption {
     font-size: 0.7em;
     color: #222222;

@@ -126,12 +126,12 @@ var TopManager = function() {//Manages top panel
     //     }, this),
     // });
     this.tagsButton = this.topMenu.addButton({
-        caption: 'Tags',
+        caption: 'Add log',
         classNameInner: 'button_inner_32',
         classNameOuter: 'button_outer_32',
         classNameText: 'button_text_32',
         handler: _.bind(function() {//Show sheets
-            new TagsManager(this.panel, this.manager);
+            this.showLogAdd();
         }, this),
     });
     this.disabledButtons = [];
@@ -142,6 +142,13 @@ var TopManager = function() {//Manages top panel
         classNameText: 'button_text_32',
         handler: _.bind(function() {//Show tags
             var items = [];
+            items.push({
+                caption: 'Tags config',
+                handler: _.bind(function() {
+                    new TagsManager(this.panel, this.manager);
+                    return true;
+                }, this),
+            });
             items.push({
                 caption: 'App config',
                 handler: _.bind(function() {
@@ -188,6 +195,34 @@ var TopManager = function() {//Manages top panel
             }, this), 5000);
         }, this));
     }, this), 100);
+
+    manager.keyListener.on('keydown', _.bind(function (e) {
+        if (e.keyCode == 120) {
+            this.showLogAdd();
+            return false;
+        };
+    }, this));
+};
+
+TopManager.prototype.showLogAdd = function() {
+    if (!this.manager) {
+        return false;
+    };
+    var body = $(document.createElement('div'));
+    var input = _addInput('Text:', 'text', body);
+    _showQuestion('Add log message:', _.bind(function (result) {
+        var val = _.trim(input.val());
+        if (0 == result && val) {
+            _proxy(this.manager, 'createNote', _.bind(function (id, err) {
+                if (id) {
+                    _showInfo('Entry added');
+                };
+            }, this), [val, 'log']);
+        };
+    }, this), null, body);
+    setTimeout(function () {
+        input.focus();
+    }, 10);
 };
 
 TopManager.prototype.sync = function(force_clean) {//Run sync
@@ -245,7 +280,7 @@ TopManager.prototype.login = function () {
         if (index == 1) {//Cancel
             return;
         };
-        log('Login:', username.val(), password.val());
+        // log('Login:', username.val(), password.val());
         this.syncManager.oauth.tokenByUsernamePassword(username.val(), password.val(), _.bind(function (err) {
             log('Auth result:', err);
             if(err) {

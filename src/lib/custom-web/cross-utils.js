@@ -150,14 +150,14 @@ EventEmitter.prototype.emit = function(type, evt, obj) {//Calls handlers
     };
     var arr = this.events[type] || [];
     for (var i = 0; i < arr.length; i++) {//Call handler one by one
-        try {
+        // try {
             var result = arr[i].call(evt.target, evt);
             if (result == false) {//Stop executing
                 return false;
             };
-        } catch (e) {//Handler error
-            log('Error in handler:', e);
-        }
+        // } catch (e) {//Handler error
+        //     log('Error in handler:', e);
+        // }
     };
     return true;
 };

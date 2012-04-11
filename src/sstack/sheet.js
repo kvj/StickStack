@@ -84,6 +84,7 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
     this.selected = null;
     this.expandedNotes = {};
     $(document.createElement('div')).addClass('clear').appendTo(this.root);
+    this.extra = {};
     if (this.data.display && this['prepare_'+this.data.display]) {
         this['prepare_'+this.data.display].call(this);
     };
@@ -1234,6 +1235,40 @@ Sheet.prototype.render_hour = function(hour, div) {
     }, this));    
 };
 
+Sheet.prototype.prepare_timeline = function() {
+    this.loadNotes = 10;
+    this.page = 0;
+    this.extra.limit = ''+this.loadNotes+' offset '+this.page;
+    this.extra.order = ['!id'];
+    var pagingDiv = $(document.createElement('div')).insertBefore(this.root.children('.clear'));
+    this.pagingMenu = new Buttons({
+        root: pagingDiv,
+        maxElements: 2,
+        safe: true,
+        buttons: [
+            {
+                caption: 'Load more',
+                handler: _.bind(function () {
+                    this.page += this.loadNotes;
+                    this.extra.limit = ''+this.loadNotes+' offset '+this.page;
+                    this.reload();
+                }, this)
+            }, {
+                caption: 'Load less',
+                handler: _.bind(function () {
+                    this.page -= this.loadNotes;
+                    if (this.page<0) {
+                        this.page = 0;
+                    };
+                    this.extra.limit = ''+this.loadNotes+' offset '+this.page;
+                    this.reload();
+                }, this)
+            }
+        ]
+    })
+};
+
+
 Sheet.prototype._prepare_days = function(dstart, dend) {
     this.days = {};
     this.daystart = dstart;
@@ -1296,6 +1331,58 @@ Sheet.prototype.prepare_month = function() {
     if (dinfo) {
         this._prepare_days(dinfo.dstart, dinfo.dend);
     };
+};
+
+Sheet.prototype.reload_timeline = function(list, beforeID) {
+    this.root.find('.note').remove();
+    this.root.find('.timeline_header').remove();
+    var yearAgo = new Date();
+    yearAgo.setFullYear(yearAgo.getFullYear()-1);
+    var monthAgo = new Date();
+    monthAgo.setMonth(monthAgo.getMonth()-1);
+    var weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate()-7);
+    var dayAgo = new Date();
+    dayAgo.setDate(dayAgo.getDate()-1);
+    var hourAgo = new Date();
+    hourAgo.setHours(hourAgo.getHours()-1);
+    var minuteAgo = new Date();
+    minuteAgo.setMinutes(minuteAgo.getMinutes()-1);
+
+    var headers = [
+        {dt: 0}, 
+        {caption: 'year ago', dt: yearAgo.getTime()},
+        {caption: 'month ago', dt: monthAgo.getTime()},
+        {caption: 'week ago', dt: weekAgo.getTime()},
+        {caption: 'day ago', dt: dayAgo.getTime()},
+        {caption: 'hour ago', dt: hourAgo.getTime()},
+        {caption: 'minute ago', dt: minuteAgo.getTime()}
+    ];
+    var prevCreated = 0;
+    var startHeader = 1;
+    for (var i = 0; i < list.length; i++) {//
+        if (i>0) {
+            var headerFound = 0;
+            for (var j = startHeader; j < headers.length; j++) {
+                if (prevCreated<headers[j].dt && list[i].created>=headers[j].dt) {
+                    headerFound = j;
+                };
+            };
+            if (headerFound>0) {
+                startHeader = headerFound;
+                var div = $(document.createElement('div')).addClass('timeline_header').text(headers[headerFound].caption);
+                div.insertBefore(this.root.children('.clear'));
+                div.bind('click', _.bind(function (e) {
+                    $(e.target).nextAll('.note').addClass('note_selected').find('.note_line_hide').addClass('note_line_show');
+                }, this));
+            };
+        };
+        prevCreated = list[i].created;
+        this.showNote(list[i], this.root, list[i].id == beforeID);
+    };
+    this.pagingMenu.setDisabled(this.pagingMenu.buttons[0], list.length == 0);
+    this.pagingMenu.setDisabled(this.pagingMenu.buttons[1], this.page == 0);
+    this.updated();
 };
 
 Sheet.prototype._reload_days = function(list, beforeID) {
@@ -1482,7 +1569,7 @@ Sheet.prototype.reload = function(beforeID) {//Asks for items
                 this['reload_'+mode].call(this, list, beforeID);
             };
         };
-    }, this), [tags, sort]);
+    }, this), [tags, sort, this.extra]);
 };
 
 Sheet.prototype.startTextEdit = function(id, note, field, value) {//Shows editor

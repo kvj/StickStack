@@ -68,11 +68,13 @@ var _showQuestion = function(message, handler, buttons, element) {//Shows questi
         return true;
     };
     _getManager().keyListener.on('keydown', _keyHandler, true);
+    _getManager().setIgnoreInput(true);
     for (var i = 0; i < buttons.length; i++) {//Add index and handler
         buttons[i].index = i;
         buttons[i].handler = _.bind(function(e, btn) {//Click on button
             this.div.hide();
             _getManager().keyListener.off('keydown', _keyHandler);
+            _getManager().setIgnoreInput(false);
             if (this.handler) {//Have handler
                 this.handler(btn.index, btn);
             };
@@ -420,8 +422,13 @@ var __panelManager = null;
         //});
         $(document.body).bind('keydown', _.bind(this.keyHandler, this));
         this.keyListener = new EventEmitter(this);
-        this.keyListener.on('keydown', _.bind(this.onKeyDown, this))
+        this.keyListener.on('keydown', _.bind(this.onKeyDown, this));
+        this.ignoreInput = false;
         this.resize();
+    };
+
+    PanelManager.prototype.setIgnoreInput = function(ignore) {
+        this.ignoreInput = ignore || false;
     };
 
     PanelManager.prototype.farRight = function() {
@@ -558,6 +565,9 @@ var __panelManager = null;
     };
 
     PanelManager.prototype.onKeyDown = function(e) {
+        if (this.ignoreInput) {
+            return true;
+        };
         if (e.keyCode == -10) {
             //Back button
             if (this.goBack(this.getFocused())) {//Have go back
@@ -573,7 +583,7 @@ var __panelManager = null;
             };
             return false;
         };
-        if (e.shiftKey) {
+        if (e.altKey) {
             // log('Key down', e.keyCode);
             // 39 ->
             // 37 <-
@@ -642,6 +652,11 @@ var Buttons = function(config) {//Cool buttons
         this.element.appendTo(this.config.root);
     };
     this.buttons = [];
+    if (this.config.buttons) {
+        for (var i = 0; i < this.config.buttons.length; i++) {
+            this.addButton(this.config.buttons[i]);
+        };
+    };
     // this._clear = $('<div/>').css('clear', 'both').appendTo(this.element);//Float: left fix
 };
 
@@ -957,6 +972,7 @@ var PopupMenu = function(config) {//Shows popup menu
     __visiblePopupMenu = this;
     this.keyHandler = _.bind(this.keyPressed, this);
     _getManager().keyListener.on('keydown', this.keyHandler, true);
+    _getManager().setIgnoreInput(true);
 };
 
 PopupMenu.prototype.keyPressed = function(e) {//
@@ -978,6 +994,7 @@ PopupMenu.prototype.hide = function() {//Hides menu
         return false;
     };
     _getManager().keyListener.off('keydown', this.keyHandler);
+    _getManager().setIgnoreInput(false);
     this.menu.remove();
     this.visible = false;
     if (__visiblePopupMenu == this) {//

@@ -816,13 +816,20 @@ class StorageProvider
 			result.join " #{op} "
 		where = array_to_query fields, query ? []
 		order = []
+		need_id = yes
 		if options?.order
 			arr = options?.order
 			if not $.isArray(arr)
 				arr = [arr]
 			for ar in arr
-				if fields[ar] then order.push fields[ar]
-		order.push 'id'
+				asc = 'asc'
+				if ar.charAt(0) is '!'
+					ar = ar.substr 1
+					asc = 'desc'
+				if fields[ar] or 'id' == ar 
+					order.push fields[ar]+' '+asc
+					if ar is 'id' then need_id = no
+		if need_id then order.push 'id asc'
 		limit = ''
 		if options?.limit
 			limit = ' limit '+options?.limit

@@ -120,3 +120,8 @@
     -webkit-animation-iteration-count:  infinite;
     -webkit-animation-timing-function: linear;
 }
+
+.button_disabled .button_inner {
+    background-color: inherit;
+    font-style: italic;
+}

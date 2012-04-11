@@ -25,6 +25,11 @@ body {
     font-size: 1.1em;
 }
 
+.timeline_header {
+    font-size: 0.8em;
+    min-height: 0.9em;
+}
+
 @media screen and (-webkit-device-pixel-ratio: 2) {
     .ic_check_yes {
         background-image: url(img/x2/check_yes.png);

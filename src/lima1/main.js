@@ -1071,7 +1071,7 @@
     };
 
     StorageProvider.prototype.select = function(stream, query, handler, options) {
-      var ar, arr, array_to_query, extract_fields, fields, limit, order, values, where, _i, _len,
+      var ar, arr, array_to_query, asc, extract_fields, fields, limit, need_id, order, values, where, _i, _len,
         _this = this;
       if (!this._precheck(stream, handler)) return;
       extract_fields = function(stream) {
@@ -1139,15 +1139,24 @@
       };
       where = array_to_query(fields, query != null ? query : []);
       order = [];
+      need_id = true;
       if (options != null ? options.order : void 0) {
         arr = options != null ? options.order : void 0;
         if (!$.isArray(arr)) arr = [arr];
         for (_i = 0, _len = arr.length; _i < _len; _i++) {
           ar = arr[_i];
-          if (fields[ar]) order.push(fields[ar]);
+          asc = 'asc';
+          if (ar.charAt(0) === '!') {
+            ar = ar.substr(1);
+            asc = 'desc';
+          }
+          if (fields[ar] || 'id' === ar) {
+            order.push(fields[ar] + ' ' + asc);
+            if (ar === 'id') need_id = false;
+          }
         }
       }
-      order.push('id');
+      if (need_id) order.push('id asc');
       limit = '';
       if (options != null ? options.limit : void 0) {
         limit = ' limit ' + (options != null ? options.limit : void 0);
