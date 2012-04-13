@@ -977,12 +977,12 @@ var PopupMenu = function(config) {//Shows popup menu
 
 PopupMenu.prototype.keyPressed = function(e) {//
     //log('Menu key', e.which);
-    if (e.which>=49 && e.which<=57) {//1-9
+    if (e.keyCode>=49 && e.keyCode<=57) {//1-9
         var index = e.which-49;//0-8
         this.menu.children('.popup_menu_item').eq(index).click();
         return false;
     };
-    if (e.which == 27 || e.which == -10) {//Esc or back
+    if (e.keyCode == 27 || e.keyCode == -10) {//Esc or back
         this.menu.children('.popup_menu_item').last().click();
         return false;
     };
