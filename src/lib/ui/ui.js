@@ -463,8 +463,11 @@ var __panelManager = null;
             this.element.children('.panel_column').remove();//Remove columns
             this.columns = [];
             for (var i = 0; i < newcolcount; i++) {//Create columns
-                var col = $('<div/>').addClass('panel_column').insertBefore(this.clear);
+                var col = $(document.createElement('div')).addClass('panel_column').insertBefore(this.clear);
                 this.columns.push(col);
+                col.bind(CURRENT_EVENT_DOWN, {index: i}, _.bind(function (e) {
+                    this.focus(e.data.index);
+                }, this));
             };
             this.putPanels();
         };

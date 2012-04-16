@@ -18,6 +18,10 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
     this.menuPlace = menuPlace;
     this.areaPanel = $('<div/>').addClass('area_wrap').appendTo(this.root).hide();
     this.area = $('<textarea/>').addClass('form_control').appendTo(this.areaPanel);
+    this.area.bind('click', function (e) {
+        e.stopPropagation();
+        return true;
+    });
     this.area.autoGrow(10);
     var menuDiv = $(document.createElement('div')).addClass('sheet_menu').appendTo(this.root).hide();
     this.menu = new Buttons({
