@@ -1020,7 +1020,7 @@ Sheet.prototype.openNote = function(note, inline) {
     if (inline) {
         if (!note.inline_notes) {
             this.expandedNotes[note.id] = true;
-            var div = $(document.createElement('div')).addClass('note_inline_notes').appendTo(note.div);
+            var div = $(document.createElement('div')).addClass('note_inline_notes note_line_hide').appendTo(note.div);
             $(document.createElement('div')).addClass('clear').appendTo(div);
             note.inline_notes = div;
             this.proxy('loadNotes', _.bind(function(list, err) {//
