@@ -307,6 +307,7 @@ ui.remoteScriptLoader = function (url, object, handler) {
             log('DOM loaded', object);
             var doc = event.target.contentDocument;
             var s = doc.createElement('script');
+            s.async = true;
             s.src = url;
             doc.body.appendChild(s);
             var bridge = {

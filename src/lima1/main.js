@@ -384,7 +384,7 @@
         _this.db.addEventListener('close', function(event) {
           return setTimeout(function() {
             return afterClose();
-          }, 10);
+          }, 1000);
         });
         return _this.db.close();
       };

@@ -272,7 +272,7 @@ class AirDBProvider extends DBProvider
 			@db.addEventListener 'close', (event) =>
 				setTimeout () =>
 					afterClose()
-				, 10
+				, 1000
 			@db.close()
 		@db.addEventListener air.SQLEvent.SCHEMA, (event) =>
 			tables = @db.getSchemaResult()?.tables ? []
