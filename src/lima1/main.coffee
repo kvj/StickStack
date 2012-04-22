@@ -888,6 +888,12 @@ class DataManager
 				@on_scheduled_sync null
 			, 1000*@channel_timeout
 
+	get_backup_url: (type, from) ->
+		dt = new Date();
+		fname = "#{@app}-#{type}-"+dt.format('yymmdd-HHMM')+'.zip'
+		url = "/rest/backup?fname=#{fname}&type=#{type}&"
+		if from then url += 'from='+from+'&'
+		return @oauth.getFullURL(@app, url)
 
 	findOne: (stream, id, handler) ->
 		@storage.select stream, ['id', id], (err, data) =>

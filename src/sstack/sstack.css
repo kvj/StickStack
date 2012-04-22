@@ -136,13 +136,13 @@
 .day, .month, .year, .arrow {
     display: table-cell;
     text-align: center;
-    border-left: #000000 solid 3px;
-    border-bottom: #000000 solid 3px;
+    margin-left: 3px;
     font-size: 1em;
     padding-top: 5px;
     padding-bottom: 5px;
     color: #eeeeee;
     background-color: #424254;
+    min-width: 20%;
 }
 
 .day:active {
@@ -272,7 +272,7 @@
 }
 
 #sync_indicator {
-    position: absolute;
+    position: fixed;
     top: 0px;
     height: 4px;
     z-index: 11;
@@ -344,7 +344,7 @@
 #channel_indicator {
     position: absolute;
     top: 0px;
-    right: 30px;
+    right: 4em;
     width: 2em;
     height: 1em;
     border-bottom-left-radius: 0.5em;

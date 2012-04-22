@@ -43,10 +43,12 @@ input, textarea {
     height: 100%;
 }
 
-.panel_column {
-    box-sizing: border-box;
-    float: left;
+.panel_column, .panel_manager_nav {
     display: table-cell;
     height: 100%;
 }
 
+.panel_manager_nav {
+    position: fixed;
+    right: 0;
+}

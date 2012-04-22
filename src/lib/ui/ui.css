@@ -29,6 +29,14 @@ div {
     float: left;
 }
 
+.panel_manager_nav {
+    border: 1px solid #dddddd;
+    padding: 2px;
+    height: 100%;
+    box-sizing: border-box;
+    float: left;    
+    width: 3em;
+}
 .draggable {
     -webkit-user-drag: element;
     -webkit-user-select: none;
@@ -140,6 +148,7 @@ textarea {
     width: 250px;
     padding: 0.5em;
     left: 50%;
+    top: 100px;
     margin-left: -125px;
     background-color: #333333;
     -webkit-border-radius: 0.5em;
@@ -160,6 +169,7 @@ textarea {
     margin-bottom: 3em;
     border: 1px solid #aaaaaa;
     z-index: 10;
+    top: 50px;
     -webkit-box-shadow: 1px 1px 2px #888;
 }
 

@@ -53,6 +53,7 @@ var run = function() {
     $('<div id="channel_indicator"/>').appendTo($('#main'));
     manager = new PanelManager({
         root: $('#main'),
+        navVisible: true,
         minColWidth: CURRENT_PLATFORM_MOBILE? 450: 300
     });
     if (CURRENT_PLATFORM == PLATFORM_WEB) {
@@ -163,11 +164,28 @@ var TopManager = function() {//Manages top panel
                     return true;
                 }, this),
             });
-            if (CURRENT_PLATFORM_MOBILE && this.android) {
+            // if (CURRENT_PLATFORM_MOBILE && this.android) {
+            //     items.push({
+            //         caption: 'Change orientation',
+            //         handler: _.bind(function() {
+            //             this.android.setOrientation(true);
+            //             return true;
+            //         }, this),
+            //     });                
+            // };
+            if (!CURRENT_PLATFORM_MOBILE && CURRENT_PLATFORM == PLATFORM_WEB) {
                 items.push({
-                    caption: 'Change orientation',
+                    caption: 'Backup data',
                     handler: _.bind(function() {
-                        this.android.setOrientation(true);
+                        window.open(this.syncManager.get_backup_url('data'));
+                        return true;
+                    }, this),
+                });                
+                items.push({
+                    caption: 'Backup files',
+                    handler: _.bind(function() {
+                        this.backupFiles();
+                        // window.open(this.syncManager.get_backup_url('data'));
                         return true;
                     }, this),
                 });                
@@ -223,6 +241,31 @@ TopManager.prototype.showLogAdd = function() {
     setTimeout(function () {
         input.focus();
     }, 10);
+};
+
+TopManager.prototype.backupFiles = function() {
+    _ask('Backup files:', 'Enter start date yy/mm/dd:', 'text', _.bind(function (text) {
+        log('Parse date:', text);
+        var reg = /^(\d{1,2})\/(\d{1,2})\/(\d{1,2})$/;
+        var from = 0;
+        if (text) {
+            var m = text.match(reg);
+            if (m) {
+                var dt = new Date();
+                dt.setDate(1);
+                dt.setHours(0);
+                dt.setMinutes(0);
+                dt.setFullYear(2000+parseInt(m[1], 10));
+                dt.setMonth(parseInt(m[2], 10)-1);
+                dt.setDate(parseInt(m[3], 10));
+                from = dt.getTime();
+                window.open(this.syncManager.get_backup_url('file', from));
+                log('dt', dt, from);
+                return;
+            };
+        };
+        _showError('Invalid date');
+    }, this));
 };
 
 TopManager.prototype.sync = function(force_clean) {//Run sync

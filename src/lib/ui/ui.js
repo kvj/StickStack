@@ -4,7 +4,8 @@ var _showInfo = function(message, timeout) {//Shows info dialog
     if (!timeout && timeout != 0) {//Default timeout
         timeout = 2000;
     };
-    var div = $('#info_dialog').text(message || '...').css('top', 130+document.body.scrollTop).stop().clearQueue().show().css('opacity', 0.7);
+    //css('top', 130+document.body.scrollTop).
+    var div = $('#info_dialog').text(message || '...').stop().clearQueue().show().css('opacity', 0.7);
     div.click(function() {
         $(this).hide();
     })
@@ -15,7 +16,8 @@ var _showInfo = function(message, timeout) {//Shows info dialog
 
 var _showError = function(message) {//Shows error
     log('Error:', message);
-    $('#error_dialog').css('top', 80+document.body.scrollTop).html(message || 'No error message provided');
+    //css('top', 80+document.body.scrollTop).
+    $('#error_dialog').html(message || 'No error message provided');
     $('#error_dialog_background').show();
 };
 
@@ -40,6 +42,20 @@ var _addInput = function (title, type, parent) {
         wr.appendTo(parent);
     }
     return control;
+}
+
+var _ask = function (message, label, type, handler) {
+    var body = $(document.createElement('div')).addClass('form_line');
+    var input = _addInput(label, type || 'text', body);
+    _showQuestion(message, _.bind(function (result) {
+        var val = _.trim(input.val());
+        if (0 == result) {
+            handler(val);
+        };
+    }, this), null, body);
+    setTimeout(function () {
+        input.focus();
+    }, 10);    
 }
 
 var _showQuestion = function(message, handler, buttons, element) {//Shows question dialog
@@ -81,7 +97,7 @@ var _showQuestion = function(message, handler, buttons, element) {//Shows questi
         }, {handler: handler, div: div})
         btns.addButton(buttons[i]);
     };
-    div.css('top', 70+document.body.scrollTop).show();
+    div.show();
     return btns;
 };
 
@@ -331,73 +347,28 @@ var _getManager = function() {//Returns manager
 
 var __panelManager = null;
 
-// if (CURRENT_PLATFORM_MOBILE) {
-
-//     PanelManager = function(config) {
-//         this.config = config || {};
-//         this.title = this.config.title || 'No title';
-//         this.element = $('<div/>').addClass('panel_manager').appendTo(this.config.root || document.body);
-//         this.panels = [];
-//         this.buttonDelay = this.config.buttonDelay || 300;
-//     };
-
-//     //PanelManager.prototype.show = function(panel) {
-//         //setTimeout(function(instance, panel) {
-//             //instance._show(panel);
-//         //}, this.buttonDelay, this, panel);
-//     //};
-
-//     PanelManager.prototype.show = function(panel) {
-//         if (this.panels.length>0) {
-//             this.panels[this.panels.length-1].scrollTop = document.body.scrollTop;
-//         }
-//         this.element.find('.panel').hide();
-//         this.panels.push(panel);
-//         panel.element.appendTo(this.element);
-//         panel.element.show();
-//         this.setTitle(panel);
-//         this.panel = panel;
-//         if (panel.onSwitch) {//Switch handler
-//             panel.onSwitch(panel);
-//         };
-//     };
-
-//     PanelManager.prototype.goBack = function() {
-//         if (this.panels.length<2) {//Work only for more than 2 panels in stack
-//             return false;
-//         }
-//         var p = this.panels.pop();
-//         this.element.find('.panel').hide();
-//         p.element.hide();
-//         var panel = this.panels[this.panels.length-1]; 
-//         panel.element.show();
-//         if(panel.scrollTop) {
-//             document.body.scrollTop = panel.scrollTop;
-//             //log('Restore scroll top', panel.scrollTop);
-//         }
-//         this.setTitle(panel);
-//         this.panel = panel;
-//         if (panel.onSwitch) {//Switch handler
-//             panel.onSwitch(panel);
-//         };
-//         return true;
-//     };
-
-//     PanelManager.prototype.setTitle = function(panel) {
-//         var prefix = this.config.titlePrefix || '';
-//         if (panel.title) {
-//             document.title = prefix + panel.title;
-//         } else {
-//             document.title = prefix + this.title;
-//         }
-//     };
-
-// } else {//Desktop version
     PanelManager = function(config) {
         __panelManager = this;
         this.config = config || {};
         this.title = this.config.title || 'No title';
         this.element = $('<div/>').addClass('panel_manager').attr('id', 'panel_manager').appendTo(this.config.root || document.body);
+        this.nav = $(document.createElement('div')).addClass('panel_manager_nav').appendTo(this.element).hide();
+        this.nav.bind(CURRENT_EVENT_DOWN, _.bind(function (e) {
+            if (this.nav_visible) {
+                this.focus(-1);
+            };
+        }, this));
+        this.nav_visible = false;
+        this.nav_buttons = new Buttons({
+            root: this.nav,
+            maxElements: 1,
+            buttons: [{
+                caption: '|',
+                classNameInner: 'button_create'
+            }, {
+                caption: 'X'                
+            }]
+        });
         this.clear = $(document.createElement('div')).addClass('clear').appendTo(this.element);
         this.panels = [];
         this.buttonDelay = this.config.buttonDelay || 300;
@@ -407,23 +378,24 @@ var __panelManager = null;
         this.focusDiv = $(document.createElement('div')).addClass('focus_indicator');
         this.focused = -1;
         $(window).resize(_.bind(this.resize, this));
-        //$(document).keypress({instance: this}, function(e) {
-            ////log('Key', e.which);
-            ////49 50 51 52 - 1-4
-            ////104 - h
-            ////99 - c
-            ////98 - b
-            ////107 - k
-            ////115 - s
-            ////119 - w
-            ////118 - v
-            ////103 - g
-            ////return e.data.instance.keyHandler(e);
-        //});
         $(document.body).bind('keydown', _.bind(this.keyHandler, this));
         this.keyListener = new EventEmitter(this);
         this.keyListener.on('keydown', _.bind(this.onKeyDown, this));
         this.ignoreInput = false;
+        if (this.config.navVisible) {
+            this.toggleNav();
+        } else {
+            this.resize();
+        }
+    };
+
+    PanelManager.prototype.toggleNav = function() {
+        this.nav_visible = !this.nav_visible;
+        if (this.nav_visible) {
+            this.nav.show();
+        } else {
+            this.nav.hide();
+        };
         this.resize();
     };
 
@@ -436,6 +408,13 @@ var __panelManager = null;
     };
 
     PanelManager.prototype.focus = function(col) {
+        this.element.children().removeClass('panel_focused');
+        if (this.nav_visible && col == -1) {
+            this.focused = -1;
+            this.focusDiv.hide();
+            this.nav.addClass('panel_focused');
+            return;
+        };
         if (!col || col<0) {
             col = 0;
         };
@@ -443,10 +422,9 @@ var __panelManager = null;
         if (col>=panels_displayed) {
             col = panels_displayed-1;
         };
-        this.element.children('.panel_column').removeClass('panel_focused');
         this.focused = col;
         if (col>=0) {
-            this.columns[col].children().children('.panel_title').append(this.focusDiv);
+            this.columns[col].children().children('.panel_title').append(this.focusDiv.show());
             this.columns[col].addClass('panel_focused');
         };
     };
@@ -463,7 +441,7 @@ var __panelManager = null;
             this.element.children('.panel_column').remove();//Remove columns
             this.columns = [];
             for (var i = 0; i < newcolcount; i++) {//Create columns
-                var col = $(document.createElement('div')).addClass('panel_column').insertBefore(this.clear);
+                var col = $(document.createElement('div')).addClass('panel_column').insertBefore(this.nav);
                 this.columns.push(col);
                 col.bind(CURRENT_EVENT_DOWN, {index: i}, _.bind(function (e) {
                     this.focus(e.data.index);
@@ -472,13 +450,20 @@ var __panelManager = null;
             this.putPanels();
         };
         var left = 0;
-        var colWidth = Math.floor($(window).width() / newcolcount);
+        var colWidths = $(window).width();
+        if (this.nav_visible) {
+            colWidths -= this.nav.outerWidth();
+        };
+        var colWidth = Math.floor(colWidths / newcolcount);
         for (var i = 0; i < this.columns.length; i++) {//Resize columns
             var w = colWidth;
             if (i == newcolcount-1) {//Last column - fix width
-                w = $(window).width() - left;
+                w = colWidths - left;
             };
-            this.columns[i].width(w).height($(window).height()-2);
+            this.columns[i].width(w);
+            if (!CURRENT_PLATFORM_MOBILE) {
+                this.columns[i].height($(document.body).height()-2);
+            };
             left += w;
         };
         this.focus(this.focused);
@@ -560,6 +545,9 @@ var __panelManager = null;
     };
 
     PanelManager.prototype.getFocused = function() {
+        if (this.focused == -1) {
+            return null;
+        };
         var skipPanels = this.panels.length - this.columns.length;
         if (skipPanels<0) {//Fix
             skipPanels = 0;
@@ -598,10 +586,16 @@ var __panelManager = null;
                 case 37:
                     this.focus(this.focused-1);
                     return false;
+                case 40:
+                    this.focus(-1);
+                    return false;
                 case 38:
                     this.goBack(this.getFocused());
                     return false;
             };
+        };
+        if (this.focused == -1 && this.nav_visible) {
+            return this.nav_buttons.keypress(e);
         };
         var panel = this.getFocused();
         if (panel && panel.keypress) {
@@ -705,7 +699,7 @@ Buttons.prototype.addButton = function(button, before) {//Adds button
     var row = this.getRow(button.row);
     button.element = $('<div/>').addClass('button_outer').insertBefore(before? before.element: row.children().last());
     button.innerElement = $('<button/>').addClass('button_inner').appendTo(button.element);
-    button.innerElement.bind((this.config.safe | button.safe)?  'click': CURRENT_EVENT_CLICK, {buttons: this, button: button, index: this.buttons.length}, function(e) {//Click on button
+    button.innerElement.bind('click', {buttons: this, button: button, index: this.buttons.length}, function(e) {//Click on button
         if (e.data.button.disabled) {//Ignore click
             return false;
         };
@@ -770,7 +764,7 @@ Buttons.prototype.focus = function(item) {
 };
 
 Buttons.prototype.click = function(button) {//Simulate click
-    button.innerElement.trigger((this.config.safe | button.safe)?  'click': CURRENT_EVENT_CLICK);
+    button.innerElement.trigger('click');
 };
 
 Buttons.prototype.setCaption = function(button, text) {//Changes text on button

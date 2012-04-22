@@ -1244,6 +1244,15 @@
       }
     };
 
+    DataManager.prototype.get_backup_url = function(type, from) {
+      var dt, fname, url;
+      dt = new Date();
+      fname = ("" + this.app + "-" + type + "-") + dt.format('yymmdd-HHMM') + '.zip';
+      url = "/rest/backup?fname=" + fname + "&type=" + type + "&";
+      if (from) url += 'from=' + from + '&';
+      return this.oauth.getFullURL(this.app, url);
+    };
+
     DataManager.prototype.findOne = function(stream, id, handler) {
       var _this = this;
       return this.storage.select(stream, ['id', id], function(err, data) {

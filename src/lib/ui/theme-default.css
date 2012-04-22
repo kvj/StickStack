@@ -1,8 +1,8 @@
-.panel_column {
+.panel_column, .panel_manager_nav {
 	border-color: #351330;
 }
 
-.panel_focused.panel_column {
+.panel_focused.panel_column, .panel_focused.panel_manager_nav {
     border-color: #CC2A41 !important;
 }
 
@@ -80,6 +80,10 @@
 
 .form_label {
 	color: #eeeeee;
+}
+
+.form_line {
+    text-align: left;
 }
 
 #question_dialog {

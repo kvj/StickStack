@@ -1340,27 +1340,42 @@ Sheet.prototype.prepare_month = function() {
 Sheet.prototype.reload_timeline = function(list, beforeID) {
     this.root.find('.note').remove();
     this.root.find('.timeline_header').remove();
-    var yearAgo = new Date();
-    yearAgo.setFullYear(yearAgo.getFullYear()-1);
-    var monthAgo = new Date();
-    monthAgo.setMonth(monthAgo.getMonth()-1);
-    var weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate()-7);
-    var dayAgo = new Date();
-    dayAgo.setDate(dayAgo.getDate()-1);
-    var hourAgo = new Date();
-    hourAgo.setHours(hourAgo.getHours()-1);
-    var minuteAgo = new Date();
-    minuteAgo.setMinutes(minuteAgo.getMinutes()-1);
+    var ago = function (method, shift) {
+        var dt = new Date();
+        dt['set'+method].call(dt, dt['get'+method].call(dt)-shift);
+        return dt.getTime();
+    };
+    // var yearAgo = new Date(); yearAgo.setFullYear(yearAgo.getFullYear()-1);
+    // var monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth()-1);
+    // var month3Ago = new Date(); month3Ago.setMonth(monthAgo.getMonth()-3);
+    // var weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+    // var dayAgo = new Date(); dayAgo.setDate(dayAgo.getDate()-1);
+    // var day2Ago = new Date(); day2Ago.setDate(dayAgo.getDate()-2);
+    // var day3Ago = new Date(); day3Ago.setDate(dayAgo.getDate()-3);
+    // var hourAgo = new Date(); hourAgo.setHours(hourAgo.getHours()-1);
+    // var hour3Ago = new Date(); hour3Ago.setHours(hourAgo.getHours()-3);
+    // var hour6Ago = new Date(); hour6Ago.setHours(hourAgo.getHours()-6);
+    // var hour12Ago = new Date(); hour12Ago.setHours(hourAgo.getHours()-12);
+    // var minuteAgo = new Date(); minuteAgo.setMinutes(minuteAgo.getMinutes()-1);
+    // var minute5Ago = new Date(); minute5Ago.setMinutes(minute5Ago.getMinutes()-5);
+    // var minute30Ago = new Date(); minute30Ago.setMinutes(minute30Ago.getMinutes()-30);
 
     var headers = [
         {dt: 0}, 
-        {caption: 'year ago', dt: yearAgo.getTime()},
-        {caption: 'month ago', dt: monthAgo.getTime()},
-        {caption: 'week ago', dt: weekAgo.getTime()},
-        {caption: 'day ago', dt: dayAgo.getTime()},
-        {caption: 'hour ago', dt: hourAgo.getTime()},
-        {caption: 'minute ago', dt: minuteAgo.getTime()}
+        {caption: 'year ago', dt: ago('FullYear', 1)},
+        {caption: '3 months ago', dt: ago('Month', 3)},
+        {caption: 'month ago', dt: ago('Month', 1)},
+        {caption: 'week ago', dt: ago('Date', 7)},
+        {caption: '3 days ago', dt: ago('Date', 3)},
+        {caption: '2 days ago', dt: ago('Date', 2)},
+        {caption: 'day ago', dt: ago('Date', 1)},
+        {caption: '12 hours ago', dt: ago('Hours', 12)},
+        {caption: '6 hours ago', dt: ago('Hours', 6)},
+        {caption: '3 hours ago', dt: ago('Hours', 3)},
+        {caption: 'hour ago', dt: ago('Hours', 1)},
+        {caption: '30 minutes ago', dt: ago('Minutes', 30)},
+        {caption: '5 minutes ago', dt: ago('Minutes', 5)},
+        {caption: 'minute ago', dt: ago('Minutes', 1)}
     ];
     var prevCreated = 0;
     var startHeader = 1;
