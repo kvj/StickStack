@@ -5,6 +5,9 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
     if (method == 'tagInfo') {
         return datamanager.tagInfo(params[0]);
     };
+    if (method == 'createBookmark') {
+        return manager.navProvider.add(null, params[0]);
+    };
     if (method == 'editMap') {
         new MapsEditor(datamanager, params[0], handler);
         return true;
@@ -1184,6 +1187,15 @@ DataManager.prototype.getTags = function(id, handler) {//Selects tags from DB
     }, this));
 };
 
+DataManager.prototype.getSheet = function(id, handler) {//Selects sheet
+    this.db.findOne('sheets', id, _.bind(function (err, data) {
+        if (err) {
+            return handler(err);
+        };
+        handler(null, data);
+    }, this));
+};
+
 DataManager.prototype.noteToSheet = function(text, tags) {
     if (!tags) {
         tags = [];
@@ -1568,7 +1580,7 @@ DataManager.prototype.selectNotes = function(tags, handler, parse, extra) {//Sel
             };
         }
     };
-    log('Select', tags, values, extra);
+    // log('Select', tags, values, extra);
     this.db.storage.select('notes', values, _.bind(function (err, data) {
         if (err) {
             return handler(null, err);

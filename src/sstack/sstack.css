@@ -384,6 +384,14 @@
     background-image: url(img/time_down.png);
 }
 
+.ic_log_add {
+    background-image: url(img/log_add.png);
+}
+
+.ic_sync {
+    background-image: url(img/sync.png);
+}
+
 .note_contact_table {
     width: 100%;
 }

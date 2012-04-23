@@ -34,6 +34,86 @@ yepnope({
 })
 
 var run = function() {
+    var NavProvider = function (db) {
+        this.db = db;
+        this.data = [];
+        try {
+            this.data = JSON.parse(db.get('nav', '[]'));
+        } catch (e) {
+            log('Error parsing nav', e);
+        }
+    };
+    NavProvider.prototype = new PanelManagerNavProvider();
+
+    NavProvider.prototype.list = function() {
+        var result = [];
+        result.push({ // Sync
+            caption: ui.buildIcon('ic_sync')
+        });
+        result.push({ // Add log
+            caption: ui.buildIcon('ic_log_add')
+        });
+        for (var i = 0; i < this.data.length; i++) {
+            var item = this.data[i];
+            result.push({
+                caption: item.caption,
+                draggable: true,
+                item: item.item
+            });
+        };
+        return result;
+    };
+
+    NavProvider.prototype.save = function() {
+        db.set('nav', JSON.stringify(this.data));
+        manager.refreshNav();
+    };
+
+    NavProvider.prototype.add = function(caption, tag) {
+        this.data.push({
+            caption: caption || '??',
+            item: tag
+        });
+        this.save();
+    };
+
+    NavProvider.prototype.edit = function(index) {
+        if (index<2) { //Sync and Log
+            return;
+        };
+        _ask('Edit bookmark:', 'Enter (short) name:', 'text', _.bind(function (val) {
+            this.data[index-2].caption = val || '??';
+            this.save();
+        }, this), this.data[index-2].caption);
+    };
+
+    NavProvider.prototype.remove = function(index) {
+        if (index<2) { //Sync and Log
+            return;
+        };
+        _showQuestion('Remove bookmark ['+this.data[index-2].caption+']?', _.bind(function (btn) {
+            if (0 == btn) {
+                this.data.splice(index-2, 1);
+                this.save();
+            };
+        }, this))
+
+    };
+
+    NavProvider.prototype.move = function(index, toindex) {
+        if (index<2 || toindex<2) { //Sync and Log
+            return;
+        };
+        if(index<toindex) {
+            this.data.splice(toindex-2, 0, this.data[index-2]);
+            this.data.splice(index-2, 1);
+        } else {
+            this.data.splice(toindex-2, 0, this.data[index-2]);
+            this.data.splice(index-1, 1);
+        }
+        this.save();
+    };
+
     // log('Agent:', navigator.userAgent);
     Date.prototype.startWeek = 1;
     if (CURRENT_PLATFORM == PLATFORM_AIR) {
@@ -51,9 +131,11 @@ var run = function() {
     };
     $('<div id="sync_indicator"/>').appendTo($('#main')).hide();
     $('<div id="channel_indicator"/>').appendTo($('#main'));
+    var navProvider = new NavProvider(db);
     manager = new PanelManager({
         root: $('#main'),
         navVisible: true,
+        navProvider: navProvider,
         minColWidth: CURRENT_PLATFORM_MOBILE? 450: 300
     });
     if (CURRENT_PLATFORM == PLATFORM_WEB) {
@@ -91,11 +173,12 @@ var run = function() {
             air.NativeApplication.nativeApplication.exit();
         });
     };
-    new TopManager();
+    new TopManager(navProvider);
 };
 
-var TopManager = function() {//Manages top panel
+var TopManager = function(nav) {//Manages top panel
     _createEsentials(this, 'Welcome:', 2);
+    this.nav = nav;
     this.panel.keypress = _.bind(function (e) {
         return this.topMenu.keypress(e);
     }, this);
@@ -114,7 +197,7 @@ var TopManager = function() {//Manages top panel
         classNameOuter: 'button_outer_32',
         classNameText: 'button_text_32',
         handler: _.bind(function() {//Show sheets
-            new SheetsManager(this.panel, this.manager);
+            this.sheetsManager = new SheetsManager(this.panel, this.manager);
         }, this),
     });
     // this.dateTimeButton = this.topMenu.addButton({
@@ -203,11 +286,10 @@ var TopManager = function() {//Manages top panel
                 this.manager.quebec4 = new Quebec4Plugin();
                 this.android = new MiscPlugin();
                 this.androidKeyboard = new KeyboardPlugin(_.bind(function (e) {
-                    // log('KB', e.ctrlKey, e.keyCode);
                     manager.keyListener.emit('keydown', e);
                 }, this));
             };
-            new SheetsManager(this.panel, this.manager);
+            this.sheetsManager = new SheetsManager(this.panel, this.manager);
             setTimeout(_.bind(function () {
                 this.sync();
             }, this), 5000);
@@ -220,6 +302,29 @@ var TopManager = function() {//Manages top panel
             return false;
         };
     }, this));
+    manager.nav.bind('dragover', _.bind(function(e) {
+        if (dd.hasDDTarget(e, tagDDType)) {
+            e.preventDefault();
+        };
+        if (dd.hasDDTarget(e, noteDDType)) {
+            e.preventDefault();
+        };
+    }, this)).bind('drop',  _.bind(function(e) {//Dropped
+        var drop = dd.getDDTarget(e, tagDDType);
+        if (drop) {//Tag drop - create nav
+            this.nav.add(null, drop);
+            e.stopPropagation();
+            e.preventDefault();
+            return false;
+        };
+        drop = dd.getDDTarget(e, noteDDType);
+        if (drop) {//Tag drop - create nav
+            this.nav.add(null, 'n:'+drop);
+            e.stopPropagation();
+            e.preventDefault();
+            return false;
+        };
+    }, this))
 };
 
 TopManager.prototype.showLogAdd = function() {
@@ -273,11 +378,11 @@ TopManager.prototype.sync = function(force_clean) {//Run sync
         //this.jsonHelper.config.url = config.appConfig.sync_url;
         //this.jsonHelper.config.key = config.appConfig.sync_key;
         $('#sync_indicator').show();
-        this.syncButton.element.find('.icon32').addClass('rotating');
+        $('.ic_sync').addClass('rotating');
         _showInfo('Sync started...', 15000);
         this.syncManager.sync(_.bind(function(err) {//Run sync
             $('#sync_indicator').hide();
-            this.syncButton.element.find('.icon32').removeClass('rotating');
+            $('.ic_sync').removeClass('rotating');
             if (err) {//Error
                 _showInfo('Error sync: '+err);
             } else {//Sync done
@@ -364,9 +469,9 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
     if (CURRENT_PLATFORM_MOBILE) {
         storage.cache = new PhoneGapCacheProvider(oauth, 'sstack', 900);
     };
-    $('#channel_indicator').bind('click', _.bind(function () {
-        this.sync();
-    }, this))
+    // $('#channel_indicator').bind('click', _.bind(function () {
+    //     this.sync();
+    // }, this))
     storage.on_channel_state.on('state', _.bind(function (e) {
         var div = $('#channel_indicator');
         div.removeClass('channel_data channel_ok');
@@ -389,6 +494,19 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
     this.syncManager.open(_.bind(function(err) {//local DB opened
         if (!err) {//
             this.manager = new DataManager(this.syncManager);
+            this.nav.handler = _.bind(function (index) {
+                if (index == 0) {
+                    this.sync();
+                    return;
+                };
+                if (index == 1) {
+                    this.showLogAdd();
+                    return;
+                };
+                var item = this.nav.data[index-2];
+                log('Show tag:', item.item);
+                openTag(item.item, null, this.manager);
+            }, this);
             this.manager.loadTagConfig(_.bind(function() {
                 for (var i = 0; i < this.disabledButtons.length; i++) {
                     this.topMenu.setDisabled(this.disabledButtons[i], false);
@@ -861,15 +979,49 @@ WindowSheet.prototype.getBounds = function(x, y) {
 };
 
 var openTag = function(tag, panel, manager, sort) {
-    if (tag) {
-        var sorting = '-'+tag;
+    var sorting = '-'+tag;
+    var failSafe = function () {
         if (sort) {
             sorting += ' '+sort;
         } else {
             sorting += ' d:* t:*';
         }
         // log('openTag', tag, sort, sorting);
-        newSheet({caption: 'Tag: '+manager.formatTag(tag), tags: tag, autotags: tag, sort: sorting}, panel, manager);
+        newSheet({caption: 'Tag: '+manager.formatTag(tag), tags: tag, autotags: tag, sort: sorting}, panel, manager);        
+    }
+    if (tag) {
+        if (_.startsWith(tag, 's:')) {
+            var sheetID = parseInt(tag.substr(2), 10);
+            if (sheetID) {
+                manager.getSheet(sheetID, function (err, sheet) {
+                    if (err) {
+                        failSafe();
+                    } else {
+                        newSheet(sheet, panel, manager, true);
+                    };
+                })
+                return;
+            };
+        };
+        if (_.startsWith(tag, 'n:')) {
+            var id = parseInt(tag.substr(2), 10);
+            if (id) {
+                manager.getTags(id, function (tags, err) {
+                    if (err) {
+                        failSafe();
+                    } else {
+                        for (var i = 0; i < tags.length; i++) {
+                            if (_.startsWith(tags[i], 'sort:')) {
+                                sort = tags[i].substr('sort:'.length);
+                            };
+                        };
+                        failSafe();
+                    };
+                })
+                return;
+            };
+        };
+        failSafe();
     };
 };
 
@@ -988,7 +1140,13 @@ var copyFileToStorage = function(files) {//
 };
 
 var InlineSheet = function(sheet, panel, datamanager, forcenew) {//
-    _createEsentials(this, sheet.caption, 3);
+    var panelID = sheet.id || sheet.tags;
+    if (manager.focusByID(panelID)) {
+        _showInfo('Already displayed');
+        return;
+    };
+    _createEsentials(this, sheet.caption || sheet.title, 3);
+    this.panel.id = panelID;
     this.topMenu.config.rows = [0, '2.5em'];
     _goBackFactory(this.topMenu, this.panel, '');
     this.manager = datamanager;
@@ -1016,6 +1174,19 @@ var InlineSheet = function(sheet, panel, datamanager, forcenew) {//
                 handler: _.bind(function () {
                     this.sheet.root.find('.note_line_hide').addClass('note_line_show');
                     this.sheet.root.find('.note').addClass('note_selected');
+                    return true;
+                }, this)
+            });
+            items.push({
+                caption: 'Bookmark sheet',
+                handler: _.bind(function () {
+                    var id = sheet.id;
+                    if (id) {
+                        id = 's:'+id;
+                    } else {
+                        id = sheet.tags;
+                    }
+                    manager.navProvider.add(null, id);
                     return true;
                 }, this)
             });

@@ -101,7 +101,7 @@ Sheet.prototype.removeNote = function(note) {
             if (0 == index) {
                 this.proxy('removeTag', _.bind(function(id, err) {//
                     if (id) {
-                        this.reload();
+                        this.reload(note.id);
                     };
                 }, this), [note.id, note.selectedTag.id]);
             };
@@ -130,10 +130,18 @@ Sheet.prototype.showNoteMenu = function() {
                 return true;
             }, this),
         });
+        //createBookmark
         items.push({
             caption: 'Select tag',
             handler: _.bind(function() {
                 this.proxy('openTag', null, [this.selected.selectedTag.id]);
+                return true;
+            }, this),
+        });
+        items.push({
+            caption: 'Bookmark tag',
+            handler: _.bind(function() {
+                this.proxy('createBookmark', null, [this.selected.selectedTag.id]);
                 return true;
             }, this),
         });
@@ -143,6 +151,13 @@ Sheet.prototype.showNoteMenu = function() {
         caption: 'Open note',
         handler: _.bind(function() {
             this.openNote(this.selected);
+            return true;
+        }, this),
+    });
+    items.push({
+        caption: 'Bookmark note',
+        handler: _.bind(function() {
+            this.proxy('createBookmark', null, ['n:'+this.selected.id]);
             return true;
         }, this),
     });
@@ -586,7 +601,7 @@ Sheet.prototype.editTextDone = function(val) {//Edit tag/link/ref
         }
         this.proxy(method, _.bind(function(id, err) {//
             if (id) {
-                this.reload();
+                this.reload(this.selected.id);
             };
         }, this), params);
     } else {
@@ -845,7 +860,7 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
         if (n.id) {//Add this tag to note
             this.proxy('addTag', _.bind(function(id, err) {//
                 if (id) {
-                    this.reload();
+                    this.reload(n.id);
                 };
             }, this), [n.id, t.id]);
         } else {//Create note with tag
@@ -853,7 +868,7 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
                 if (id) {
                     this.proxy('addTag', _.bind(function(id, err) {//
                         if (id) {
-                            this.reload();
+                            this.reload(id);
                         };
                     }, this), [id, t.id]);
                 };
@@ -1098,7 +1113,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
         if (n.id) {//
             this.proxy('addTag', _.bind(function(id, err) {//
                 if (id) {
-                    this.reload();
+                    this.reload(note.id);
                 };
             }, this), [note.id, 'n:'+n.id]);
         } else {//put note and add tag
@@ -1106,7 +1121,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
                 if (id) {
                     this.proxy('addTag', _.bind(function(id, err) {//
                         if (id) {
-                            this.reload();
+                            this.reload(note.id);
                         };
                     }, this), [note.id, 'n:'+id]);
                 };
@@ -1255,7 +1270,7 @@ Sheet.prototype.prepare_timeline = function() {
                 handler: _.bind(function () {
                     this.page += this.loadNotes;
                     this.extra.limit = ''+this.loadNotes+' offset '+this.page;
-                    this.reload();
+                    this.reload(null, true);
                 }, this)
             }, {
                 caption: 'Load less',
@@ -1265,7 +1280,7 @@ Sheet.prototype.prepare_timeline = function() {
                         this.page = 0;
                     };
                     this.extra.limit = ''+this.loadNotes+' offset '+this.page;
-                    this.reload();
+                    this.reload(null, true);
                 }, this)
             }
         ]
@@ -1306,13 +1321,13 @@ Sheet.prototype._prepare_days = function(dstart, dend) {
             if (n.id) {//Note
                 this.instance.proxy('moveNote', _.bind(function(id, err) {//
                     if (id) {
-                        this.reload();
+                        this.reload(n.id);
                     };
                 }, this.instance), [n.id, '-d:* '+this.tag]);
             } else {
                 this.instance.proxy('putNote', _.bind(function(id, err) {//
                     if (id) {
-                        this.reload();
+                        this.reload(n.id);
                     };
                 }, this.instance), [n, this.tag]);
             };
@@ -1469,13 +1484,13 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
                 if (n.id) {//Note
                     this.instance.proxy('moveNote', _.bind(function(id, err) {//
                         if (id) {
-                            this.reload();
+                            this.reload(n.id);
                         };
                     }, this.instance), [n.id, this.instance.data.autotags+' -t:* t:'+(this.hour*100)]);
                 } else {
                     this.instance.proxy('putNote', _.bind(function(id, err) {//
                         if (id) {
-                            this.reload();
+                            this.reload(n.id);
                         };
                     }, this.instance), [n, this.instance.data.autotags+' t:'+(this.hour*100)]);
                 };
@@ -1565,7 +1580,7 @@ Sheet.prototype.moveNowLine = function() {//Moves now line
     };
 };
 
-Sheet.prototype.reload = function(beforeID) {//Asks for items
+Sheet.prototype.reload = function(beforeID, forceNoSelect) {//Asks for items
     this.areaPanel.hide();
     this.textPanel.hide();
     this.menu.element.hide();
@@ -1584,6 +1599,9 @@ Sheet.prototype.reload = function(beforeID) {//Asks for items
     this.proxy('loadNotes', _.bind(function(list, err) {//
         if (list) {//Display list
             var mode = this.data.display || 'default';
+            if (!beforeID && list.length>0 && !forceNoSelect && mode == 'default') {
+                beforeID = list[0].id;
+            };
             if (this['reload_'+mode]) {//Have reload
                 this['reload_'+mode].call(this, list, beforeID);
             };

@@ -44,9 +44,12 @@ var _addInput = function (title, type, parent) {
     return control;
 }
 
-var _ask = function (message, label, type, handler) {
+var _ask = function (message, label, type, handler, value) {
     var body = $(document.createElement('div')).addClass('form_line');
     var input = _addInput(label, type || 'text', body);
+    if (value) {
+        input.val(value);
+    };
     _showQuestion(message, _.bind(function (result) {
         var val = _.trim(input.val());
         if (0 == result) {
@@ -347,276 +350,447 @@ var _getManager = function() {//Returns manager
 
 var __panelManager = null;
 
-    PanelManager = function(config) {
-        __panelManager = this;
-        this.config = config || {};
-        this.title = this.config.title || 'No title';
-        this.element = $('<div/>').addClass('panel_manager').attr('id', 'panel_manager').appendTo(this.config.root || document.body);
-        this.nav = $(document.createElement('div')).addClass('panel_manager_nav').appendTo(this.element).hide();
-        this.nav.bind(CURRENT_EVENT_DOWN, _.bind(function (e) {
-            if (this.nav_visible) {
-                this.focus(-1);
-            };
-        }, this));
-        this.nav_visible = false;
-        this.nav_buttons = new Buttons({
-            root: this.nav,
-            maxElements: 1,
-            buttons: [{
-                caption: '|',
-                classNameInner: 'button_create'
-            }, {
-                caption: 'X'                
-            }]
-        });
-        this.clear = $(document.createElement('div')).addClass('clear').appendTo(this.element);
-        this.panels = [];
-        this.buttonDelay = this.config.buttonDelay || 300;
-        this.columns = [];
-        this.minColWidth = this.config.minColWidth || 280;
-        this.colGap = 5;
-        this.focusDiv = $(document.createElement('div')).addClass('focus_indicator');
-        this.focused = -1;
-        $(window).resize(_.bind(this.resize, this));
-        $(document.body).bind('keydown', _.bind(this.keyHandler, this));
-        this.keyListener = new EventEmitter(this);
-        this.keyListener.on('keydown', _.bind(this.onKeyDown, this));
-        this.ignoreInput = false;
-        if (this.config.navVisible) {
-            this.toggleNav();
-        } else {
-            this.resize();
-        }
-    };
+var PanelManagerNavProvider = function () {
+    
+};
 
-    PanelManager.prototype.toggleNav = function() {
-        this.nav_visible = !this.nav_visible;
+PanelManagerNavProvider.prototype.list = function() { //Returns all button configs
+    return [];
+};
+
+PanelManagerNavProvider.prototype.remove = function(index) { //When nav item is about to remove
+    log('Not implemented: remove', index);
+};
+
+PanelManagerNavProvider.prototype.edit = function(index) { //When nav item is about to edit
+    log('Not implemented: edit', index);    
+};
+
+PanelManagerNavProvider.prototype.move = function(index, toindex) { //When nav item was moved
+    log('Not implemented: move', index, toindex);    
+};
+
+PanelManagerNavProvider.prototype.handler = function(index) { //Click on nav item
+    log('Not implemented: handler', index);    
+};
+
+PanelManager = function(config) {
+    __panelManager = this;
+
+    this.NAV_NORMAL = 0;
+    this.NAV_EDIT = 1;
+    this.NAV_MOVE_START = 2;
+    this.NAV_MOVE_FINISH = 3;
+    this.NAV_REMOVE = 4;
+    this.config = config || {};
+    this.title = this.config.title || 'No title';
+    this.element = $('<div/>').addClass('panel_manager').attr('id', 'panel_manager').appendTo(this.config.root || document.body);
+    this.navProvider = this.config.navProvider || null;
+    if (this.navProvider) {
+        this.navProvider.manager = this;
+    };
+    this.nav = $(document.createElement('div')).addClass('panel_manager_nav').appendTo(this.element).hide();
+    this.nav.bind(CURRENT_EVENT_DOWN, _.bind(function (e) {
         if (this.nav_visible) {
-            this.nav.show();
-        } else {
-            this.nav.hide();
+            this.focus(-1);
         };
+    }, this));
+    this.nav_visible = false;
+    this.nav_buttons = new Buttons({
+        root: this.nav,
+        maxElements: 1,
+        handler: _.bind(this.onNavClick, this),
+        buttons: [{
+            caption: '|',
+            classNameInner: 'button_create'
+        }]
+    });
+    this.navMode = this.NAV_NORMAL;
+    this.clear = $(document.createElement('div')).addClass('clear').appendTo(this.element);
+    this.panels = [];
+    this.buttonDelay = this.config.buttonDelay || 300;
+    this.columns = [];
+    this.minColWidth = this.config.minColWidth || 280;
+    this.colGap = 5;
+    this.focusDiv = $(document.createElement('div')).addClass('focus_indicator');
+    this.focused = -1;
+    $(window).resize(_.bind(this.resize, this));
+    $(document.body).bind('keydown', _.bind(this.keyHandler, this));
+    this.keyListener = new EventEmitter(this);
+    this.keyListener.on('keydown', _.bind(this.onKeyDown, this));
+    this.ignoreInput = false;
+    if (this.config.navVisible && this.navProvider) {
+        this.toggleNav();
+    } else {
         this.resize();
-    };
+    }
+};
 
-    PanelManager.prototype.setIgnoreInput = function(ignore) {
-        this.ignoreInput = ignore || false;
+PanelManager.prototype.refreshNav = function() {
+    if (!this.navProvider) {
+        return;
     };
-
-    PanelManager.prototype.farRight = function() {
-        return Math.min(this.panels.length, this.columns.length);
+    this.navMode = this.NAV_NORMAL;
+    var ddType = 'panel-manager/nav';
+    while(this.nav_buttons.buttons.length>1) {
+        this.nav_buttons.removeButton(this.nav_buttons.buttons[1]);
     };
-
-    PanelManager.prototype.focus = function(col) {
-        this.element.children().removeClass('panel_focused');
-        if (this.nav_visible && col == -1) {
-            this.focused = -1;
-            this.focusDiv.hide();
-            this.nav.addClass('panel_focused');
-            return;
+    var arr = this.navProvider.list() || [];
+    for (var i = 0; i < arr.length; i++) {
+        var item = arr[i];
+        var btn = this.nav_buttons.addButton(item);
+        if (i<9) {
+            var numDiv = $(document.createElement('div')).addClass('panel_manager_nav_num').text(''+(i+1)).appendTo(btn.element);
         };
-        if (!col || col<0) {
-            col = 0;
+        if (!item.draggable) {
+            continue;
         };
-        var panels_displayed = this.farRight();
-        if (col>=panels_displayed) {
-            col = panels_displayed-1;
-        };
-        this.focused = col;
-        if (col>=0) {
-            this.columns[col].children().children('.panel_title').append(this.focusDiv.show());
-            this.columns[col].addClass('panel_focused');
-        };
-    };
-
-    PanelManager.prototype.resize = function() {//Change layout
-        var newcolcount = Math.floor($(window).width() / this.minColWidth);
-        if (newcolcount == 0) {//One column always
-            newcolcount = 1;
-        };
-        if (newcolcount != this.columns.length) {//Number of cols is changed - recreate columns
-            for (var i = 0; i < this.panels.length; i++) {//Detach panels
-                this.panels[i].element.detach();
+        btn.innerElement.addClass('draggable').bind('dragstart', {index: i}, function(e) {
+            dd.setDDTarget(e, ddType, e.data.index);
+        }).bind('dragover', _.bind(function(e) {
+            if (dd.hasDDTarget(e, ddType)) {
+                e.preventDefault();
             };
-            this.element.children('.panel_column').remove();//Remove columns
-            this.columns = [];
-            for (var i = 0; i < newcolcount; i++) {//Create columns
-                var col = $(document.createElement('div')).addClass('panel_column').insertBefore(this.nav);
-                this.columns.push(col);
-                col.bind(CURRENT_EVENT_DOWN, {index: i}, _.bind(function (e) {
-                    this.focus(e.data.index);
-                }, this));
-            };
-            this.putPanels();
-        };
-        var left = 0;
-        var colWidths = $(window).width();
-        if (this.nav_visible) {
-            colWidths -= this.nav.outerWidth();
-        };
-        var colWidth = Math.floor(colWidths / newcolcount);
-        for (var i = 0; i < this.columns.length; i++) {//Resize columns
-            var w = colWidth;
-            if (i == newcolcount-1) {//Last column - fix width
-                w = colWidths - left;
-            };
-            this.columns[i].width(w);
-            if (!CURRENT_PLATFORM_MOBILE) {
-                this.columns[i].height($(document.body).height()-2);
-            };
-            left += w;
-        };
-        this.focus(this.focused);
-    };
-
-    PanelManager.prototype.putPanels = function() {//Put panels into columns
-        for (var i = 0; i < this.panels.length; i++) {//Detach panels
-            this.panels[i].scroll = this.panels[i].element.parent().scrollTop();
-            this.panels[i].element.detach();
-        };
-        var skipPanels = this.panels.length - this.columns.length;
-        if (skipPanels<0) {//Fix
-            skipPanels = 0;
-        };
-        for (var i = 0; i < this.farRight(); i++) {//Put panels
-            var panel = this.panels[i+skipPanels];
-            panel.element.appendTo(this.columns[i]);
-            if (panel.scroll || panel.scroll == 0) {//Restore
-                this.columns[i].scrollTop(panel.scroll);
-            };
-        };
-    };
-
-    //PanelManager.prototype.show = function(panel, current) {
-        //setTimeout(function(instance, panel, current) {
-            //instance._show(panel, current);
-        //}, this.buttonDelay, this, panel, current);
-    //};
-
-    PanelManager.prototype.clearRightPanels = function(current) {
-        if (current) {//Remove panels right to the current
-            for (var i = 0; i < this.panels.length; i++) {//Search for position
-                if (this.panels[i] == current) {//Remove all others
-                    for (var j = i+1; j < this.panels.length;) {//Remove panel
-                        var p = this.panels[j];
-                        p.element.detach();
-                        this.panels.splice(j, 1);
-                    };
-                };
-            };
-        };
-    };
-
-    PanelManager.prototype.show = function(panel, current) {
-        this.clearRightPanels(current);
-        this.panels.push(panel);
-        this.panel = panel;
-        this.putPanels();
-        if (panel.onSwitch) {//Switch handler
-            panel.onSwitch(panel);
-        };
-        this.focus(this.farRight()-1);
-    };
-
-    PanelManager.prototype.goBack = function(current) {
-        if (this.panels.length<2 || current == this.panels[0]) {//Work only for more than 2 panels in stack
-            return false;
-        }
-        this.clearRightPanels(current);
-        var p = this.panels.pop();
-        p.element.detach();
-        var panel = this.panels[this.panels.length-1];
-        this.panel = panel;
-        this.putPanels();
-        if (panel.onSwitch) {//Switch handler
-            panel.onSwitch(panel);
-        };
-        this.focus(this.farRight()-1);
-        return true;
-    };
-
-    PanelManager.prototype.setTitle = function(panel) {
-        var prefix = this.config.titlePrefix || '';
-        if (panel.title) {
-            document.title = prefix + panel.title;
-        } else {
-            document.title = prefix + this.title;
-        }
-    };
-
-    PanelManager.prototype.getFocused = function() {
-        if (this.focused == -1) {
-            return null;
-        };
-        var skipPanels = this.panels.length - this.columns.length;
-        if (skipPanels<0) {//Fix
-            skipPanels = 0;
-        };
-        return this.panels[skipPanels+this.focused];        
-    };
-
-    PanelManager.prototype.onKeyDown = function(e) {
-        if (this.ignoreInput) {
-            return true;
-        };
-        if (e.keyCode == -10) {
-            //Back button
-            if (this.goBack(this.getFocused())) {//Have go back
-                this.warningShown = false;
-            } else {//Exit app
-                if (!this.warningShown) {//Show warning
-                    this.warningShown = true;
-                    _showInfo('Press again to exit');
-                } else {//Exit
-                    navigator.app.exitApp();
-                    return true;
-                };
-            };
-            return false;
-        };
-        if (e.altKey) {
-            // log('Key down', e.keyCode);
-            // 39 ->
-            // 37 <-
-            // 38 ^
-            switch (e.keyCode) {
-                case 39:
-                    this.focus(this.focused+1);
-                    return false;
-                case 37:
-                    this.focus(this.focused-1);
-                    return false;
-                case 40:
-                    this.focus(-1);
-                    return false;
-                case 38:
-                    this.goBack(this.getFocused());
-                    return false;
-            };
-        };
-        if (this.focused == -1 && this.nav_visible) {
-            return this.nav_buttons.keypress(e);
-        };
-        var panel = this.getFocused();
-        if (panel && panel.keypress) {
-            if (false === panel.keypress(e)) {
+        }, this)).bind('drop', {index: i},  _.bind(function(e) {//Dropped
+            var drag = parseInt(dd.getDDTarget(e, ddType), 10);
+            var drop = e.data.index;
+            log('drop', drag, drop);
+            if (drag != drop) {// Nav to Nav
+                this.navProvider.move(drag, drop);
+                e.stopPropagation();
+                e.preventDefault();
                 return false;
             };
+        }, this));
+    };
+};
+
+PanelManager.prototype.onNavClick = function(index, button, buttons, e) {
+    //Do smth
+    if (index == 0) {
+        // Show menu
+        this.navMode = this.NAV_NORMAL;
+        new PopupMenu({
+            element: this.element,
+            items: [
+                {
+                    caption: 'Move item',
+                    handler: _.bind(function () {
+                        this.navMode = this.NAV_MOVE_START;
+                        _showInfo('Click to target item to start move');
+                        return true;
+                    }, this)
+                }, {
+                    caption: 'Edit item',
+                    handler: _.bind(function () {
+                        this.navMode = this.NAV_EDIT;
+                        _showInfo('Click to target item to edit');
+                        return true;
+                    }, this)
+                }, {
+                    caption: 'Remove item',
+                    handler: _.bind(function () {
+                        this.navMode = this.NAV_REMOVE;
+                        _showInfo('Click to target item to remove');
+                        return true;
+                    }, this)
+                }
+            ]
+        })
+        return;
+    };
+    if (e.ctrlKey) {
+        this.navProvider.edit(index-1);
+        return;
+    };
+    if (e.shiftKey) {
+        this.navProvider.remove(index-1);
+        return;
+    };
+    switch (this.navMode) {
+        case this.NAV_NORMAL:
+            this.navProvider.handler(index-1);
+            return;
+        case this.NAV_EDIT:
+            this.navProvider.edit(index-1);
+            this.navMode = this.NAV_NORMAL;
+            return;
+        case this.NAV_REMOVE:
+            this.navProvider.remove(index-1);
+            this.navMode = this.NAV_NORMAL;
+            return;
+        case this.NAV_MOVE_START:
+            this.navMoving = index;
+            this.navMode = this.NAV_MOVE_FINISH;
+            _showInfo('Click to target item to finish move');
+            return;
+        case this.NAV_MOVE_FINISH:
+            this.navMode = this.NAV_NORMAL;
+            if (this.navMoving != index) {
+                this.navProvider.move(this.navMoving-1, index-1);
+            } else {
+                _showInfo('Same item');
+            }
+            return;
+    }
+};
+
+PanelManager.prototype.toggleNav = function() {
+    if (!this.navProvider) {
+        return;
+    };
+    this.nav_visible = !this.nav_visible;
+    if (this.nav_visible) {
+        this.nav.show();
+        this.refreshNav();
+    } else {
+        this.nav.hide();
+    };
+    this.resize();
+};
+
+PanelManager.prototype.setIgnoreInput = function(ignore) {
+    this.ignoreInput = ignore || false;
+};
+
+PanelManager.prototype.farRight = function() {
+    return Math.min(this.panels.length, this.columns.length);
+};
+
+PanelManager.prototype.focus = function(col) {
+    this.element.children().removeClass('panel_focused');
+    if (this.nav_visible && col == -1) {
+        this.focused = -1;
+        this.focusDiv.hide();
+        this.nav.addClass('panel_focused');
+        return;
+    };
+    if (!col || col<0) {
+        col = 0;
+    };
+    var panels_displayed = this.farRight();
+    if (col>=panels_displayed) {
+        col = panels_displayed-1;
+    };
+    this.focused = col;
+    if (col>=0) {
+        this.columns[col].children().children('.panel_title').append(this.focusDiv.show());
+        this.columns[col].addClass('panel_focused');
+    };
+};
+
+PanelManager.prototype.resize = function() {//Change layout
+    var newcolcount = Math.floor($(window).width() / this.minColWidth);
+    if (newcolcount == 0) {//One column always
+        newcolcount = 1;
+    };
+    if (newcolcount != this.columns.length) {//Number of cols is changed - recreate columns
+        for (var i = 0; i < this.panels.length; i++) {//Detach panels
+            this.panels[i].element.detach();
         };
-        // if (this.panel && this.panel.keys[e.which]) {
-        //     var obj = this.panel.keys[e.which].obj;
-        //     var handler = this.panel.keys[e.which].handler;
-        //     e.data = this.panel.keys[e.which].data;
-        //     return handler.call(obj, e);
-        // }
+        this.element.children('.panel_column').remove();//Remove columns
+        this.columns = [];
+        for (var i = 0; i < newcolcount; i++) {//Create columns
+            var col = $(document.createElement('div')).addClass('panel_column').insertBefore(this.nav);
+            this.columns.push(col);
+            col.bind(CURRENT_EVENT_DOWN, {index: i}, _.bind(function (e) {
+                this.focus(e.data.index);
+            }, this));
+        };
+        this.putPanels();
+    };
+    var left = 0;
+    var colWidths = $(window).width();
+    if (this.nav_visible) {
+        colWidths -= this.nav.outerWidth();
+    };
+    var colWidth = Math.floor(colWidths / newcolcount);
+    for (var i = 0; i < this.columns.length; i++) {//Resize columns
+        var w = colWidth;
+        if (i == newcolcount-1) {//Last column - fix width
+            w = colWidths - left;
+        };
+        this.columns[i].width(w);
+        if (!CURRENT_PLATFORM_MOBILE) {
+            this.columns[i].height($(document.body).height()-2);
+        };
+        left += w;
+    };
+    this.focus(this.focused);
+};
+
+PanelManager.prototype.focusByID = function(id) {
+    if (!id) {
+        return false;
+    };
+    var skipPanels = this.panels.length - this.columns.length;
+    if (skipPanels<0) {//Fix
+        skipPanels = 0;
+    };
+    for (var i = 0; i < this.farRight(); i++) {//Put panels
+        var panel = this.panels[i+skipPanels];
+        if (panel.id && panel.id == id) {
+            this.focus(i);
+            return true;
+        };
+    };
+    return false;
+};
+
+PanelManager.prototype.putPanels = function() {//Put panels into columns
+    for (var i = 0; i < this.panels.length; i++) {//Detach panels
+        this.panels[i].scroll = this.panels[i].element.parent().scrollTop();
+        this.panels[i].element.detach();
+    };
+    var skipPanels = this.panels.length - this.columns.length;
+    if (skipPanels<0) {//Fix
+        skipPanels = 0;
+    };
+    for (var i = 0; i < this.farRight(); i++) {//Put panels
+        var panel = this.panels[i+skipPanels];
+        panel.element.appendTo(this.columns[i]);
+        if (panel.scroll || panel.scroll == 0) {//Restore
+            this.columns[i].scrollTop(panel.scroll);
+        };
+    };
+};
+
+//PanelManager.prototype.show = function(panel, current) {
+    //setTimeout(function(instance, panel, current) {
+        //instance._show(panel, current);
+    //}, this.buttonDelay, this, panel, current);
+//};
+
+PanelManager.prototype.clearRightPanels = function(current) {
+    if (current) {//Remove panels right to the current
+        for (var i = 0; i < this.panels.length; i++) {//Search for position
+            if (this.panels[i] == current) {//Remove all others
+                for (var j = i+1; j < this.panels.length;) {//Remove panel
+                    var p = this.panels[j];
+                    p.element.detach();
+                    this.panels.splice(j, 1);
+                };
+            };
+        };
+    };
+};
+
+PanelManager.prototype.show = function(panel, current) {
+    this.clearRightPanels(current);
+    this.panels.push(panel);
+    this.panel = panel;
+    this.putPanels();
+    if (panel.onSwitch) {//Switch handler
+        panel.onSwitch(panel);
+    };
+    this.focus(this.farRight()-1);
+};
+
+PanelManager.prototype.goBack = function(current) {
+    if (this.panels.length<2 || current == this.panels[0]) {//Work only for more than 2 panels in stack
+        return false;
+    }
+    this.clearRightPanels(current);
+    var p = this.panels.pop();
+    p.element.detach();
+    var panel = this.panels[this.panels.length-1];
+    this.panel = panel;
+    this.putPanels();
+    if (panel.onSwitch) {//Switch handler
+        panel.onSwitch(panel);
+    };
+    this.focus(this.farRight()-1);
+    return true;
+};
+
+PanelManager.prototype.setTitle = function(panel) {
+    var prefix = this.config.titlePrefix || '';
+    if (panel.title) {
+        document.title = prefix + panel.title;
+    } else {
+        document.title = prefix + this.title;
+    }
+};
+
+PanelManager.prototype.getFocused = function() {
+    if (this.focused == -1) {
+        return null;
+    };
+    var skipPanels = this.panels.length - this.columns.length;
+    if (skipPanels<0) {//Fix
+        skipPanels = 0;
+    };
+    return this.panels[skipPanels+this.focused];        
+};
+
+PanelManager.prototype.onKeyDown = function(e) {
+    if (this.ignoreInput) {
         return true;
     };
-
-    PanelManager.prototype.keyHandler = function(e) {
-        return this.keyListener.emit('keydown', e);
+    if (e.keyCode == -10) {
+        //Back button
+        if (this.goBack(this.getFocused())) {//Have go back
+            this.warningShown = false;
+        } else {//Exit app
+            if (!this.warningShown) {//Show warning
+                this.warningShown = true;
+                _showInfo('Press again to exit');
+            } else {//Exit
+                navigator.app.exitApp();
+                return true;
+            };
+        };
+        return false;
     };
+    if (e.altKey) {
+        // log('Key down', e.keyCode);
+        // 39 ->
+        // 37 <-
+        // 38 ^
+        if (e.keyCode>=48 && e.keyCode<=57 && this.nav_visible) {
+            var buttonIndex = e.keyCode-48;
+            if (buttonIndex<this.nav_buttons.buttons.length) {
+                this.nav_buttons.click(this.nav_buttons.buttons[buttonIndex]);
+                return false;
+            };
+            // 0-9
+        };
+        switch (e.keyCode) {
+            case 39:
+                this.focus(this.focused+1);
+                return false;
+            case 37:
+                this.focus(this.focused-1);
+                return false;
+            case 40:
+                this.focus(-1);
+                return false;
+            case 38:
+                this.goBack(this.getFocused());
+                return false;
+        };
+    };
+    if (this.focused == -1 && this.nav_visible) {
+        return this.nav_buttons.keypress(e);
+    };
+    var panel = this.getFocused();
+    if (panel && panel.keypress) {
+        if (false === panel.keypress(e)) {
+            return false;
+        };
+    };
+    // if (this.panel && this.panel.keys[e.which]) {
+    //     var obj = this.panel.keys[e.which].obj;
+    //     var handler = this.panel.keys[e.which].handler;
+    //     e.data = this.panel.keys[e.which].data;
+    //     return handler.call(obj, e);
+    // }
+    return true;
+};
 
-//};
+PanelManager.prototype.keyHandler = function(e) {
+    return this.keyListener.emit('keydown', e);
+};
 
 var Panel = function(title) {
     this.element = $('<div/>').addClass('panel');
@@ -714,7 +888,11 @@ Buttons.prototype.addButton = function(button, before) {//Adds button
         if (e.data.button.handler) {//We have handler
             e.data.button.handler(e, e.data.button, e);
             return false;
-        };
+        } else {
+            if (e.data.buttons.config.handler) {
+                e.data.buttons.config.handler(e.data.index, e.data.button, e.data.buttons, e);
+            };
+        }
         //e.preventDefault();
         //e.stopPropagation();
         return false;

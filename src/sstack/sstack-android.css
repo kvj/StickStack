@@ -43,6 +43,14 @@ body {
         background-image: url(img/x2/notes.png);
     }
 
+    .ic_sync {
+        background-image: url(img/x2/sync.png);
+    }
+
+    .ic_log_add {
+        background-image: url(img/x2/log_add.png);
+    }
+
     .note_bottom_bg {
         background-image: url(img/x2/note_bottom.png);
     }

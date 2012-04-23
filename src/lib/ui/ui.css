@@ -37,6 +37,15 @@ div {
     float: left;    
     width: 3em;
 }
+
+.panel_manager_nav_num {
+    font-size: 0.65em;
+    position: absolute;
+    top: 0.1em;
+    right: 0.5em;
+    color: #fefefe;
+}
+
 .draggable {
     -webkit-user-drag: element;
     -webkit-user-select: none;
