@@ -392,6 +392,30 @@
     background-image: url(img/sync.png);
 }
 
+.ic_sharp {
+    background-image: url(img/marker/sharp.png);
+}
+
+.ic_star {
+    background-image: url(img/marker/star.png);
+}
+
+.ic_minus {
+    background-image: url(img/marker/minus.png);
+}
+
+.ic_plus {
+    background-image: url(img/marker/plus.png);
+}
+
+.ic_exclamation {
+    background-image: url(img/marker/exclamation.png);
+}
+
+.ic_question {
+    background-image: url(img/marker/question.png);
+}
+
 .note_contact_table {
     width: 100%;
 }

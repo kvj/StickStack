@@ -55,4 +55,28 @@ body {
         background-image: url(img/x2/note_bottom.png);
     }
 
+    .ic_sharp {
+        background-image: url(img/x2/marker/sharp.png);
+    }
+
+    .ic_star {
+        background-image: url(img/x2/marker/star.png);
+    }
+
+    .ic_minus {
+        background-image: url(img/x2/marker/minus.png);
+    }
+
+    .ic_plus {
+        background-image: url(img/x2/marker/plus.png);
+    }
+
+    .ic_exclamation {
+        background-image: url(img/x2/marker/exclamation.png);
+    }
+
+    .ic_question {
+        background-image: url(img/x2/marker/question.png);
+    }
+
 }

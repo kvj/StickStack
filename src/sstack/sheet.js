@@ -1203,10 +1203,39 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
 };
 
 Sheet.prototype.renderLine = function(note, line, line_div) {
+    var markers = [
+        {
+            text: '#',
+            cls: 'ic_sharp'
+        }, {
+            text: '*',
+            cls: 'ic_star'            
+        }, {
+            text: '-',
+            cls: 'ic_minus'
+        }, {
+            text: '+',
+            cls: 'ic_plus'            
+        }, {
+            text: '!',
+            cls: 'ic_exclamation'            
+        }, {
+            text: '?',
+            cls: 'ic_question'            
+        }
+    ];
+    var findMarker = function (text) {
+        for (var i = 0; i < markers.length; i++) {
+            if (markers[i].text == text) {
+                return i;
+            };
+        };
+        return 0;
+    }
     for (var k = 0; k < line.length; k++) {//Add words
         var word = line[k];
         if (word.type == 'text') {//Add word
-            $('<div/>').addClass('note_word').appendTo(line_div).text(word.text);
+            $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(word.text);
         } else if (word.type == 'checkbox') {
             var cbox = $(ui.buildIcon(word.checked? 'ic_check_yes': 'ic_check_no')).appendTo(line_div).css('float', 'left');
             cbox.bind('click', {note: note, box: word}, _.bind(function(e) {
@@ -1219,17 +1248,30 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
                 return false;
             }, this));
             $('<div/>').addClass('note_word').appendTo(line_div).text(' ');
+        } else if (word.type == 'marker') {
+            var m = findMarker(word.text);
+            var cbox = $(ui.buildIcon(markers[m].cls)).appendTo(line_div).css('float', 'left');
+            cbox.bind('click', {note: note, box: word, next: markers[(m+1) % markers.length]}, _.bind(function(e) {
+                var new_text = e.data.note.text.substr(0, e.data.box.at)+e.data.next.text+e.data.note.text.substr(e.data.box.at+1);
+                this.proxy('editNoteField', _.bind(function(id, err) {//
+                    if (id) {
+                        this.reload(id);
+                    };
+                }, this), [e.data.note.id, new_text]);
+                return false;
+            }, this));
+            $('<div/>').addClass('note_word').appendTo(line_div).text(' ');
         } else if (word.type == 'tag') {//Add tag
             this.showTag(note, word.tag, line_div);
             $('<div/>').addClass('note_word').appendTo(line_div).text(' ');
         } else if (word.type == 'link') {//Add link
-            var anchor = $(document.createElement('a')).addClass('note_link').attr('href', word.link).appendTo(line_div).text(word.text);
+            var div = $(document.createElement('div')).addClass('note_word').appendTo(line_div);
+            var anchor = $(document.createElement('a')).addClass('note_link').attr('href', word.link).appendTo(div).text(word.text);
             anchor.bind('click', word, _.bind(function (e) {
                 this.proxy('openLink', _.bind(function(res) {
                 }, this), [e.data.link, e.ctrlKey]);
                 return false;
-            }, this))
-            $('<div/>').addClass('note_word').appendTo(line_div).text(' ');
+            }, this));
         };
     };
     $('<div style="clear: both;"/>').appendTo(line_div);

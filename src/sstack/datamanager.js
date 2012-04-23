@@ -1506,6 +1506,7 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
         var parts = [];
         var words = line.split(' ');
         var schemas = ['http://', 'https://', 'geo:', 'tel:', 'sms:', 'mailto:'];
+        var markers = ['#', '*', '-', '+', '!', '?'];
         for (var j = 0; j < words.length; j++) {//Add words
             if (words[j] == '[X]') {//Checked
                 parts.push({type: 'checkbox', checked: true, at: chars});
@@ -1518,8 +1519,18 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
                 var conf = this.findTagConfig(tag);
                 parts.push({type: 'tag', at: chars, tag: {id: tag, caption: this.formatTag(tag), color: conf.tag_color}});
             } else {
-                var schemafound = false;
-                for (var k = 0; k < schemas.length; k++) {
+                var skip = false;
+                if (j == 0 && words[j].length == 1) {
+                    for (var k = 0; k < markers.length; k++) {
+                        var m = markers[k];
+                        if (words[j] == m) {
+                            parts.push({type: 'marker', at: chars, text: m});
+                            skip = true;
+                            break;
+                        };
+                    };
+                };
+                for (var k = 0; !skip && k < schemas.length; k++) {
                     var sch = schemas[k];
                     if (_.startsWith(words[j], sch) && words[j].length>sch.length) {
                         var caption = words[j].substr(sch.length);
@@ -1527,11 +1538,11 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
                             caption = caption.substr(0, 18)+'...';
                         };
                         parts.push({type: 'link', at: chars, text: caption, link: words[j]});
-                        schemafound = true;
+                        skip = true;
                         break;
                     };
                 };
-                if (!schemafound) {
+                if (!skip) {
                     parts.push({type: 'text', at: chars, text: words[j]});
                 };
             }
