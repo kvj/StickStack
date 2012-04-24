@@ -1188,6 +1188,7 @@
       this.app = app;
       this.oauth = oauth;
       this.storage = storage;
+      this.on_sync = new EventEmitter(this);
       this.oauth.on_new_token = function(token) {
         return _this.storage.set_token(token);
       };
@@ -1290,8 +1291,10 @@
       if (progress_handler == null) progress_handler = function() {};
       if (this.in_sync) return false;
       this.in_sync = true;
+      this.on_sync.emit('start');
       return this.storage.sync(this.app, this.oauth, function(err, data) {
         _this.in_sync = false;
+        _this.on_sync.emit('finish');
         if (!err && _this.timeout_id) _this.unschedule_sync(null);
         return handler(err, data);
       }, force_clean, progress_handler);

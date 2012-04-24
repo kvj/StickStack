@@ -16,12 +16,6 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
         new ContactEditor(datamanager, params[0], params[1], handler);
         return true;
     };
-    if (method == 'createAttachment') {
-        datamanager.createAttachment(params[0], params[1], function (err) {
-            handler(err);
-        });
-        return true;
-    };
     if (method == 'getNote') {
         datamanager.getNote(params[0], function (err, note) {
             handler(err, note);
@@ -56,6 +50,39 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
         }, true, params[2]);
         return true;
     };
+    if (datamanager.in_sync) {
+        // log('Defer edit:', method, params);
+        datamanager.edits.push({method: method, handler: handler, params: params});
+        _disableUI();
+        _showInfo('Sync is in progress');
+        return true;
+    };
+    if (method == 'addSheet') {
+        datamanager.addSheet(handler);
+        return true;
+    };
+    if (method == 'updateSheet') {
+        datamanager.updateSheet(params[0], params[1], handler);
+        return true;
+    };
+    if (method == 'removeSheet') {
+        datamanager.removeSheet(params[0], handler);
+        return true;
+    };
+    if (method == 'updateTagConfig') {
+        datamanager.updateTagConfig(params[0], handler);
+        return true;
+    };
+    if (method == 'removeTagConfig') {
+        datamanager.removeTagConfig(params[0], handler);
+        return true;
+    };
+    if (method == 'createAttachment') {
+        datamanager.createAttachment(params[0], params[1], function (err) {
+            handler(err);
+        });
+        return true;
+    };
     if (method == 'createNote') {
         datamanager.updateNote(null, params[0], null, function(id, err) {
             if (id) {//Add notes
@@ -77,7 +104,7 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
         datamanager.putNote(params[0], function(id, err) {
             if (id) {//Add notes
                 var tags = datamanager.noteToSheet(params[1], params[0].tags);
-                log('Saving tags', tags);
+                // log('Saving tags', tags);
                 datamanager.updateTags(id, tags, function(id, err) {
                     if (id) {
                         handler(id);
@@ -177,6 +204,26 @@ var DataManager = function(database) {//Do DB operations
     this.db = database;
     this.tagControllers = [];
     this.events = new EventEmitter();
+    this.in_sync = false;
+    this.edits = [];
+    database.on_sync.on('start', _.bind(function () {
+        // log('Sync actually started');
+        this.in_sync = true;
+    }, this));
+    database.on_sync.on('finish', _.bind(function () {
+        this.in_sync = false;
+        var arr = this.edits;
+        this.edits = [];
+        if (arr.length>0) {
+            // log('After sync edits:', arr.length);
+            for (var i = 0; i < arr.length; i++) {
+                var item = arr[i];
+                // log('Re-run edit:', item.method, item.params);
+                _proxy(this, item.method, item.handler, item.params);
+            };
+            _enableUI();
+        };
+    }, this));
     var DefaultTag = function() {
         this.name = 'default';
     };

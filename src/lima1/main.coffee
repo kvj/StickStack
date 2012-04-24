@@ -845,6 +845,7 @@ class StorageProvider
 class DataManager
 
 	constructor: (@app, @oauth, @storage) ->
+		@on_sync = new EventEmitter this
 		@oauth.on_new_token = (token) =>
 			@storage.set_token token
 		@storage.on_channel_state.on 'state', (evt) =>
@@ -920,8 +921,10 @@ class DataManager
 	sync: (handler, force_clean, progress_handler = () ->) ->
 		if @in_sync then return no
 		@in_sync = yes
+		@on_sync.emit 'start'
 		return @storage.sync @app, @oauth, (err, data) =>
 			@in_sync = no
+			@on_sync.emit 'finish'
 			if not err and @timeout_id
 				@unschedule_sync null
 			handler err, data

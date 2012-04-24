@@ -594,13 +594,14 @@ var SheetsManager = function(panel, datamanager) {
         caption: 'New',
         classNameInner: 'button_create',
         handler: _.bind(function() {
-            this.manager.addSheet(_.bind(function(id, err) {
+
+            _proxy(this.manager, 'addSheet', _.bind(function(id, err) {
                 if (id) {//Reload
                     this.reload();
                 } else {//
                     _showError('Error adding sheet: '+err);
                 };
-            }, this));
+            }, this), []);
         }, this),
     });
     this.calendarPlace = $('<div/>').addClass('calendar_place').appendTo(this.panel.element);
@@ -748,26 +749,26 @@ var SheetEditor = function(sheet, panel, datamanager) {
     this.topMenu.addButton({
         caption: 'Save',
         handler: _.bind(function() {
-            this.manager.updateSheet(sheet.id, this.form.saveForm(), _.bind(function(id, err) {
+            _proxy(this.manager, 'updateSheet', _.bind(function(id, err) {
                 if (id) {//Saved
                     manager.goBack(this.panel);
                 } else {
                     _showError('Error updating sheet: '+err);
                 };
-            }, this))
+            }, this), [sheet.id, this.form.saveForm()]);
         }, this),
     });
     this.topMenu.addButton({
         caption: 'Remove',
         classNameInner: 'button_remove',
         handler: _.bind(function() {
-            this.manager.removeSheet(sheet.id, function(id, err) {//Removed
+            _proxy(this.manager, 'removeSheet', function(id, err) {//Removed
                 if (id) {
                     manager.goBack(this.panel);
                 } else {
                     _showError('Error removing sheet: '+err);
                 };
-            })
+            }, [sheet.id]);
         }, this),
     });
     manager.show(this.panel, panel);
@@ -796,13 +797,13 @@ var TagsManager = function(panel, datamanager) {
         caption: 'New',
         classNameInner: 'button_create',
         handler: _.bind(function() {
-            this.manager.updateTagConfig({}, _.bind(function(id, err) {
+            _proxy(this.manager, 'updateTagConfig', _.bind(function(id, err) {
                 if (id) {//Reload
                     this.reload();
                 } else {//
                     _showError('Error adding tag: '+err);
                 };
-            }, this));
+            }, this), [{}]);
         }, this),
     });
     this.list = new Buttons({
@@ -864,26 +865,26 @@ var TagsEditor = function(config, panel, datamanager) {
             var data = this.form.saveForm();
             data.id = config.id;
             data.weight = data.weight || null;
-            this.manager.updateTagConfig(data, _.bind(function(id, err) {
+            _proxy(this.manager, 'updateTagConfig', _.bind(function(id, err) {
                 if (id) {//Saved
                     manager.goBack(this.panel);
                 } else {
                     _showError('Error updating config: '+err);
                 };
-            }, this))
+            }, this), [data]);
         }, this),
     });
     this.topMenu.addButton({
         caption: 'Remove',
         classNameInner: 'button_remove',
         handler: _.bind(function() {
-            this.manager.removeTagConfig(config.id, function(id, err) {//Removed
+            _proxy(this.manager, 'removeTagConfig', function(id, err) {//Removed
                 if (id) {
                     manager.goBack(this.panel);
                 } else {
                     _showError('Error removing config: '+err);
                 };
-            })
+            }, [config.id]);
         }, this),
     });
     manager.show(this.panel, panel);

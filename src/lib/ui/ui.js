@@ -17,11 +17,20 @@ var _showInfo = function(message, timeout) {//Shows info dialog
 var _showError = function(message) {//Shows error
     log('Error:', message);
     //css('top', 80+document.body.scrollTop).
-    $('#error_dialog').html(message || 'No error message provided');
+    $('#error_dialog').html(message || 'No error message provided').show();
     $('#error_dialog_background').show();
 };
 
+var _disableUI = function () {
+    $('#error_dialog_background').show();    
+}
+
+var _enableUI = function () {
+    $('#error_dialog_background').hide();
+}
+
 var _hideError = function() {
+    $('#error_dialog').hide();
     $('#error_dialog_background').hide();
 };
 
@@ -175,7 +184,7 @@ var _initUI = function(storage) {//Creates root UI elements
     var main = $('<div id="main"/>').appendTo(document.body);
     $('<div id="question_dialog" class="popup_dialog"/>').appendTo(document.body).addClass('question_dialog').hide();
     var err_bg = $('<div id="error_dialog_background"/>').appendTo(document.body).hide();
-    var err = $('<div id="error_dialog" class="popup_dialog"/>').appendTo(err_bg).addClass('error_dialog');
+    var err = $('<div id="error_dialog" class="popup_dialog"/>').appendTo(err_bg).addClass('error_dialog').hide();
     err.bind(CURRENT_EVENT_CLICK, function(e) {//Hide error dialog
         $('#error_dialog_background').hide();
         return false;
