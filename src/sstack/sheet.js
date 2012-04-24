@@ -393,6 +393,30 @@ Sheet.prototype.tag_menu_sheet = function(note, tag, items) {
     })
 };
 
+Sheet.prototype.tag_click_sheet = function(note, tag) {
+    this.proxy('getSheet', _.bind(function (err, sheet) {
+        if (!err) {
+            _showInfo(sheet.title || 'Untitled');
+        };
+    }, this), [tag.substr(2)]);
+};
+
+Sheet.prototype.tag_click_note = function(note, tag) {
+    this.proxy('getNote', _.bind(function (err, note) {
+        if (!err) {
+            var text = note.text;
+            if (text.indexOf('\n') != -1) {
+                text = text.substr(0, text.indexOf('\n'));
+            } else {
+                if (text.length>50) {
+                    text = text.substr(0, 50)+'...';
+                };
+            }
+            _showInfo(text || 'Untitled');
+        };
+    }, this), [tag.substr(2)]);
+};
+
 Sheet.prototype.tag_unselect_geo = function(note, tag) {
     if (note.geoCreated) {
         note.div.find('.geo').remove();
@@ -785,10 +809,11 @@ Sheet.prototype.unselectNote = function() {
 };
 
 Sheet.prototype.selectTag = function(t) {
-    log('Click tag:', t);
+    // log('Click tag:', t);
     this.selected.selectedTag = t;
     this.selected.div.find('.note_tag').removeClass('note_tag_selected');
     t.div.addClass('note_tag_selected');
+    this.launchTagMethod(this.selected, 'click', t.id);
     this.updated();    
 };
 

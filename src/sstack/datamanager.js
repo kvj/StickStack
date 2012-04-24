@@ -22,6 +22,18 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
         });
         return true;
     };
+    if (method == 'getNote') {
+        datamanager.getNote(params[0], function (err, note) {
+            handler(err, note);
+        });
+        return true;
+    };
+    if (method == 'getSheet') {
+        datamanager.getSheet(params[0], function (err, sheet) {
+            handler(err, sheet);
+        });
+        return true;
+    };
     if (method == 'getAttachment') {
         datamanager.getAttachment(params[0], function (err, uri) {
             handler(err, uri);
@@ -103,13 +115,13 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
     if (method == 'addTag') {
         datamanager.getTags(params[0], function(tags, err) {
             if (tags) {
-                log('Add tag', tags, params[1], params[2]);
+                // log('Add tag', tags, params[1], params[2]);
                 if (params[2]) {
                     tags = datamanager.tagToTag(tags, params[1], params[2]);
                 } else {
                     tags = datamanager.tagToNote(tags, params[1]);
                 };
-                log('Saving', tags);
+                // log('Saving', tags);
                 datamanager.updateTags(params[0], tags, function(id, err) {
                     if (id) {
                         handler(id);
@@ -201,6 +213,7 @@ var DataManager = function(database) {//Do DB operations
 
     var NoteTag = function() {
         this.name = 'note';
+        this.display = 'note';
     };
     NoteTag.prototype = new DefaultTag();
 
@@ -558,7 +571,7 @@ var DataManager = function(database) {//Do DB operations
                 dtend.setFullYear(dtstart.getFullYear()+1);
                 dtend.setDate(0);
             };
-            return {dstart: dtstart, dend: dtend};
+            return {dstart: dtstart, dend: dtend, type: dt.type};
         };
         return null;
     };
@@ -626,18 +639,24 @@ var DataManager = function(database) {//Do DB operations
         };
         var dt = this._toDate(text);
         var dinfo = this.info(text);
+        log('Select DateTag', dinfo);
         if (dinfo) {
             var dtstart = dinfo.dstart;
             var dtend = dinfo.dend;
-            values.push({
-                op: 'or', 
-                'var': [
-                    'id', this._in(['type', 'd:', 
-                        'value', {op: '>=', 'var': dtstart.format('yyyymmdd')}, 
-                        'value', {op: '<=', 'var': dtend.format('yyyymmdd')}
-                    ]), 'id', this._in(['type', 'd:', 'text', this.adopt(text)])
-                ]
-            })
+            if (dinfo.type == 'y') {
+                // Only by direct tag
+                values.push('id', this._in(['type', 'd:', 'text', this.adopt(text)]));
+            } else {
+                values.push({
+                    op: 'or', 
+                    'var': [
+                        'id', this._in(['type', 'd:', 
+                            'value', {op: '>=', 'var': dtstart.format('yyyymmdd')}, 
+                            'value', {op: '<=', 'var': dtend.format('yyyymmdd')}
+                        ]), 'id', this._in(['type', 'd:', 'text', this.adopt(text)])
+                    ]
+                })
+            }
         };
         return DefaultTag.prototype.select(this.adopt(text), values);
     };
@@ -1189,6 +1208,15 @@ DataManager.prototype.getTags = function(id, handler) {//Selects tags from DB
 
 DataManager.prototype.getSheet = function(id, handler) {//Selects sheet
     this.db.findOne('sheets', id, _.bind(function (err, data) {
+        if (err) {
+            return handler(err);
+        };
+        handler(null, data);
+    }, this));
+};
+
+DataManager.prototype.getNote = function(id, handler) {//Selects note
+    this.db.findOne('notes', id, _.bind(function (err, data) {
         if (err) {
             return handler(err);
         };
