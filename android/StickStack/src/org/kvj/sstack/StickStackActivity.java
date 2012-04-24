@@ -16,7 +16,7 @@ public class StickStackActivity extends DroidGap {
 		// Log.i(TAG, "onCreate: " + savedInstanceState);
 		// setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		super.setIntegerProperty("backgroundColor", Color.BLACK);
-		super.setBooleanProperty("keepRunning", true);
+		super.setBooleanProperty("keepRunning", false);
 		// setStringProperty("loadingDialog", "Stick Stack,Loading...");
 		super.onCreate(savedInstanceState);
 		super.init();
@@ -29,4 +29,5 @@ public class StickStackActivity extends DroidGap {
 	View getRoot() {
 		return this.appView;
 	}
+
 }

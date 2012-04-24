@@ -247,15 +247,6 @@ var TopManager = function(nav) {//Manages top panel
                     return true;
                 }, this),
             });
-            // if (CURRENT_PLATFORM_MOBILE && this.android) {
-            //     items.push({
-            //         caption: 'Change orientation',
-            //         handler: _.bind(function() {
-            //             this.android.setOrientation(true);
-            //             return true;
-            //         }, this),
-            //     });                
-            // };
             if (!CURRENT_PLATFORM_MOBILE && CURRENT_PLATFORM == PLATFORM_WEB) {
                 items.push({
                     caption: 'Backup data',

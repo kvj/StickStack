@@ -825,7 +825,7 @@ var Buttons = function(config) {//Cool buttons
     this.config = config || {};
     this.element = $('<div/>').addClass('buttons');
     this.focusDiv = $(document.createElement('div')).addClass('focus_indicator');
-    this.focused = -1;
+    this.focused = 0;
     this.row = $(document.createElement('div')).addClass('buttons_row').appendTo(this.element);
     this.buttonRows = [];
     if (this.config.root) {//Attach to parent

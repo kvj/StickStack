@@ -61,28 +61,28 @@ public class KeyboardPlugin extends Plugin {
 			switch (keyCode) {
 			case KeyEvent.KEYCODE_DPAD_UP:
 				sendEvent(obj, 38);
-				break;
+				return true;
 			case KeyEvent.KEYCODE_DPAD_DOWN:
 				sendEvent(obj, 40);
-				break;
+				return true;
 			case KeyEvent.KEYCODE_DPAD_LEFT:
 				sendEvent(obj, 37);
-				break;
+				return true;
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
 				sendEvent(obj, 39);
-				break;
+				return true;
 			case KeyEvent.KEYCODE_ENTER:
 				sendEvent(obj, 13);
-				break;
+				return true;
 			case KeyEvent.KEYCODE_MOVE_HOME:
 				sendEvent(obj, 36);
-				break;
+				return true;
 			case KeyEvent.KEYCODE_MOVE_END:
 				sendEvent(obj, 35);
-				break;
+				return true;
 			case KeyEvent.KEYCODE_L:
 				sendEvent(obj, 76);
-				break;
+				return true;
 			}
 		} catch (JSONException e) {
 			e.printStackTrace();

@@ -2,7 +2,7 @@
 	border-color: #351330;
 }
 
-.panel_focused.panel_column, .panel_focused.panel_manager_nav {
+.panel_focused.panel_column {
     border-color: #CC2A41 !important;
 }
 
