@@ -283,7 +283,7 @@ var TopManager = function(nav) {//Manages top panel
             this.sheetsManager = new SheetsManager(this.panel, this.manager);
             setTimeout(_.bind(function () {
                 this.sync();
-            }, this), 5000);
+            }, this), 2000);
         }, this));
     }, this), 100);
 
@@ -485,6 +485,7 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
     this.syncManager.open(_.bind(function(err) {//local DB opened
         if (!err) {//
             this.manager = new DataManager(this.syncManager);
+            this.manager.sync_timeout = CURRENT_PLATFORM_MOBILE? 10: 90;
             this.nav.handler = _.bind(function (index) {
                 if (index == 0) {
                     this.sync();
@@ -1142,7 +1143,7 @@ var InlineSheet = function(sheet, panel, datamanager, forcenew) {//
     this.topMenu.config.rows = [0, '2.5em'];
     _goBackFactory(this.topMenu, this.panel, '');
     this.manager = datamanager;
-    this.topMenu.addButton({
+    var newButton = this.topMenu.addButton({
         caption: 'New',
         classNameInner: 'button_create',
         handler: _.bind(function() {
@@ -1224,6 +1225,24 @@ var InlineSheet = function(sheet, panel, datamanager, forcenew) {//
         return this.sheet.keypress(e);
     }, this);
     manager.show(this.panel, forcenew? null: panel);
+    this.sheet.enableTagDrop(newButton.element, _.bind(function(tag, text) {
+        this.sheet.startNoteWithTag({tags_captions: []}, tag);
+    }, this));
+    this.sheet.enableNoteDrop(newButton.element, _.bind(function(n) {
+        if (n.id) {//note drop
+            this.sheet.proxy('moveNote', _.bind(function(id, err) {//
+                if (id) {
+                    this.reload(id);
+                };
+            }, this.sheet), [n.id, this.sheet.autotags]);
+        } else {//Put note
+            this.sheet.proxy('putNote', _.bind(function(id, err) {//
+                if (id) {
+                    this.reload(id);
+                };
+            }, this.sheet), [n, this.sheet.autotags]);
+        };
+    }, this));
 };
 
 var newSheet = function(sheet, panel, datamanager, forceinline) {//Creates new sheet

@@ -18,7 +18,7 @@ var _showError = function(message) {//Shows error
     log('Error:', message);
     //css('top', 80+document.body.scrollTop).
     $('#error_dialog').html(message || 'No error message provided').show();
-    $('#error_dialog_background').show();
+    _disableUI();
 };
 
 var _disableUI = function () {
@@ -31,7 +31,7 @@ var _enableUI = function () {
 
 var _hideError = function() {
     $('#error_dialog').hide();
-    $('#error_dialog_background').hide();
+    _enableUI();
 };
 
 var __id = 0;
@@ -95,14 +95,17 @@ var _showQuestion = function(message, handler, buttons, element) {//Shows questi
         }
         return true;
     };
+    _keyHandler.marker = '_showQuestion';
     _getManager().keyListener.on('keydown', _keyHandler, true);
     _getManager().setIgnoreInput(true);
+    _disableUI();
     for (var i = 0; i < buttons.length; i++) {//Add index and handler
         buttons[i].index = i;
         buttons[i].handler = _.bind(function(e, btn) {//Click on button
             this.div.hide();
             _getManager().keyListener.off('keydown', _keyHandler);
             _getManager().setIgnoreInput(false);
+            _enableUI();
             if (this.handler) {//Have handler
                 this.handler(btn.index, btn);
             };
@@ -182,9 +185,9 @@ var _appEvents = new EventEmitter();
 
 var _initUI = function(storage) {//Creates root UI elements
     var main = $('<div id="main"/>').appendTo(document.body);
-    $('<div id="question_dialog" class="popup_dialog"/>').appendTo(document.body).addClass('question_dialog').hide();
     var err_bg = $('<div id="error_dialog_background"/>').appendTo(document.body).hide();
     var err = $('<div id="error_dialog" class="popup_dialog"/>').appendTo(err_bg).addClass('error_dialog').hide();
+    $('<div id="question_dialog" class="popup_dialog"/>').appendTo(err_bg).addClass('question_dialog').hide();
     err.bind(CURRENT_EVENT_CLICK, function(e) {//Hide error dialog
         $('#error_dialog_background').hide();
         return false;
@@ -1154,6 +1157,7 @@ var PopupMenu = function(config) {//Shows popup menu
     };
     this.visible = true;
     __visiblePopupMenu = this;
+    _disableUI();
     this.keyHandler = _.bind(this.keyPressed, this);
     _getManager().keyListener.on('keydown', this.keyHandler, true);
     _getManager().setIgnoreInput(true);
@@ -1177,6 +1181,7 @@ PopupMenu.prototype.hide = function() {//Hides menu
     if (!this.visible) {
         return false;
     };
+    _enableUI();
     _getManager().keyListener.off('keydown', this.keyHandler);
     _getManager().setIgnoreInput(false);
     this.menu.remove();

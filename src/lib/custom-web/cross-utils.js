@@ -102,7 +102,8 @@ EventEmitter.prototype.on = function(type, handler, top) {//Adds new handler
         arr = this.events[type];
     };
     for (var i = 0; i < arr.length; i++) {//Check for duplicate
-        if (arr[i] == handler) {//Already here
+        if (arr[i] == handler || (arr[i].marker && arr[i].marker == handler.marker)) {//Already here
+            arr[i] = handler;
             return false;
         };
     };
@@ -127,7 +128,7 @@ EventEmitter.prototype.off = function(type, handler) {//Removes handler
         return true;
     };
     for (var i = 0; i < arr.length; i++) {//Look for handler
-        if (arr[i] == handler) {//Found - splice
+        if (arr[i] == handler || (arr[i].marker && arr[i].marker == handler.marker)) {//Found - splice
             arr.splice(i, 1);
             i--;
         };

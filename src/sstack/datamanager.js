@@ -18,7 +18,18 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
     };
     if (method == 'getNote') {
         datamanager.getNote(params[0], function (err, note) {
-            handler(err, note);
+            if (params[1] && !err) {
+                // Load tags
+                datamanager.loadTags([note], function(list, err) {
+                    if (list) {
+                        handler(null, note, list);
+                    } else {
+                        handler(null, note);
+                    };
+                });
+            } else {
+                handler(err, note);
+            }
         });
         return true;
     };

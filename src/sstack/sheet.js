@@ -13,10 +13,11 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
         this.autotags = 's:'+this.data.id+' ';
     };
     this.root = element;
+    this.topDiv = $(document.createElement('div')).appendTo(this.root)
     this.proxy = proxy;
     this.mediaGap = 8;
     this.menuPlace = menuPlace;
-    this.areaPanel = $('<div/>').addClass('area_wrap').appendTo(this.root).hide();
+    this.areaPanel = $(document.createElement('div')).addClass('area_wrap').appendTo(this.root).hide();
     this.area = $('<textarea/>').addClass('form_control').appendTo(this.areaPanel);
     this.area.bind('click', function (e) {
         e.stopPropagation();
@@ -75,7 +76,7 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
         this.updated();
         return true;
     }, this));
-    this.textPanel = $('<div/>').addClass('input_wrap').appendTo(this.root).hide();
+    this.textPanel = $(document.createElement('div')).addClass('input_wrap').appendTo(this.root).hide();
     this.text = $('<input type="text"/>').addClass('form_control').appendTo(this.textPanel);
     this.text.bind('keydown', _.bind(function(e) {
         if (e.which == 13) {//Enter
@@ -127,6 +128,13 @@ Sheet.prototype.showNoteMenu = function() {
             caption: 'Edit tag',
             handler: _.bind(function() {
                 this.startTextEdit(this.selected.id, this.selected.div, 'tag', this.selected.selectedTag.id);
+                return true;
+            }, this),
+        });
+        items.push({
+            caption: 'Note from tag',
+            handler: _.bind(function() {
+                this.startNoteWithTag(this.selected, this.selected.selectedTag.id);
                 return true;
             }, this),
         });
@@ -319,13 +327,32 @@ Sheet.prototype.launchTagMethod = function(note, method, tag) {
                     params.push(arguments[i]);
                 };
                 var result = this[m].apply(this, params);
-                if (result === true) {
-                    return true;
+                if (result) {
+                    return result;
                 };
             };
         };
     };
-    return false;
+    return null;
+};
+
+Sheet.prototype.tag_start_contact = function(note, tag) {
+    this.startTextEdit(null, this.topDiv, null, 'contact:', _.bind(function (text) {
+        this.proxy('createNote', _.bind(function(id, err) {//
+            if (id) {
+                this.proxy('addTag', _.bind(function(id, err) {//
+                    if (id) {
+                        this.reload(id);
+                    };
+                }, this), [id, text]);
+            };
+        }, this), ['', this.autotags]);
+    }, this))
+    return true;
+};
+
+Sheet.prototype.tag_get_name_contact = function(note, tag) {
+    return tag.substr('contact:'.length);
 };
 
 Sheet.prototype.tag_unselect_file = function(note, tag) {
@@ -402,9 +429,15 @@ Sheet.prototype.tag_click_sheet = function(note, tag) {
 };
 
 Sheet.prototype.tag_click_note = function(note, tag) {
-    this.proxy('getNote', _.bind(function (err, note) {
+    this.proxy('getNote', _.bind(function (err, note, list) {
         if (!err) {
-            var text = note.text;
+            var text = '';
+            if (list) {
+                text = this.launchTagMethod(list[0], 'get_name');
+            };
+            if (!text) {
+                text = note.text;
+            };
             if (text.indexOf('\n') != -1) {
                 text = text.substr(0, text.indexOf('\n'));
             } else {
@@ -414,7 +447,7 @@ Sheet.prototype.tag_click_note = function(note, tag) {
             }
             _showInfo(text || 'Untitled');
         };
-    }, this), [tag.substr(2)]);
+    }, this), [tag.substr(2), true]);
 };
 
 Sheet.prototype.tag_unselect_geo = function(note, tag) {
@@ -614,9 +647,14 @@ Sheet.prototype.tag_select_path = function(note, tag) {
 
 Sheet.prototype.editTextDone = function(val) {//Edit tag/link/ref
     var method = null;
+    val = _.trim(val || '');
+    this.text.val('');
+    this.text.blur();
+    if (this.textEditHandler) {
+        this.textEditHandler(val);
+    };
     if (this.editField == 'tag') {
         method = 'addTag';
-        val = _.trim(val || '');
         var params = [this.editID];
         if (this.editValue) {
             params.push(this.editValue, val);
@@ -629,15 +667,12 @@ Sheet.prototype.editTextDone = function(val) {//Edit tag/link/ref
             };
         }, this), params);
     } else {
-        val = _.trim(val || '');
         this.proxy('editNoteField', _.bind(function(id, err) {//
             if (id) {
                 this.reload();
             };
         }, this), [this.editID, val, this.editField]);
     };
-    this.text.val('');
-    this.text.blur();
 };
 
 var fixFloat = function (fl, round) {
@@ -817,8 +852,15 @@ Sheet.prototype.selectTag = function(t) {
     this.updated();    
 };
 
+Sheet.prototype.startNoteWithTag = function(note, tag) {
+    if (this.launchTagMethod(note, 'start', tag)) {
+        return;
+    };
+    this.newNote(tag);
+};
+
 Sheet.prototype.showTag = function(note, t, parent, remove) {//
-    var tag = $('<div/>').addClass('note_tag draggable').attr('draggable', 'true').appendTo(parent);
+    var tag = $(document.createElement('div')).addClass('note_tag draggable').attr('draggable', 'true').appendTo(parent);
     if (t.tag_display) {
         tag.addClass('note_tag_display_'+t.tag_display);
     };
@@ -827,8 +869,8 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
     tag.text(t.caption);
     this.launchTagMethod(note, 'show', t.id, tag);
     tag.bind('dblclick', {tag: t}, _.bind(function(e) {
+        this.startNoteWithTag(note, t.id);
         e.preventDefault();
-        this.newNote(t.id);
         return false;
     }, this));
     tag.bind('click', {div: tag, tag: t}, _.bind(function(e) {//
@@ -943,8 +985,12 @@ Sheet.prototype.editNote = function(note, div) {
     this.areaPanel.detach().insertAfter(div);
     this.areaPanel.show();
     this.editing = true;
-    this.area.val(note.text || '').focus();
+    this.area.val(note.text || '');
     this.updated();
+    setTimeout(_.bind(function () {
+        this.area.focus();
+    }, this), 10);
+    this.scrollTo(this.areaPanel);
 };
 
 Sheet.prototype.enableTagDrop = function(div, handler, id) {//Called when tag dropped
@@ -1085,7 +1131,7 @@ Sheet.prototype.openNote = function(note, inline) {
 };
 
 Sheet.prototype.showNote = function(note, parent, lastSelected) {//
-    var div = $('<div/>').addClass('note draggable').insertBefore(parent.children('.clear'));
+    var div = $(document.createElement('div')).addClass('note draggable').insertBefore(parent.children('.clear'));
     note.divID = 'note'+(this.noteIndex++);
     div.attr('tabindex', 0).attr('id', note.divID);
     this.notes[note.divID] = note;
@@ -1158,7 +1204,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
         e.stopPropagation();
         return true;
     }, this));
-    var tags = $('<div/>').addClass('note_tags');
+    var tags = $(document.createElement('div')).addClass('note_tags');
     if (note.subnotes>1) {
         $(ui.buildIcon('ic_notes')).appendTo(tags).addClass('left_icon').bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
             this.openNote(note, e.ctrlKey);
@@ -1166,12 +1212,12 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
         }, this));
     }
     $('<div style="clear: both;"/>').appendTo(div);
-    var text = $('<div/>').addClass('note_text').appendTo(div);
+    var text = $(document.createElement('div')).addClass('note_text').appendTo(div);
     var lines = note.parsed || [''];
     if (!this.launchTagMethod(note, 'show_note', null, text, lines)) {
         for (var j = 0; j < lines.length; j++) {//Add lines
             var line = lines[j];
-            var line_div = $('<div/>').addClass('note_line').appendTo(text);
+            var line_div = $(document.createElement('div')).addClass('note_line').appendTo(text);
             this.renderLine(note, line, line_div);
             // if (line.length == 0) {//Add text
             //     line_div.text('-');
@@ -1272,7 +1318,7 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
                 }, this), [e.data.note.id, new_text]);
                 return false;
             }, this));
-            $('<div/>').addClass('note_word').appendTo(line_div).text(' ');
+            $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(' ');
         } else if (word.type == 'marker') {
             var m = findMarker(word.text);
             var cbox = $(ui.buildIcon(markers[m].cls)).appendTo(line_div).css('float', 'left');
@@ -1285,10 +1331,10 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
                 }, this), [e.data.note.id, new_text]);
                 return false;
             }, this));
-            $('<div/>').addClass('note_word').appendTo(line_div).text(' ');
+            $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(' ');
         } else if (word.type == 'tag') {//Add tag
             this.showTag(note, word.tag, line_div);
-            $('<div/>').addClass('note_word').appendTo(line_div).text(' ');
+            $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(' ');
         } else if (word.type == 'link') {//Add link
             var div = $(document.createElement('div')).addClass('note_word').appendTo(line_div);
             var anchor = $(document.createElement('a')).addClass('note_link').attr('href', word.link).appendTo(div).text(word.text);
@@ -1514,13 +1560,13 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
     this.endHour = 23;
     if (!this.hours) {//Create hours
         this.hours = [];
-        this.noHour = $('<div/>').appendTo(this.root);
+        this.noHour = $(document.createElement('div')).appendTo(this.root);
         $(document.createElement('div')).addClass('clear').appendTo(this.noHour);
         for (var i = this.startHour; i <= this.endHour; i++) {//Create divs
-            var hr = $('<div/>').addClass('day_hour').appendTo(this.root);
-            $('<div/>').addClass('day_hour_caption').appendTo(hr).text(''+(i>12? i-12: i)+(i>11? 'p': 'a'));
+            var hr = $(document.createElement('div')).addClass('day_hour').appendTo(this.root);
+            $(document.createElement('div')).addClass('day_hour_caption').appendTo(hr).text(''+(i>12? i-12: i)+(i>11? 'p': 'a'));
             this.hours[i] = hr;
-            var notes_place = $('<div/>').addClass('day_hour_notes').appendTo(hr);
+            var notes_place = $(document.createElement('div')).addClass('day_hour_notes').appendTo(hr);
             $(document.createElement('div')).addClass('clear').appendTo(notes_place);
             if (CURRENT_PLATFORM_MOBILE) {
                 installSwipeHandler(hr, _.bind(function(hour) {//
@@ -1577,7 +1623,7 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
                 this.unselectNote();
             }, this));
         };
-        this.nowLine = $('<div/>').appendTo(this.root).addClass('now_line');
+        this.nowLine = $(document.createElement('div')).appendTo(this.root).addClass('now_line');
         if (this.moveNowLineID) {
             cancelInterval(this.moveNowLineID);
         };
@@ -1676,15 +1722,27 @@ Sheet.prototype.reload = function(beforeID, forceNoSelect) {//Asks for items
     }, this), [tags, sort, this.extra]);
 };
 
-Sheet.prototype.startTextEdit = function(id, note, field, value) {//Shows editor
+Sheet.prototype.scrollTo = function(element) {
+    if (CURRENT_PLATFORM_MOBILE) {
+        var offs = element.offset();
+        $(window).scrollTop(offs.top-10);
+    };
+};
+
+Sheet.prototype.startTextEdit = function(id, note, field, value, handler) {//Shows editor
     this.editing = true;
     this.textPanel.detach().insertAfter(note);
+    this.textEditHandler = handler || null;
     this.textPanel.show();
-    this.text.val(value || '').focus();
+    this.text.val(value || '');
     this.editID = id;
     this.editField = field;
     this.editValue = value;
     this.updated();
+    setTimeout(_.bind(function () {
+        this.text.focus();
+    }, this), 10);
+    this.scrollTo(this.textPanel);
 };
 
 Sheet.prototype.newNote = function(tags, ignoreAutoTags) {//Starts new note
@@ -1693,9 +1751,13 @@ Sheet.prototype.newNote = function(tags, ignoreAutoTags) {//Starts new note
     this.ignoreAutoTags = ignoreAutoTags;
     this.root.prepend(this.areaPanel.detach());
     this.areaPanel.show();
-    this.area.val('').focus();
+    this.area.val('');
     this.editID = null;
     this.updated();
+    setTimeout(_.bind(function () {
+        this.area.focus();
+    }, this), 10);
+    this.scrollTo(this.areaPanel);
 };
 
 Sheet.prototype.updated = function() {//Empty
