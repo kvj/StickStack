@@ -445,3 +445,15 @@
 .note_selected .note_time_down {
     display: block;
 }
+
+.sheet_drop_targets .button_outer {
+    min-height: 1em;
+}
+
+.sheet_drop_targets .button_inner {
+    min-height: 0.7em;
+}
+
+.sheet_drop_targets .drag_active .button_inner {
+    background-color: #CC2A41;
+}

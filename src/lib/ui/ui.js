@@ -805,8 +805,8 @@ PanelManager.prototype.keyHandler = function(e) {
 };
 
 var Panel = function(title) {
-    this.element = $('<div/>').addClass('panel');
-    this.titleElement = $('<div/>').addClass('panel_title').appendTo(this.element);
+    this.element = $(document.createElement('div')).addClass('panel');
+    this.titleElement = $(document.createElement('div')).addClass('panel_title').appendTo(this.element);
     this.title = title;
     this.titleElement.text(title);
     this.keys = {};
@@ -826,6 +826,7 @@ Panel.prototype.addKeyHandler = function(key, obj, handler, data) {
 
 var Buttons = function(config) {//Cool buttons
     this.config = config || {};
+    this.readonly = this.config.readonly || false;
     this.element = $('<div/>').addClass('buttons');
     this.focusDiv = $(document.createElement('div')).addClass('focus_indicator');
     this.focused = 0;
@@ -844,6 +845,9 @@ var Buttons = function(config) {//Cool buttons
 };
 
 Buttons.prototype.keypress = function(e) {
+    if (this.readonly) {
+        return false;
+    };
     switch (e.keyCode) {
         case 38: // up
             if (this.focus(this.focused-1)) {
@@ -885,8 +889,12 @@ Buttons.prototype.addButton = function(button, before) {//Adds button
     var row = this.getRow(button.row);
     button.element = $('<div/>').addClass('button_outer').insertBefore(before? before.element: row.children().last());
     button.innerElement = $('<button/>').addClass('button_inner').appendTo(button.element);
+    if (this.readonly) {
+        button.innerElement.attr('disabled', 'disabled');
+        button.element.addClass('button_readonly');
+    };
     button.innerElement.bind('click', {buttons: this, button: button, index: this.buttons.length}, function(e) {//Click on button
-        if (e.data.button.disabled) {//Ignore click
+        if (e.data.button.disabled || e.data.buttons.readonly) {//Ignore click
             return false;
         };
         // e.data.button.element.addClass('button_pressed');

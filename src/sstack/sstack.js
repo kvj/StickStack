@@ -455,10 +455,14 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
     }, this);
     this.syncManager = new Lima1DataManager('sstack', oauth, storage);
     if (CURRENT_PLATFORM == PLATFORM_AIR) {
-        storage.cache = new AirCacheProvider(oauth, 'sstack', 600);
+        storage.cache = new AirCacheProvider(oauth, 'sstack', manager.minColWidth*2);
     };
-    if (CURRENT_PLATFORM_MOBILE) {
-        storage.cache = new PhoneGapCacheProvider(oauth, 'sstack', 900);
+    if (CURRENT_PLATFORM == PLATFORM_WEB) {
+        if (CURRENT_PLATFORM_MOBILE) {
+            storage.cache = new PhoneGapCacheProvider(oauth, 'sstack', 900);
+        } else {
+            storage.cache = new HTML5CacheProvider(oauth, 'sstack', manager.minColWidth*2);
+        }
     };
     // $('#channel_indicator').bind('click', _.bind(function () {
     //     this.sync();
@@ -645,7 +649,7 @@ var SheetsManager = function(panel, datamanager) {
         if (e.which == 13) {//Enter
             var val = this.text.val();
             if (val) {
-                openTag(val, this.panel, datamanager);
+                openTag(val, this.panel, datamanager, null, 'timeline');
             };
             return false;
         };
@@ -971,8 +975,10 @@ WindowSheet.prototype.getBounds = function(x, y) {
     return positions[1];
 };
 
-var openTag = function(tag, panel, manager, sort) {
+var openTag = function(tag, panel, manager, sort, display) {
     var sorting = '-'+tag;
+    var autotags = tag;
+    var sheetType = null;
     var failSafe = function () {
         if (sort) {
             sorting += ' '+sort;
@@ -980,7 +986,7 @@ var openTag = function(tag, panel, manager, sort) {
             sorting += ' d:* t:*';
         }
         // log('openTag', tag, sort, sorting);
-        newSheet({caption: 'Tag: '+manager.formatTag(tag), tags: tag, autotags: tag, sort: sorting}, panel, manager);        
+        newSheet({caption: 'Tag: '+manager.formatTag(tag), tags: tag, autotags: autotags, sort: sorting, type: sheetType, display: display}, panel, manager);        
     }
     if (tag) {
         if (_.startsWith(tag, 's:')) {
@@ -990,6 +996,7 @@ var openTag = function(tag, panel, manager, sort) {
                     if (err) {
                         failSafe();
                     } else {
+                        sheetType = 's:';
                         newSheet(sheet, panel, manager, true);
                     };
                 })
@@ -1008,6 +1015,7 @@ var openTag = function(tag, panel, manager, sort) {
                                 sort = tags[i].substr('sort:'.length);
                             };
                         };
+                        sheetType = 'n:';
                         failSafe();
                     };
                 })
@@ -1150,7 +1158,7 @@ var InlineSheet = function(sheet, panel, datamanager, forcenew) {//
             this.sheet.newNote();
         }, this),
     });
-    this.topMenu.addButton({
+    var reloadButton = this.topMenu.addButton({
         caption: 'Reload',
         handler: _.bind(function() {
             this.sheet.reload();
@@ -1225,24 +1233,6 @@ var InlineSheet = function(sheet, panel, datamanager, forcenew) {//
         return this.sheet.keypress(e);
     }, this);
     manager.show(this.panel, forcenew? null: panel);
-    this.sheet.enableTagDrop(newButton.element, _.bind(function(tag, text) {
-        this.sheet.startNoteWithTag({tags_captions: []}, tag);
-    }, this));
-    this.sheet.enableNoteDrop(newButton.element, _.bind(function(n) {
-        if (n.id) {//note drop
-            this.sheet.proxy('moveNote', _.bind(function(id, err) {//
-                if (id) {
-                    this.reload(id);
-                };
-            }, this.sheet), [n.id, this.sheet.autotags]);
-        } else {//Put note
-            this.sheet.proxy('putNote', _.bind(function(id, err) {//
-                if (id) {
-                    this.reload(id);
-                };
-            }, this.sheet), [n, this.sheet.autotags]);
-        };
-    }, this));
 };
 
 var newSheet = function(sheet, panel, datamanager, forceinline) {//Creates new sheet

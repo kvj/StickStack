@@ -1,5 +1,5 @@
 (function() {
-  var AirCacheProvider, AirDBProvider, CacheProvider, ChannelProvider, DBProvider, DataManager, DesktopChannelProvider, HTML5Provider, PhoneGapCacheProvider, StorageProvider,
+  var AirCacheProvider, AirDBProvider, CacheProvider, ChannelProvider, DBProvider, DataManager, DesktopChannelProvider, HTML5CacheProvider, HTML5Provider, PhoneGapCacheProvider, StorageProvider,
     __hasProp = Object.prototype.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
@@ -145,6 +145,105 @@
     return CacheProvider;
 
   })();
+
+  HTML5CacheProvider = (function(_super) {
+
+    __extends(HTML5CacheProvider, _super);
+
+    function HTML5CacheProvider(oauth, app, maxwidth) {
+      var _this = this;
+      this.oauth = oauth;
+      this.app = app;
+      this.maxwidth = maxwidth;
+      this.fs = null;
+      window.webkitStorageInfo.requestQuota(PERSISTENT, 100 * 1024 * 1024, function(bytes) {
+        return window.webkitRequestFileSystem(window.PERSISTENT, bytes, function(fs) {
+          _this.fs = fs;
+          return fs.root.getDirectory('cache', {
+            create: true
+          }, function(dir) {
+            _this.cacheDir = dir;
+            return log('Filesystem ready', _this.fs, dir);
+          }, function(err) {
+            log('Error getting dir', err);
+            return _this.fs = null;
+          });
+        }, function(err) {
+          return log('Error requesting FS:', err);
+        });
+      }, function(err) {
+        return log('Error requesting quota:', err);
+      });
+    }
+
+    HTML5CacheProvider.prototype.store = function(name, path, handler) {
+      return handler('No supported yet');
+    };
+
+    HTML5CacheProvider.prototype.get = function(name, handler) {
+      var _this = this;
+      if (!this.cacheDir) return handler('No filesystem');
+      return this.cacheDir.getFile(name, {
+        create: false
+      }, function(file) {
+        log('File found:', file, file.toURL());
+        return handler(null, file.toURL());
+      }, function(err) {
+        var url, xhr;
+        log('File not found, downloading', name);
+        url = "/rest/file/download?name=" + name + "&";
+        if (_.endsWith(name, '.jpg')) url += "width=" + _this.maxwidth + "&";
+        log('Download', url);
+        url = _this.oauth.getFullURL(_this.app, url);
+        xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'blob';
+        xhr.onload = function(e) {
+          log('onload', xhr, xhr.readyState, xhr.status);
+          if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+              log('Download OK', xhr, status);
+              return _this.cacheDir.getFile(name, {
+                create: true
+              }, function(file) {
+                return file.createWriter(function(writer) {
+                  writer.onwriteend = function() {
+                    log('Write done, yea!');
+                    return handler(null, file.toURL());
+                  };
+                  writer.onerror = function(err) {
+                    log('Write failed', err);
+                    return handler('Write error');
+                  };
+                  return writer.write(xhr.response);
+                }, function(err) {
+                  log('Write failed', err);
+                  return handler('Write error');
+                });
+              }, function(err) {
+                log('Create file failed', err);
+                return handler('Write error');
+              });
+            } else {
+              return handler('HTTP error');
+            }
+          }
+        };
+        return xhr.send();
+      });
+    };
+
+    HTML5CacheProvider.prototype.upload = function(name, handler) {
+      return handler('Not supported yet');
+    };
+
+    HTML5CacheProvider.prototype.remove = function(name, handler) {
+      return handler(null);
+    };
+
+    return HTML5CacheProvider;
+
+  })(CacheProvider);
 
   PhoneGapCacheProvider = (function(_super) {
 
@@ -1317,6 +1416,8 @@
   window.PhoneGapCacheProvider = PhoneGapCacheProvider;
 
   window.DesktopChannelProvider = DesktopChannelProvider;
+
+  window.HTML5CacheProvider = HTML5CacheProvider;
 
   window.env = {
     mobile: false,

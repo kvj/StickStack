@@ -98,6 +98,76 @@ class CacheProvider
 	remove: (name, handler) ->
 		handler null
 
+class HTML5CacheProvider extends CacheProvider
+
+	constructor: (@oauth, @app, @maxwidth) ->
+		@fs = null
+		window.webkitStorageInfo.requestQuota PERSISTENT, 100*1024*1024, (bytes) =>
+			window.webkitRequestFileSystem window.PERSISTENT, bytes, (fs) =>
+				@fs = fs
+				fs.root.getDirectory 'cache', {create: true}, (dir) =>
+					@cacheDir = dir
+					log 'Filesystem ready', @fs, dir
+				, (err) =>
+					log 'Error getting dir', err
+					@fs = null
+			, (err) =>
+				log 'Error requesting FS:', err
+		, (err) =>
+			log 'Error requesting quota:', err
+
+	# Copies file to cache
+	store: (name, path, handler) ->
+		handler 'No supported yet'
+
+	# Downloads? and Returns path to file in cache
+	get: (name, handler) ->
+		if not @cacheDir then return handler 'No filesystem'
+		@cacheDir.getFile name, {create: false}, (file) =>
+			log 'File found:', file, file.toURL()
+			handler null, file.toURL()
+		, (err) =>
+			log 'File not found, downloading', name
+			url = "/rest/file/download?name=#{name}&"
+			if _.endsWith name, '.jpg'
+				url += "width=#{@maxwidth}&"
+			# log 'Download', url
+			url = @oauth.getFullURL(@app, url)
+			xhr = new XMLHttpRequest()
+			xhr.open 'GET', url, yes
+			xhr.responseType = 'blob'
+			xhr.onload = (e) =>
+				log 'onload', xhr, xhr.readyState, xhr.status
+				if xhr.readyState is 4
+					if xhr.status is 200
+						# log 'Download OK', xhr, status
+						@cacheDir.getFile name, {create: true}, (file) =>
+							file.createWriter (writer) =>
+								writer.onwriteend = () =>
+									# log 'Write done, yea!'
+									handler null, file.toURL()
+								writer.onerror = (err) =>
+									log 'Write failed', err
+									handler 'Write error'
+								writer.write xhr.response
+							, (err) =>
+								log 'Write failed', err
+								handler 'Write error'
+						, (err) =>
+								log 'Create file failed', err
+								handler 'Write error'
+					else
+						handler 'HTTP error'
+			xhr.send()
+
+	# Uploads file from cache
+	upload: (name, handler) ->
+		handler 'Not supported yet'
+
+	# Removes file from cache
+	remove: (name, handler) ->
+		handler null
+
 class PhoneGapCacheProvider extends CacheProvider
 
 	constructor: (@oauth, @app, @maxwidth) ->
@@ -937,6 +1007,7 @@ window.Lima1DataManager = DataManager
 window.AirCacheProvider = AirCacheProvider
 window.PhoneGapCacheProvider = PhoneGapCacheProvider
 window.DesktopChannelProvider = DesktopChannelProvider
+window.HTML5CacheProvider = HTML5CacheProvider
 window.env =
 	mobile: no
 	prefix: ''

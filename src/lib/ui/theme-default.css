@@ -70,6 +70,13 @@
     background-color: #351330;
 }
 
+.button_readonly .button_inner:active {
+    left: 0px;
+    top: 0px;
+    right: 1px;
+    background-color: #424254;
+}
+
 .panel_title {
     padding: 0.2em;
     font-weight: bold;

@@ -1425,8 +1425,11 @@ DataManager.prototype.tagToTag = function(tags, tag, drop) {//Drop tag to tag
     return tags;
 };
 
-DataManager.prototype.hasTag = function(tags, tag, last) {//Searches tag in array, returns last or first
+DataManager.prototype.hasTag = function(tags, tag, last, note) {//Searches tag in array, returns last or first
     var foundTags = [];
+    if (_.startsWith(tag, ':') && note) {
+        return note[tag.substr(1)];
+    };
     for (var i = 0; i < tags.length; i++) {
         if (_.endsWith(tag, '*')) {
             if (_.startsWith(tags[i], tag.substr(0, tag.length-1))) {
@@ -1463,8 +1466,8 @@ DataManager.prototype.sortNotes = function(list, sort) {
     // log('sortNotes asc', asc, 'desc', desc, sort);
     return list.sort(_.bind(function(a, b) {//Sort by tags
         for (var i = 0; i < asc.length; i++) {
-            var ta = this.hasTag(a.tags || [], asc[i].tag);
-            var tb = this.hasTag(b.tags || [], asc[i].tag);
+            var ta = this.hasTag(a.tags || [], asc[i].tag, false, a);
+            var tb = this.hasTag(b.tags || [], asc[i].tag, false, b);
             var mul = asc[i].desc? -1: 1;
             //log('asc', a.text, b.text, ta, tb, a.tags, b.tags);
             if (ta && tb) {//Both have
@@ -1654,6 +1657,27 @@ DataManager.prototype.selectNotes = function(tags, handler, parse, extra) {//Sel
             line = line.substr(1);
             exclude = true;
         };
+        if (_.startsWith(line, '"')) {//Full text search
+            line = line.substr(1);
+            var buffer = '';
+            while (i<arr.length) {
+                if (_.endsWith(line, '"')) {
+                    buffer += ' '+line.substr(0, line.length-1);
+                    break;
+                } else {
+                    buffer += ' '+line;
+                    i++;
+                    line = arr[i];
+                }
+            }
+            var op = {op: 'like', 'var': '%'+_.trim(buffer)+'%'};
+            if (exclude) {
+                values.push({op: 'not', 'var': ['text', op]});
+            } else {
+                values.push('text', op);
+            }
+            continue;
+        };
         var vals = [];
         var arr2 = line.split('|');//Ors
         if(arr2.length>1) {
@@ -1677,7 +1701,7 @@ DataManager.prototype.selectNotes = function(tags, handler, parse, extra) {//Sel
             };
         }
     };
-    // log('Select', tags, values, extra);
+    log('Select', tags, values, extra);
     this.db.storage.select('notes', values, _.bind(function (err, data) {
         if (err) {
             return handler(null, err);

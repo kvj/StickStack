@@ -13,7 +13,55 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
         this.autotags = 's:'+this.data.id+' ';
     };
     this.root = element;
-    this.topDiv = $(document.createElement('div')).appendTo(this.root)
+    this.topDiv = $(document.createElement('div')).appendTo(this.root);
+    var dropTargets = $(document.createElement('div')).addClass('sheet_drop_targets').appendTo(this.topDiv);
+    this.dropTargets = new Buttons({
+        root: dropTargets,
+        maxElements: 2,
+        readonly: true
+    });
+    var copyButton = this.dropTargets.addButton({
+        caption: ''
+    });
+    var moveButton = this.dropTargets.addButton({
+        caption: ''
+    });
+    this.enableTagDrop(copyButton.element, _.bind(function(tag, text) {
+        this.startNoteWithTag({tags_captions: []}, tag);
+    }, this));
+    this.enableNoteDrop(copyButton.element, _.bind(function(n, e) {
+        if (n.id) {//note drop
+            var autotags = this.autotags;
+            this.proxy('moveNote', _.bind(function(id, err) {//
+                if (id) {
+                    this.reload(id);
+                };
+            }, this), [n.id, autotags]);
+        } else {//Put note
+            this.proxy('putNote', _.bind(function(id, err) {//
+                if (id) {
+                    this.reload(id);
+                };
+            }, this), [n, this.autotags]);
+        };
+    }, this));
+    this.enableNoteDrop(moveButton.element, _.bind(function(n, e) {
+        if (n.id) {//note drop
+            var sheetType = this.data.type;
+            var autotags = this.autotags;
+            if (sheetType) {
+                autotags = '-'+sheetType+'* '+autotags;
+            };
+            this.proxy('moveNote', _.bind(function(id, err) {//
+                if (id) {
+                    this.reload(id);
+                };
+            }, this), [n.id, autotags]);
+        };
+    }, this));
+    if (CURRENT_PLATFORM_MOBILE) {
+        this.topDiv.hide();
+    };
     this.proxy = proxy;
     this.mediaGap = 8;
     this.menuPlace = menuPlace;
@@ -247,7 +295,7 @@ Sheet.prototype.keypress = function(e) {
             };
             return false;
     }
-    log('keypress', e.keyCode);
+    // log('keypress', e.keyCode);
 };
 
 Sheet.prototype.moveTagSelection = function(dir) {
@@ -369,7 +417,7 @@ Sheet.prototype.tag_select_file = function(note, tag) {
         // log('Show file', tag);
         var name = tag.substr(2);
         if (_.endsWith(name, '.jpg')) {
-            var loading = $(document.createElement('div')).addClass('file_loading note_line_hide').appendTo(frame).text('Loading...');
+            var loading = $(document.createElement('div')).addClass('file_loading').appendTo(frame).text('Loading...');
             this.proxy('getAttachment', _.bind(function (err, uri) {
                 loading.remove();
                 if (err) {
@@ -942,12 +990,6 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
             }, this), [n]);
         };
     }, this))
-    //tag.bind('dragenter', _.bind(function(e) {
-        //log('tag drag enter', dd.hasDDTarget(e, tagDDType));
-        //if (dd.hasDDTarget(e, tagDDType)) {
-            //e.preventDefault();
-        //};
-    //}, this));
     this.enableTagDrop(tag, _.bind(function(tag, text) {
         this.proxy('addTag', _.bind(function(id, err) {//
             if (id) {
@@ -955,25 +997,6 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
             };
         }, this), [note.id, t.id, tag]);
     }, this));
-    // tag.bind('dragover', _.bind(function(e) {
-    //     //log('tag drag over', dd.hasDDTarget(e, tagDDType));
-    //     if (dd.hasDDTarget(e, tagDDType)) {
-    //         e.preventDefault();
-    //     };
-    // }, this));
-    // tag.bind('drop', {note: note, tag: t}, _.bind(function(e) {
-    //     var drop = dd.getDDTarget(e, tagDDType);
-    //     if (drop) {
-    //         this.proxy('addTag', _.bind(function(id, err) {//
-    //             if (id) {
-    //                 this.reload();
-    //             };
-    //         }, this), [e.data.note.id, e.data.tag.id, drop]);
-    //         e.stopPropagation();
-    //         e.preventDefault();
-    //         return false;
-    //     };
-    // }, this));
 };
 
 Sheet.prototype.editNote = function(note, div) {
@@ -1031,8 +1054,11 @@ Sheet.prototype.enableTagDrop = function(div, handler, id) {//Called when tag dr
 Sheet.prototype.enableNoteDrop = function(div, handler, id, special_drop_handler) {//Called when note or text is dropped
     var filesDD = 'application/x-vnd.adobe.air.file-list';
     var ctrlKey = false;
-    div.bind('dragover', _.bind(function(e) {
-        ctrlKey = e.ctrlKey;
+    div.bind('dragenter', _.bind(function (e) {
+        div.addClass('drag_active');
+    }, this)).bind('dragleave', _.bind(function (e) {
+        div.removeClass('drag_active');
+    }, this)).bind('dragover', _.bind(function(e) {
         if (dd.hasDDTarget(e, noteDDType)) {
             e.preventDefault();
         };
@@ -1040,11 +1066,10 @@ Sheet.prototype.enableNoteDrop = function(div, handler, id, special_drop_handler
             e.preventDefault();
         };
     }, this)).bind('drop', _.bind(function(e) {//Dropped
-        log('Enable note drop');
         var drop = dd.getDDTarget(e, noteDDType);
         if (drop) {//Only ID - note drop
             // log('Dropped note', drop);
-            handler({id: drop});
+            handler({id: drop}, e);
             e.stopPropagation();
             e.preventDefault();
             return false;
@@ -1087,7 +1112,7 @@ Sheet.prototype.enableNoteDrop = function(div, handler, id, special_drop_handler
         };
         if (drop && _.trim(drop)) {
             log('Dropped text', drop);
-            handler({text: _.trim(drop)});
+            handler({text: _.trim(drop)}, e);
             e.stopPropagation();
             e.preventDefault();
             return false;
@@ -1473,21 +1498,6 @@ Sheet.prototype.reload_timeline = function(list, beforeID) {
         dt['set'+method].call(dt, dt['get'+method].call(dt)-shift);
         return dt.getTime();
     };
-    // var yearAgo = new Date(); yearAgo.setFullYear(yearAgo.getFullYear()-1);
-    // var monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth()-1);
-    // var month3Ago = new Date(); month3Ago.setMonth(monthAgo.getMonth()-3);
-    // var weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
-    // var dayAgo = new Date(); dayAgo.setDate(dayAgo.getDate()-1);
-    // var day2Ago = new Date(); day2Ago.setDate(dayAgo.getDate()-2);
-    // var day3Ago = new Date(); day3Ago.setDate(dayAgo.getDate()-3);
-    // var hourAgo = new Date(); hourAgo.setHours(hourAgo.getHours()-1);
-    // var hour3Ago = new Date(); hour3Ago.setHours(hourAgo.getHours()-3);
-    // var hour6Ago = new Date(); hour6Ago.setHours(hourAgo.getHours()-6);
-    // var hour12Ago = new Date(); hour12Ago.setHours(hourAgo.getHours()-12);
-    // var minuteAgo = new Date(); minuteAgo.setMinutes(minuteAgo.getMinutes()-1);
-    // var minute5Ago = new Date(); minute5Ago.setMinutes(minute5Ago.getMinutes()-5);
-    // var minute30Ago = new Date(); minute30Ago.setMinutes(minute30Ago.getMinutes()-30);
-
     var headers = [
         {dt: 0}, 
         {caption: 'year ago', dt: ago('FullYear', 1)},
@@ -1527,7 +1537,7 @@ Sheet.prototype.reload_timeline = function(list, beforeID) {
         prevCreated = list[i].created;
         this.showNote(list[i], this.root, list[i].id == beforeID);
     };
-    this.pagingMenu.setDisabled(this.pagingMenu.buttons[0], list.length == 0);
+    this.pagingMenu.setDisabled(this.pagingMenu.buttons[0], list.length != this.loadNotes);
     this.pagingMenu.setDisabled(this.pagingMenu.buttons[1], this.page == 0);
     this.updated();
 };
