@@ -193,7 +193,6 @@
         log('File not found, downloading', name);
         url = "/rest/file/download?name=" + name + "&";
         if (_.endsWith(name, '.jpg')) url += "width=" + _this.maxwidth + "&";
-        log('Download', url);
         url = _this.oauth.getFullURL(_this.app, url);
         xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
@@ -202,13 +201,11 @@
           log('onload', xhr, xhr.readyState, xhr.status);
           if (xhr.readyState === 4) {
             if (xhr.status === 200) {
-              log('Download OK', xhr, status);
               return _this.cacheDir.getFile(name, {
                 create: true
               }, function(file) {
                 return file.createWriter(function(writer) {
                   writer.onwriteend = function() {
-                    log('Write done, yea!');
                     return handler(null, file.toURL());
                   };
                   writer.onerror = function(err) {

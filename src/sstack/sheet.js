@@ -1008,12 +1008,12 @@ Sheet.prototype.editNote = function(note, div) {
     this.areaPanel.detach().insertAfter(div);
     this.areaPanel.show();
     this.editing = true;
-    this.area.val(note.text || '');
-    this.updated();
-    setTimeout(_.bind(function () {
-        this.area.focus();
-    }, this), 10);
     this.scrollTo(this.areaPanel);
+    this.area.val(note.text || '').focus();
+    this.updated();
+    // setTimeout(_.bind(function () {
+    //     this.area.focus();
+    // }, this), 10);
 };
 
 Sheet.prototype.enableTagDrop = function(div, handler, id) {//Called when tag dropped
@@ -1744,15 +1744,15 @@ Sheet.prototype.startTextEdit = function(id, note, field, value, handler) {//Sho
     this.textPanel.detach().insertAfter(note);
     this.textEditHandler = handler || null;
     this.textPanel.show();
-    this.text.val(value || '');
+    this.scrollTo(this.textPanel);
+    this.text.val(value || '').focus();
     this.editID = id;
     this.editField = field;
     this.editValue = value;
     this.updated();
-    setTimeout(_.bind(function () {
-        this.text.focus();
-    }, this), 10);
-    this.scrollTo(this.textPanel);
+    // setTimeout(_.bind(function () {
+    //     this.text.focus();
+    // }, this), 10);
 };
 
 Sheet.prototype.newNote = function(tags, ignoreAutoTags) {//Starts new note
@@ -1761,13 +1761,13 @@ Sheet.prototype.newNote = function(tags, ignoreAutoTags) {//Starts new note
     this.ignoreAutoTags = ignoreAutoTags;
     this.root.prepend(this.areaPanel.detach());
     this.areaPanel.show();
-    this.area.val('');
+    this.scrollTo(this.areaPanel);
+    this.area.val('').focus();
     this.editID = null;
     this.updated();
-    setTimeout(_.bind(function () {
-        this.area.focus();
-    }, this), 10);
-    this.scrollTo(this.areaPanel);
+    // setTimeout(_.bind(function () {
+    //     this.area.focus();
+    // }, this), 10);
 };
 
 Sheet.prototype.updated = function() {//Empty

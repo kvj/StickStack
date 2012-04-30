@@ -488,8 +488,8 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
     this.manager = null;
     this.syncManager.open(_.bind(function(err) {//local DB opened
         if (!err) {//
+            this.syncManager.sync_timeout = CURRENT_PLATFORM_MOBILE? 10: 90;
             this.manager = new DataManager(this.syncManager);
-            this.manager.sync_timeout = CURRENT_PLATFORM_MOBILE? 10: 90;
             this.nav.handler = _.bind(function (index) {
                 if (index == 0) {
                     this.sync();
@@ -500,7 +500,7 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
                     return;
                 };
                 var item = this.nav.data[index-2];
-                log('Show tag:', item.item);
+                // log('Show tag:', item.item);
                 openTag(item.item, null, this.manager);
             }, this);
             this.manager.loadTagConfig(_.bind(function() {
@@ -666,12 +666,6 @@ var SheetsManager = function(panel, datamanager) {
         this.reload();
     }, this);
     this.panel.keypress = _.bind(function (e) {
-        log('key', e.keyCode);
-        if (e.keyCode == 82 && !e.ctrlKey) { // Reload - r
-            this.group = null;
-            this.reload();
-            return false;            
-        };
         return this.sheetList.keypress(e);
     }, this)
     manager.show(this.panel, panel);

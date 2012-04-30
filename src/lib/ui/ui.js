@@ -22,7 +22,9 @@ var _showError = function(message) {//Shows error
 };
 
 var _disableUI = function () {
-    $('#error_dialog_background').show();    
+    setTimeout(function () {
+        $('#error_dialog_background').show();
+    }, 1);
 }
 
 var _enableUI = function () {

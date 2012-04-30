@@ -1701,7 +1701,7 @@ DataManager.prototype.selectNotes = function(tags, handler, parse, extra) {//Sel
             };
         }
     };
-    log('Select', tags, values, extra);
+    // log('Select', tags, values, extra);
     this.db.storage.select('notes', values, _.bind(function (err, data) {
         if (err) {
             return handler(null, err);
