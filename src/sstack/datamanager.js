@@ -410,10 +410,16 @@ var DataManager = function(database) {//Do DB operations
         if (_.startsWith(text || '', this.name+':')) {
             return true;
         };
+        if (this.config.simple && this.name == text) {
+            return true;
+        };
         return false;
     };
 
     MarkTag.prototype.store = function(text) {
+        if (this.config.simple) {
+            return ['', 0];
+        };
         return [this.name+':', 0];
     };
 
@@ -879,6 +885,9 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new SheetTag());
     this.tagControllers.push(new MarkTag({name: 'contact', format: 'contact'}));
     this.tagControllers.push(new MarkTag({name: 'sort', format: 'sort'}));
+    this.tagControllers.push(new MarkTag({name: 'display', format: 'display'}));
+    this.tagControllers.push(new MarkTag({name: 'autotags', format: 'tags'}));
+    this.tagControllers.push(new MarkTag({name: 'fcard', format: 'fcard', simple: true}));
     this.tagControllers.push(new DefaultTag());
 
     this.sheetsConfig = {};

@@ -14,17 +14,17 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
     };
     this.root = element;
     this.topDiv = $(document.createElement('div')).appendTo(this.root);
-    var dropTargets = $(document.createElement('div')).addClass('sheet_drop_targets').appendTo(this.topDiv);
+    this.dropTargetsDiv = $(document.createElement('div')).appendTo(this.topDiv).hide();
     this.dropTargets = new Buttons({
-        root: dropTargets,
+        root: this.dropTargetsDiv,
         maxElements: 2,
         readonly: true
     });
     var copyButton = this.dropTargets.addButton({
-        caption: ''
+        caption: 'Copy here'
     });
     var moveButton = this.dropTargets.addButton({
-        caption: ''
+        caption: 'Move here'
     });
     this.enableTagDrop(copyButton.element, _.bind(function(tag, text) {
         this.startNoteWithTag({tags_captions: []}, tag);
@@ -169,6 +169,17 @@ Sheet.prototype.removeNote = function(note) {
     this.updated();    
 };
 
+Sheet.prototype.onSheetMenu = function(items) {
+    items.push({
+        caption: 'Toggle drop targets',
+        handler: _.bind(function() {
+            this.dropTargetsDiv.toggle();
+            this.updated();
+            return true;
+        }, this),
+    });
+};
+
 Sheet.prototype.showNoteMenu = function() {
     var items = [];
     if (this.selected && this.selected.selectedTag) {
@@ -203,20 +214,22 @@ Sheet.prototype.showNoteMenu = function() {
         });
         this.launchTagMethod(this.selected, 'menu', this.selected.selectedTag.id, items);       
     };
-    items.push({
-        caption: 'Open note',
-        handler: _.bind(function() {
-            this.openNote(this.selected);
-            return true;
-        }, this),
-    });
-    items.push({
-        caption: 'Bookmark note',
-        handler: _.bind(function() {
-            this.proxy('createBookmark', null, ['n:'+this.selected.id]);
-            return true;
-        }, this),
-    });
+    if (this.selected) {
+        items.push({
+            caption: 'Open note',
+            handler: _.bind(function() {
+                this.openNote(this.selected);
+                return true;
+            }, this),
+        });
+        items.push({
+            caption: 'Bookmark note',
+            handler: _.bind(function() {
+                this.proxy('createBookmark', null, ['n:'+this.selected.id]);
+                return true;
+            }, this),
+        });
+    };
     new PopupMenu({
         element: this.menuPlace || this.root,
         items: items,
@@ -295,7 +308,13 @@ Sheet.prototype.keypress = function(e) {
             };
             return false;
     }
-    // log('keypress', e.keyCode);
+    if (this.data.display && this['keypress_'+this.data.display]) {
+        var result = this['keypress_'+this.data.display].call(this, e);
+        if (false === result) {
+            return result;
+        };
+    };
+    log('keypress', e.keyCode);
 };
 
 Sheet.prototype.moveTagSelection = function(dir) {
@@ -608,6 +627,22 @@ Sheet.prototype.tag_menu_path = function(note, tag, items) {
     })
 };
 
+Sheet.prototype.tag_show_note_fcard = function(note, tag, text, lines) {
+    var first_line = $(document.createElement('div')).addClass('note_line').appendTo(text);
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        var lineDiv = $(document.createElement('div')).addClass('note_line note_line_fcard').appendTo(text);
+        if (this.hiddenLines && this.hiddenLines[i] && !this.showList) {
+            lineDiv.addClass('note_line_hide');
+        };
+        if (i<lines.length-1) { // Add class to every line except last
+            lineDiv.addClass('note_line_fcard'+i);
+        };
+        this.renderLine(note, line, lineDiv);
+    };
+    return true;
+};
+
 Sheet.prototype.tag_show_note_contact = function(note, tag, text, lines) {
     var first_line = $(document.createElement('div')).addClass('note_line').appendTo(text);
     $(document.createElement('div')).addClass('note_contact_title').appendTo(first_line).text(tag.substr('contact:'.length));
@@ -874,7 +909,7 @@ Sheet.prototype.selectNote = function(note) {
     if (note_inline) {
         note_inline.appendTo(note.div);
     };
-    // log('Select note', note.tags);
+    log('Select note', note.tags, note);
     this.moveNowLine();
     this.updated();
 };
@@ -1155,7 +1190,7 @@ Sheet.prototype.openNote = function(note, inline) {
     this.proxy('openTag', null, ['n:'+note.id, sort]);
 };
 
-Sheet.prototype.showNote = function(note, parent, lastSelected) {//
+Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {//
     var div = $(document.createElement('div')).addClass('note draggable').insertBefore(parent.children('.clear'));
     note.divID = 'note'+(this.noteIndex++);
     div.attr('tabindex', 0).attr('id', note.divID);
@@ -1180,7 +1215,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected) {//
             return false;
         };
         // log('Note', note);
-        if (this.selected == note) {
+        if (this.selected == note && !preventExpand) {
             this.openNote(note, true);
         };
         this.areaPanel.hide();
@@ -1328,10 +1363,16 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
         };
         return 0;
     }
+
+    var addText = function (text, parent) {
+        $(document.createTextNode(text)).appendTo(parent);
+    }
+
     for (var k = 0; k < line.length; k++) {//Add words
         var word = line[k];
         if (word.type == 'text') {//Add word
             $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(word.text);
+            addText(' ', line_div);
         } else if (word.type == 'checkbox') {
             var cbox = $(ui.buildIcon(word.checked? 'ic_check_yes': 'ic_check_no')).appendTo(line_div).css('float', 'left');
             cbox.bind('click', {note: note, box: word}, _.bind(function(e) {
@@ -1343,7 +1384,8 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
                 }, this), [e.data.note.id, new_text]);
                 return false;
             }, this));
-            $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(' ');
+            addText(' ', line_div);
+            // $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(' ');
         } else if (word.type == 'marker') {
             var m = findMarker(word.text);
             var cbox = $(ui.buildIcon(markers[m].cls)).appendTo(line_div).css('float', 'left');
@@ -1356,10 +1398,12 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
                 }, this), [e.data.note.id, new_text]);
                 return false;
             }, this));
-            $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(' ');
+            // $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(' ');
+            addText(' ', line_div);
         } else if (word.type == 'tag') {//Add tag
             this.showTag(note, word.tag, line_div);
-            $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(' ');
+            // $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(' ');
+            addText(' ', line_div);
         } else if (word.type == 'link') {//Add link
             var div = $(document.createElement('div')).addClass('note_word').appendTo(line_div);
             var anchor = $(document.createElement('a')).addClass('note_link').attr('href', word.link).appendTo(div).text(word.text);
@@ -1368,6 +1412,7 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
                 }, this), [e.data.link, e.ctrlKey]);
                 return false;
             }, this));
+            addText(' ', line_div);
         };
     };
     $('<div style="clear: both;"/>').appendTo(line_div);
@@ -1390,6 +1435,133 @@ Sheet.prototype.render_hour = function(hour, div) {
             };
         }, this), [text || null, this.autotags+' '+tag+' t:'+(hour*100)]);
     }, this));    
+};
+
+Sheet.prototype.prepare_cards = function() {
+    this.hiddenLines = {};
+    this.showList = false;
+    this.navigationDiv = $(document.createElement('div')).insertAfter(this.root.children('.clear'));
+    this.navigation = new Buttons({
+        root: this.navigationDiv,
+        rows: [0, '2.5em'],
+        maxElements: 3,
+        safe: true
+    });
+    var prevButton = this.navigation.addButton({
+        caption: 'Previous',
+        handler: _.bind(function () {
+            if (this.currentCard>0) {
+                this.currentCard--;
+                this.showCard();
+            };
+        }, this)
+    });
+    this.navigation.addButton({
+        caption: 'Show list',
+        handler: _.bind(function () {
+            this.showList = !this.showList;
+            this.reload();
+        }, this)
+    });
+
+    // var showButton = navigation.addButton({
+    //     caption: 'Show all',
+    //     classNameInner: 'button_create'
+    // });
+    var nextButton = this.navigation.addButton({
+        caption: 'Next',
+        handler: _.bind(function () {
+            if (this.currentCard<this.cards.length-1) {
+                this.currentCard++;
+                this.showCard();
+            };
+        }, this)
+    });
+    this.navigation.addButton({
+        caption: '|',
+        width: 3,
+        row: 1,
+        handler: _.bind(function() {//
+            var note = this.cards[this.currentCard];
+            if (!note) {
+                _showInfo('No card selected');
+                return true;
+            };
+            var items = [];
+            var linesCount = note.parsed.length;
+            for (var i = 0; i < linesCount; i++) {
+                items.push({
+                    caption: ''+(this.hiddenLines[i]? 'Show': 'Hide')+' line '+i,
+                    line: i,
+                    handler: _.bind(function (item) {
+                        this.hiddenLines[item.line] = !(this.hiddenLines[item.line] || false);
+                        this.showCard();
+                        return true;
+                    }, this)
+                });
+            };
+            new PopupMenu({
+                element: this.menuPlace || this.root,
+                items: items
+            });
+            return true;
+        }, this)
+    });
+    this.currentCard = 0;
+};
+Sheet.prototype.keypress_cards = function (e) {
+    switch(e.keyCode) {
+        case 65: // a
+            this.navigation.click(this.navigation.buttons[0]);
+            return false;
+        case 83: // s
+            this.navigation.click(this.navigation.buttons[2]);
+            return false;
+        case 67: // c
+            this.navigation.click(this.navigation.buttons[3]);
+            return false;
+        case 76: // l
+            this.navigation.click(this.navigation.buttons[1]);
+            return false;
+    }
+};
+
+
+Sheet.prototype.showCard = function() {
+    this.root.find('.note').remove();
+    // log('Show card', this.currentCard, this.cards);
+    var note = this.cards[this.currentCard];
+    this.navigation.setDisabled(this.navigation.buttons[0], this.currentCard == 0);
+    this.navigation.setDisabled(this.navigation.buttons[2], this.currentCard>=this.cards.length-1);
+    if (!note) {
+        return;
+    };
+    this.unselectNote(this.selected);
+    this.showNote(note, this.root, false, true);
+};
+
+Sheet.prototype.reload_cards = function(list, beforeID) {
+    this.root.find('.note').remove();
+    this.cards = list;
+    if (this.currentCard>=this.cards.length) {
+        this.currentCard = 0;
+    };
+    for (var i = 0; i < list.length; i++) {
+        if (list[i].id == beforeID) {
+            this.currentCard = i;
+            break;
+        };
+    };
+    if (this.showList) {
+        this.navigation.setDisabled(this.navigation.buttons[0], true);
+        this.navigation.setDisabled(this.navigation.buttons[2], true);        
+        for (var i = 0; i < list.length; i++) {//
+            this.showNote(list[i], this.root, list[i].id == beforeID);
+        };
+    } else {
+        this.showCard();
+    }
+    this.updated();
 };
 
 Sheet.prototype.prepare_timeline = function() {

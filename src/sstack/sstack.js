@@ -1008,6 +1008,12 @@ var openTag = function(tag, panel, manager, sort, display) {
                             if (_.startsWith(tags[i], 'sort:')) {
                                 sort = tags[i].substr('sort:'.length);
                             };
+                            if (_.startsWith(tags[i], 'display:')) {
+                                display = tags[i].substr('display:'.length);
+                            };
+                            if (_.startsWith(tags[i], 'autotags:')) {
+                                autotags += ' '+tags[i].substr('autotags:'.length);
+                            };
                         };
                         sheetType = 'n:';
                         failSafe();
@@ -1194,13 +1200,7 @@ var InlineSheet = function(sheet, panel, datamanager, forcenew) {//
                     }, this)
                 })
             };
-            // items.push({
-            //     caption: 'Import from Test',
-            //     handler: _.bind(function () {
-            //         this.sheet.importNotes(new Quebec4Test());
-            //         return true;
-            //     }, this)
-            // });
+            this.sheet.onSheetMenu(items);
             new PopupMenu({
                 items: items,
                 element: this.panel.element

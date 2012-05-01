@@ -300,13 +300,13 @@
 }
 
 .note_word {
-    float: left;
-    padding-right: 0.4em;
+    display: inline;
+    padding-right: 0.1em;
     font-size: 0.9em;
 }
 
 .note_checkbox {
-    float: left;
+    display: inline;
 }
 
 .has_gradient {
@@ -456,4 +456,17 @@
 
 .sheet_drop_targets .drag_active .button_inner {
     background-color: #CC2A41;
+}
+
+.note_line_fcard {
+    clear: both;
+    text-align: center;
+}
+
+.note_line_fcard0 {
+    font-size: 1.7em;
+}
+
+.note_line_fcard1 {
+    font-size: 1.5em;
 }
