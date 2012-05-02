@@ -6,8 +6,9 @@ var _buildIcon = function(name, cl) {//Builds img html
     return '<div class="icon'+(cl? ' '+cl: '')+'" style="background-image: url(\'img/icons/'+name+'.png\');"/>';
 };
 
-var Sheet = function(sheet, element, proxy, menuPlace) {//
+var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
     this.data = sheet;
+    this.panel = panel;
     this.autotags = this.data.autotags;
     if (!this.autotags && this.data.id) {
         this.autotags = 's:'+this.data.id+' ';
@@ -138,8 +139,14 @@ var Sheet = function(sheet, element, proxy, menuPlace) {//
     this.expandedNotes = {};
     $(document.createElement('div')).addClass('clear').appendTo(this.root);
     this.extra = {};
-    if (this.data.display && this['prepare_'+this.data.display]) {
-        this['prepare_'+this.data.display].call(this);
+    this.display = this.data.display || 'default';
+    if (this.display.indexOf(':') != -1) {
+        var index = this.display.indexOf(':');
+        this.displayConfig = this.display.substr(index+1);
+        this.display = this.display.substr(0, index);
+    };
+    if (this['prepare_'+this.display]) {
+        this['prepare_'+this.display].call(this);
     };
     this.reload();
 };
@@ -308,13 +315,13 @@ Sheet.prototype.keypress = function(e) {
             };
             return false;
     }
-    if (this.data.display && this['keypress_'+this.data.display]) {
-        var result = this['keypress_'+this.data.display].call(this, e);
+    if (this['keypress_'+this.display]) {
+        var result = this['keypress_'+this.display].call(this, e);
         if (false === result) {
             return result;
         };
     };
-    log('keypress', e.keyCode);
+    // log('keypress', e.keyCode);
 };
 
 Sheet.prototype.moveTagSelection = function(dir) {
@@ -935,11 +942,11 @@ Sheet.prototype.selectTag = function(t) {
     this.updated();    
 };
 
-Sheet.prototype.startNoteWithTag = function(note, tag) {
+Sheet.prototype.startNoteWithTag = function(note, tag, place) {
     if (this.launchTagMethod(note, 'start', tag)) {
         return;
     };
-    this.newNote(tag);
+    this.newNote(tag, false, place);
 };
 
 Sheet.prototype.showTag = function(note, t, parent, remove) {//
@@ -1437,6 +1444,164 @@ Sheet.prototype.render_hour = function(hour, div) {
     }, this));    
 };
 
+Sheet.prototype.resizeGrid = function() {
+    for (var i = 0; i < this.gridItems.length; i++) {
+        var col = this.gridItems[i];
+        col.div.detach();
+    };
+    // Remove all rows
+    this.gridBody.empty();
+    if (this.gridItems.length == 0) {
+        return; //Nothing to show
+    };
+    var minColWidth = ui.em()*12;
+    var cols = this.gridConfig.cols || this.gridItems.length;
+    if (this.gridBody.width()/cols<minColWidth) { // Width not enough
+        cols = Math.floor(this.gridBody.width()/minColWidth);
+        if (cols<1) { // Fix
+            cols = 1;
+        };
+    };
+    var width = ''+Math.floor(100/cols)+'%';
+    var row = $(document.createElement('div')).addClass('grid_row').appendTo(this.gridBody);
+    var colsInRow = 0;
+    for (var i = 0; i < this.gridItems.length; i++) {
+        var col = this.gridItems[i];
+        col.div.appendTo(row).width(width);
+        colsInRow++;
+        if (colsInRow == cols) {
+            row = $(document.createElement('div')).addClass('grid_row').appendTo(this.gridBody);
+            colsInRow = 0;
+        };
+    };
+    this.updated();
+};
+
+Sheet.prototype.createGridColumn = function(index, config) {
+    var div = $(document.createElement('div')).addClass('grid_column');
+    var menuDiv = $(document.createElement('div')).addClass('grid_column_menu').appendTo(div);
+    var menu = new Buttons({
+        root: menuDiv,
+        rows: [0, '5em'],
+        maxElements: 2
+    });
+    var headerPlace = menu.getRow(0);
+    var header = $(document.createElement('div')).addClass('grid_header');
+    headerPlace.prepend(header);
+    header.text(config.caption || 'Untitled');
+    var acceptNote = _.bind(function (id) {
+        var tags = this.autotags;
+        for (var i = 0; i < this.gridItems.length; i++) {
+            var col = this.gridItems[i];
+            if (col._tag && i != index) {
+                tags += ' -'+col._tag;
+            };
+            if (config._tag) {
+                tags += ' '+config._tag;
+            };
+        };
+        this.proxy('moveNote', _.bind(function(id, err) {//
+            if (id) {
+                this.reload(id);
+            };
+        }, this), [id, tags]);
+    }, this);
+    menu.addButton({
+        caption: '+',
+        width: 1,
+        row: 1,
+        classNameInner: 'button_create',
+        handler: _.bind(function() {//
+            this.startNoteWithTag({tags_captions: []}, config.tag, notesDiv);
+            return true;
+        }, this)
+    });
+    menu.addButton({
+        caption: '|',
+        width: 1,
+        row: 1,
+        handler: _.bind(function() {//
+            var items = [];
+            new PopupMenu({
+                element: this.menuPlace || this.root,
+                items: items
+            });
+            return true;
+        }, this)
+    });
+    var notesDiv = $(document.createElement('div')).addClass('grid_notes').appendTo(div);
+    $(document.createElement('div')).addClass('clear').appendTo(notesDiv);
+    config.div = div;
+    config.notesDiv = notesDiv;
+    config._tag = this.proxy('adoptTag', null, [config.tag]);
+    this.enableTagDrop(div, _.bind(function(tag, text) {
+        this.startNoteWithTag({tags_captions: []}, tag+' '+config.tag, notesDiv);
+    }, this));
+    this.enableNoteDrop(div, _.bind(function(n) {
+        if (n.id) {//Note
+            acceptNote(n.id);
+        } else {
+            this.proxy('putNote', _.bind(function(id, err) {//
+                if (id) {
+                    this.reload(n.id);
+                };
+            }, this), [n, this.autotags+' '+config.tag]);
+        };
+    }, this));
+    log('Col', config);
+
+};
+
+Sheet.prototype.reload_grid = function(list, beforeID) {
+    this.root.find('.note').remove();
+    // log('Reload grid', list.length, this.gridItems.length);
+    for (var i = 0; i < list.length; i++) {//
+        var colNum = 0; // Put to first col by default
+        for (var k = 0; k < this.gridItems.length; k++) {
+            var col = this.gridItems[k];
+            if (col._tag) {
+                for (var j = 0; j < list[i].tags.length; j++) {
+                    var tag = list[i].tags[j];
+                    if (tag == col._tag) {
+                        colNum = k;
+                    };
+                };
+            };
+        };
+        if (this.gridItems[colNum]) {
+            this.showNote(list[i], this.gridItems[colNum].notesDiv, list[i].id == beforeID);
+        };
+    };
+    this.updated();
+};
+
+Sheet.prototype.prepare_grid = function() {
+    // log('Prepare grid', this.displayConfig);
+    if (this.panel) {
+        this.panel.wide = true;
+        this.panel.onResize = _.bind(function () {
+            setTimeout(_.bind(function () {
+                this.resizeGrid();
+            }, this), 0);
+        }, this);
+    };
+    this.gridConfig = {cols: 1, items: []};
+    if (this.displayConfig) {
+        try {
+            this.gridConfig = JSON.parse(this.displayConfig);
+        } catch (e) {
+            log('Error parsing', e);
+            _showInfo('Error loading display config');
+        }
+    };
+    this.gridItems = this.gridConfig.items || [];
+    this.gridBody = $(document.createElement('div')).addClass('grid_body').insertBefore(this.root.children('.clear'));
+    for (var i = 0; i < this.gridItems.length; i++) {
+        var col = this.gridItems[i];
+        this.createGridColumn(i, col);
+    };
+};
+
 Sheet.prototype.prepare_cards = function() {
     this.hiddenLines = {};
     this.showList = false;
@@ -1447,7 +1612,7 @@ Sheet.prototype.prepare_cards = function() {
         maxElements: 3,
         safe: true
     });
-    var prevButton = this.navigation.addButton({
+    this.navigation.addButton({
         caption: 'Previous',
         handler: _.bind(function () {
             if (this.currentCard>0) {
@@ -1468,7 +1633,7 @@ Sheet.prototype.prepare_cards = function() {
     //     caption: 'Show all',
     //     classNameInner: 'button_create'
     // });
-    var nextButton = this.navigation.addButton({
+    this.navigation.addButton({
         caption: 'Next',
         handler: _.bind(function () {
             if (this.currentCard<this.cards.length-1) {
@@ -1500,6 +1665,22 @@ Sheet.prototype.prepare_cards = function() {
                     }, this)
                 });
             };
+            items.push({
+                caption: 'First item',
+                handler: _.bind(function () {
+                    this.currentCard = 0;
+                    this.showCard();
+                    return true;
+                }, this)
+            });
+            items.push({
+                caption: 'Last item',
+                handler: _.bind(function () {
+                    this.currentCard = this.cards.length-1;
+                    this.showCard();
+                    return true;
+                }, this)
+            });
             new PopupMenu({
                 element: this.menuPlace || this.root,
                 items: items
@@ -1893,7 +2074,7 @@ Sheet.prototype.reload = function(beforeID, forceNoSelect) {//Asks for items
     };
     this.proxy('loadNotes', _.bind(function(list, err) {//
         if (list) {//Display list
-            var mode = this.data.display || 'default';
+            var mode = this.display;
             if (!beforeID && list.length>0 && !forceNoSelect && mode == 'default') {
                 beforeID = list[0].id;
             };
@@ -1927,11 +2108,11 @@ Sheet.prototype.startTextEdit = function(id, note, field, value, handler) {//Sho
     // }, this), 10);
 };
 
-Sheet.prototype.newNote = function(tags, ignoreAutoTags) {//Starts new note
+Sheet.prototype.newNote = function(tags, ignoreAutoTags, place) {//Starts new note
     this.editing = true;
-    this.newTags = tags;
+    this.newTags = tags || '';
     this.ignoreAutoTags = ignoreAutoTags;
-    this.root.prepend(this.areaPanel.detach());
+    (place || this.root).prepend(this.areaPanel.detach());
     this.areaPanel.show();
     this.scrollTo(this.areaPanel);
     this.area.val('').focus();

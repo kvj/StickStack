@@ -579,6 +579,7 @@ var SheetsManager = function(panel, datamanager) {
     this.manager = datamanager;
     _createEsentials(this, 'Sheets:', 3);
     _goBackFactory(this.topMenu, this.panel, '');
+    // this.panel.wide = true;
     this.topMenu.addButton({
         caption: 'Reload',
         handler: _.bind(function() {
@@ -1222,7 +1223,7 @@ var InlineSheet = function(sheet, panel, datamanager, forcenew) {//
             return true;
         };
         return _proxy(this.manager, method, handler || function() {}, params || []);
-    }, this));
+    }, this), null, this.panel);
     this.panel.keypress = _.bind(function (e) {
         return this.sheet.keypress(e);
     }, this);

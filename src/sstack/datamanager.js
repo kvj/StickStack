@@ -5,6 +5,12 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
     if (method == 'tagInfo') {
         return datamanager.tagInfo(params[0]);
     };
+    if (method == 'formatTag') {
+        return datamanager.formatTag(params[0]);
+    };
+    if (method == 'adoptTag') {
+        return datamanager.adoptTag(params[0]);
+    };
     if (method == 'createBookmark') {
         return manager.navProvider.add(null, params[0]);
     };

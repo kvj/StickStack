@@ -470,3 +470,27 @@
 .note_line_fcard1 {
     font-size: 1.5em;
 }
+
+.grid_body {
+    display: table;
+    width: 100%;
+}
+
+.grid_row {
+    display: table-row;
+}
+
+.grid_column {
+    display: table-cell;
+}
+
+.grid_header {
+    text-align: center;
+}
+
+.grid_notes {
+    width: auto;
+    margin: 0.1em;
+    padding: 0.1em;
+    border: 1px dotted #888888;
+}

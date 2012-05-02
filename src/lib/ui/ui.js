@@ -187,6 +187,7 @@ var _appEvents = new EventEmitter();
 
 var _initUI = function(storage) {//Creates root UI elements
     var main = $('<div id="main"/>').appendTo(document.body);
+    var em = $('<div style="width: 1em; height: 1em; left: -2em; top: -2em; position: absolute; visibility: hidden;" id="__em"/>').appendTo(document.body);
     var err_bg = $('<div id="error_dialog_background"/>').appendTo(document.body).hide();
     var err = $('<div id="error_dialog" class="popup_dialog"/>').appendTo(err_bg).addClass('error_dialog').hide();
     $('<div id="question_dialog" class="popup_dialog"/>').appendTo(err_bg).addClass('question_dialog').hide();
@@ -278,6 +279,10 @@ ui.buildIcon = function (name, size) {
     var result = '<div class="ic'+(size>0? ' ic_'+size: ' ')+' '+name+'"></div>';
     return result;
 }
+
+ui.em = function () {
+    return $('#__em').width() || 10;
+};
 
 var widgets = {};
 
@@ -428,7 +433,9 @@ PanelManager = function(config) {
     this.colGap = 5;
     this.focusDiv = $(document.createElement('div')).addClass('focus_indicator');
     this.focused = -1;
-    $(window).resize(_.bind(this.resize, this));
+    $(window).resize(_.bind(function () {
+        this.resize(true);
+    }, this));
     $(document.body).bind('keydown', _.bind(this.keyHandler, this));
     this.keyListener = new EventEmitter(this);
     this.keyListener.on('keydown', _.bind(this.onKeyDown, this));
@@ -436,7 +443,7 @@ PanelManager = function(config) {
     if (this.config.navVisible && this.navProvider) {
         this.toggleNav();
     } else {
-        this.resize();
+        this.resize(true);
     }
 };
 
@@ -560,7 +567,7 @@ PanelManager.prototype.toggleNav = function() {
     } else {
         this.nav.hide();
     };
-    this.resize();
+    this.resize(true);
 };
 
 PanelManager.prototype.setIgnoreInput = function(ignore) {
@@ -593,12 +600,42 @@ PanelManager.prototype.focus = function(col) {
     };
 };
 
-PanelManager.prototype.resize = function() {//Change layout
+PanelManager.prototype.resize = function(autoPut) {//Change layout
     var newcolcount = Math.floor($(window).width() / this.minColWidth);
     if (newcolcount == 0) {//One column always
         newcolcount = 1;
     };
-    if (newcolcount != this.columns.length) {//Number of cols is changed - recreate columns
+    var widePanel = -1;
+    var forceResize = false;
+    if (this.panels.length>1 && newcolcount>1) {
+        // Show more than 1 panel - check wide
+        var lastPanel = this.panels[this.panels.length-1];
+        var prevPanel = this.panels[this.panels.length-2];
+        if (lastPanel.wide) {
+            // Last panel wide
+            forceResize = true; // Have wide panel
+            if (prevPanel.wide) {
+                // Both wide - show only last
+                newcolcount = 1;
+                widePanel = 0;
+            } else {
+                widePanel = 1;
+                newcolcount = 2;
+            }
+        } else {
+            if (prevPanel.wide) {
+                // Prev wide
+                forceResize = true; // Have wide panel
+                widePanel = 0;
+                newcolcount = 2;
+            } else {
+                // Normal case, no wide panels, check do we have wide panel visible
+            }
+        }
+    };
+    var resized = false;
+    if (newcolcount != this.columns.length || forceResize) {//Number of cols is changed - recreate columns
+        resized = true;
         for (var i = 0; i < this.panels.length; i++) {//Detach panels
             this.panels[i].element.detach();
         };
@@ -611,7 +648,9 @@ PanelManager.prototype.resize = function() {//Change layout
                 this.focus(e.data.index);
             }, this));
         };
-        this.putPanels();
+        if (autoPut) {
+            this.putPanels();
+        };
     };
     var left = 0;
     var colWidths = $(window).width();
@@ -621,6 +660,15 @@ PanelManager.prototype.resize = function() {//Change layout
     var colWidth = Math.floor(colWidths / newcolcount);
     for (var i = 0; i < this.columns.length; i++) {//Resize columns
         var w = colWidth;
+        if (widePanel != -1) {
+            // Wide panel is visible
+            if (widePanel == i) {
+                // This is wide panel
+                w = colWidths-this.minColWidth;
+            } else {
+                w = this.minColWidth;
+            }
+        };
         if (i == newcolcount-1) {//Last column - fix width
             w = colWidths - left;
         };
@@ -633,16 +681,32 @@ PanelManager.prototype.resize = function() {//Change layout
     this.focus(this.focused);
 };
 
+PanelManager.prototype.getVisiblePanels = function() {
+    var result = [];
+    var i = this.panels.length-1;
+    while (i>=0) {
+        var panel = this.panels[i];
+        if (panel.wide && result.length>1) {
+            // Wide panel and two panels displayed - stop
+            return result;
+        };
+        result.splice(0, 0, panel);
+        if (result.length == this.columns.length) {
+            // All columns
+            return result;
+        };
+        i--;
+    }
+    return result;
+};
+
 PanelManager.prototype.focusByID = function(id) {
     if (!id) {
         return false;
     };
-    var skipPanels = this.panels.length - this.columns.length;
-    if (skipPanels<0) {//Fix
-        skipPanels = 0;
-    };
-    for (var i = 0; i < this.farRight(); i++) {//Put panels
-        var panel = this.panels[i+skipPanels];
+    var arr = this.getVisiblePanels();
+    for (var i = 0; i < arr.length; i++) {
+        var panel = arr[i];
         if (panel.id && panel.id == id) {
             this.focus(i);
             return true;
@@ -656,16 +720,14 @@ PanelManager.prototype.putPanels = function() {//Put panels into columns
         this.panels[i].scroll = this.panels[i].element.parent().scrollTop();
         this.panels[i].element.detach();
     };
-    var skipPanels = this.panels.length - this.columns.length;
-    if (skipPanels<0) {//Fix
-        skipPanels = 0;
-    };
-    for (var i = 0; i < this.farRight(); i++) {//Put panels
-        var panel = this.panels[i+skipPanels];
+    var arr = this.getVisiblePanels();
+    for (var i = 0; i < arr.length; i++) {
+        var panel = arr[i];
         panel.element.appendTo(this.columns[i]);
         if (panel.scroll || panel.scroll == 0) {//Restore
             this.columns[i].scrollTop(panel.scroll);
         };
+        panel.onResize();
     };
 };
 
@@ -693,6 +755,7 @@ PanelManager.prototype.show = function(panel, current) {
     this.clearRightPanels(current);
     this.panels.push(panel);
     this.panel = panel;
+    this.resize();
     this.putPanels();
     if (panel.onSwitch) {//Switch handler
         panel.onSwitch(panel);
@@ -709,6 +772,7 @@ PanelManager.prototype.goBack = function(current) {
     p.element.detach();
     var panel = this.panels[this.panels.length-1];
     this.panel = panel;
+    this.resize();
     this.putPanels();
     if (panel.onSwitch) {//Switch handler
         panel.onSwitch(panel);
@@ -812,6 +876,11 @@ var Panel = function(title) {
     this.title = title;
     this.titleElement.text(title);
     this.keys = {};
+    this.wide = false;
+};
+
+Panel.prototype.onResize = function() {
+    // By default no action required
 };
 
 Panel.prototype.setTitle = function(title) {
@@ -1114,11 +1183,16 @@ var __visiblePopupMenu = null;
 
 var PopupMenu = function(config) {//Shows popup menu
     this.config = config || {};
-    var parent = this.config.element? this.config.element: this.config.panel.element;
+    var body = $(document.body);
+    var parent = this.config.element? this.config.element: body;
     this.menu = $('<div/>').addClass('popup_menu').appendTo(parent);
+    var width = Math.floor(parent.outerWidth()*0.8);
+    if (width>300) {
+        width = 300;
+    };
     this.menu.data('instance', this);
-    this.menu.css('top', document.body.scrollTop+parent.parent().scrollTop());
-    //log('scroll', document.body.scrollTop, this.config.panel.element.parent().scrollTop(), manager.element.scrollTop());
+    this.menu.css('left', parent.offset().left+(parent.outerWidth()-width)/2).width(width);
+//    log('scroll', document.body.scrollTop, parent.parent().scrollTop(), parent.scrollTop());
     this.items = this.config.items || [];
     this.items.push({caption: 'Cancel'});
     for (var i = 0; i < this.items.length; i++) {//Create menu items
