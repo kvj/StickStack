@@ -201,6 +201,11 @@ var _initUI = function(storage) {//Creates root UI elements
             e.keyCode = -10;// Back button
             return _getManager().keyListener.emit('keydown', e);
         }, true);
+        document.addEventListener('searchbutton', function() {//Back button
+            var e = {};
+            e.keyCode = -11;// Search button
+            return _getManager().keyListener.emit('keydown', e);
+        }, true);
     };
     $('<div id="info_dialog"/>').appendTo(document.body).hide();
     if (CURRENT_PLATFORM == PLATFORM_AIR && storage) {//Only for air
@@ -1187,8 +1192,9 @@ var PopupMenu = function(config) {//Shows popup menu
     var parent = this.config.element? this.config.element: body;
     this.menu = $('<div/>').addClass('popup_menu').appendTo(parent);
     var width = Math.floor(parent.outerWidth()*0.8);
-    if (width>300) {
-        width = 300;
+    var maxWidth = 20*ui.em();
+    if (width>maxWidth) {
+        width = maxWidth;
     };
     this.menu.data('instance', this);
     this.menu.css('left', parent.offset().left+(parent.outerWidth()-width)/2).width(width);

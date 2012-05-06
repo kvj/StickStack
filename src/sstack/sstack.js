@@ -292,6 +292,11 @@ var TopManager = function(nav) {//Manages top panel
             this.showLogAdd();
             return false;
         };
+        if (e.keyCode == 119 || (e.ctrlKey && e.keyCode == 83) || e.keyCode == -11) {
+            // F8 or Ctrl+S or Search
+            this.showSearchDialog();
+            return false;
+        };
     }, this));
     manager.nav.bind('dragover', _.bind(function(e) {
         if (dd.hasDDTarget(e, tagDDType)) {
@@ -316,6 +321,17 @@ var TopManager = function(nav) {//Manages top panel
             return false;
         };
     }, this))
+};
+
+TopManager.prototype.showSearchDialog = function() {
+    if (!this.manager) {
+        return false;
+    };
+    _ask('Quick search', 'Enter text:', 'text', _.bind(function (text) {
+        if (text) {
+            openTag('"'+text+'"', null, this.manager, null, 'timeline');
+        };
+    }, this));
 };
 
 TopManager.prototype.showLogAdd = function() {

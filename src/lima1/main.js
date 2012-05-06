@@ -130,6 +130,10 @@
       return handler(null);
     };
 
+    CacheProvider.prototype.path_to_name = function(path) {
+      return path;
+    };
+
     CacheProvider.prototype.get = function(name, handler) {
       return handler(null);
     };
@@ -176,19 +180,63 @@
       });
     }
 
+    HTML5CacheProvider.prototype.path_to_name = function(path) {
+      log('path_to_name', path);
+      return path.name;
+    };
+
     HTML5CacheProvider.prototype.store = function(name, path, handler) {
-      return handler('No supported yet');
+      var openForRead, openForWrite, readWrite,
+        _this = this;
+      if (!this.cacheDir) return handler('No filesystem');
+      openForRead = function(file) {
+        var reader;
+        reader = new FileReader();
+        reader.onloadend = function(e) {
+          return openForWrite(name, reader.result);
+        };
+        reader.onerror = function(err) {
+          log('Error reading', err);
+          return handler('Read error');
+        };
+        return reader.readAsArrayBuffer(file);
+      };
+      readWrite = function(data, file) {
+        return file.createWriter(function(writer) {
+          var bb;
+          writer.onwriteend = function() {
+            return handler(null, file.toURL());
+          };
+          writer.onerror = function(err) {
+            log('Write failed', err);
+            return handler('Write error');
+          };
+          bb = new WebKitBlobBuilder();
+          bb.append(data);
+          return writer.write(bb.getBlob());
+        }, function(err) {
+          log('Write failed', err);
+          return handler('Write error');
+        });
+      };
+      openForWrite = function(name, data) {
+        return _this.cacheDir.getFile(name, {
+          create: true
+        }, function(file) {
+          return readWrite(data, file);
+        }, function(err) {
+          log('Create file failed', err);
+          return handler('Write error');
+        });
+      };
+      return openForRead(path);
     };
 
     HTML5CacheProvider.prototype.get = function(name, handler) {
-      var _this = this;
+      var downloadFile,
+        _this = this;
       if (!this.cacheDir) return handler('No filesystem');
-      return this.cacheDir.getFile(name, {
-        create: false
-      }, function(file) {
-        log('File found:', file, file.toURL());
-        return handler(null, file.toURL());
-      }, function(err) {
+      downloadFile = function(name) {
         var url, xhr;
         log('File not found, downloading', name);
         url = "/rest/file/download?name=" + name + "&";
@@ -198,44 +246,118 @@
         xhr.open('GET', url, true);
         xhr.responseType = 'blob';
         xhr.onload = function(e) {
-          log('onload', xhr, xhr.readyState, xhr.status);
-          if (xhr.readyState === 4) {
-            if (xhr.status === 200) {
-              return _this.cacheDir.getFile(name, {
-                create: true
-              }, function(file) {
-                return file.createWriter(function(writer) {
-                  writer.onwriteend = function() {
-                    return handler(null, file.toURL());
-                  };
-                  writer.onerror = function(err) {
-                    log('Write failed', err);
-                    return handler('Write error');
-                  };
-                  return writer.write(xhr.response);
-                }, function(err) {
+          log('Load', xhr.response, e);
+          if (xhr.response) {
+            return _this.cacheDir.getFile(name, {
+              create: true
+            }, function(file) {
+              return file.createWriter(function(writer) {
+                writer.onwriteend = function() {
+                  return handler(null, file.toURL());
+                };
+                writer.onerror = function(err) {
                   log('Write failed', err);
                   return handler('Write error');
-                });
+                };
+                return writer.write(xhr.response);
               }, function(err) {
-                log('Create file failed', err);
+                log('Write failed', err);
                 return handler('Write error');
               });
-            } else {
-              return handler('HTTP error');
-            }
+            }, function(err) {
+              log('Create file failed', err);
+              return handler('Write error');
+            });
+          } else {
+            return handler('HTTP error');
           }
         };
+        xhr.onerror = function(e) {
+          return log('XHR error', e, arguments);
+        };
         return xhr.send();
+      };
+      return this.cacheDir.getFile(name, {
+        create: false
+      }, function(file) {
+        log('File found:', file, file.toURL());
+        return file.getMetadata(function(meta) {
+          if (meta.size > 0) {
+            return handler(null, file.toURL());
+          } else {
+            return downloadFile(name);
+          }
+        }, function(err) {
+          log('Error getting metadata', err);
+          return handler('File error');
+        });
+      }, function(err) {
+        return downloadFile(name);
       });
     };
 
     HTML5CacheProvider.prototype.upload = function(name, handler) {
-      return handler('Not supported yet');
+      var doUpload, getFileContents, getUploadURL,
+        _this = this;
+      if (!this.cacheDir) return handler('No filesystem');
+      getFileContents = function(name) {
+        return _this.cacheDir.getFile(name, {
+          create: false
+        }, function(file) {
+          return file.file(function(file) {
+            return getUploadURL(file);
+          }, function(err) {
+            log('Error reading', err);
+            return handler('Read error');
+          });
+        }, function(err) {
+          return handler(null, -2);
+        });
+      };
+      getUploadURL = function(file) {
+        return _this.oauth.rest(_this.app, "/rest/file/upload?name=" + name + "&", null, function(err, data) {
+          if (err) return handler('Error uploading file');
+          return doUpload(file, data.u);
+        });
+      };
+      doUpload = function(data, url) {
+        var formData, xhr;
+        xhr = new XMLHttpRequest();
+        xhr.open('POST', url, true);
+        formData = new FormData();
+        formData.append('file', data);
+        xhr.onload = function(e) {
+          log('Upload done', e, xhr.status);
+          if (xhr.status !== 200) {
+            return handler('HTTP error');
+          } else {
+            return handler(null, -1);
+          }
+        };
+        xhr.onerror = function(e) {
+          log('XHR error', e, arguments);
+          return handler('HTTP error');
+        };
+        return xhr.send(formData);
+      };
+      return getFileContents(name);
     };
 
     HTML5CacheProvider.prototype.remove = function(name, handler) {
-      return handler(null);
+      var _this = this;
+      if (!this.cacheDir) return handler('No filesystem');
+      return this.cacheDir.getFile(name, {
+        create: false
+      }, function(file) {
+        log('File found:', file, file.toURL());
+        return file.remove(function() {
+          return handler(null);
+        }, function(err) {
+          return handler('File error');
+        });
+      }, function(err) {
+        return handler(null);
+      });
     };
 
     return HTML5CacheProvider;
@@ -267,7 +389,7 @@
 
     PhoneGapCacheProvider.prototype.get = function(name, handler) {
       var _this = this;
-      PhoneGap.exec(function(url) {
+      return PhoneGap.exec(function(url) {
         return handler(null, url);
       }, function(err) {
         var url;
@@ -280,7 +402,6 @@
           return handler(err != null ? err : 'PhoneGap error');
         }, 'Cache', 'download', [name, _this.oauth.getFullURL(_this.app, url)]);
       }, 'Cache', 'get', [name]);
-      return handler(null);
     };
 
     PhoneGapCacheProvider.prototype.upload = function(name, handler) {
@@ -328,10 +449,14 @@
       return folder;
     };
 
+    AirCacheProvider.prototype.path_to_name = function(path) {
+      return path.nativePath;
+    };
+
     AirCacheProvider.prototype.store = function(name, path, handler) {
       var file,
         _this = this;
-      file = new air.File(path);
+      file = new air.File(path.nativePath);
       if (!file.exists) return handler('File not found');
       file.addEventListener('complete', function() {
         return handler(null);
@@ -1050,16 +1175,17 @@
     StorageProvider.prototype.on_change = function(type, stream, id) {};
 
     StorageProvider.prototype.uploadFile = function(path, handler) {
-      var dotloc, ext, name,
+      var dotloc, ext, fileName, name,
         _this = this;
       if (!this.cache) return handler('Not supported');
-      dotloc = path.lastIndexOf('.');
-      ext = '';
-      if (dotloc !== -1) ext = path.substr(dotloc);
+      fileName = this.cache.path_to_name(path);
+      dotloc = fileName.lastIndexOf('.');
+      ext = '.bin';
+      if (dotloc !== -1) ext = fileName.substr(dotloc);
       name = '' + this._id() + ext.toLowerCase();
       return this.cache.store(name, path, function(err) {
         if (err) return handler(err);
-        return _this.db.query('insert into uploads (id, path, name, status) values (?, ?, ?, ?)', [_this._id(), path, name, 1], function(err) {
+        return _this.db.query('insert into uploads (id, path, name, status) values (?, ?, ?, ?)', [_this._id(), fileName, name, 1], function(err) {
           if (err) return handler(err);
           return handler(null, name);
         });

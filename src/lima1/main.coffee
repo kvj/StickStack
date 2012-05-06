@@ -86,6 +86,10 @@ class CacheProvider
 	store: (name, path, handler) ->
 		handler null
 
+	# Returns file name by it's path
+	path_to_name: (path) ->
+		return path
+
 	# Downloads? and Returns path to file in cache
 	get: (name, handler) ->
 		handler null
@@ -116,17 +120,48 @@ class HTML5CacheProvider extends CacheProvider
 		, (err) =>
 			log 'Error requesting quota:', err
 
+	path_to_name: (path) ->
+		log 'path_to_name', path
+		return path.name
+
 	# Copies file to cache
 	store: (name, path, handler) ->
-		handler 'No supported yet'
+		# log 'Saving file', name, path
+		if not @cacheDir then return handler 'No filesystem'
+		openForRead = (file) =>
+			reader = new FileReader()
+			reader.onloadend = (e) =>
+				# log 'Read done', e
+				openForWrite name, reader.result
+			reader.onerror = (err) =>
+				log 'Error reading', err
+				handler 'Read error'
+			reader.readAsArrayBuffer file
+		readWrite = (data, file) =>
+			file.createWriter (writer) =>
+				writer.onwriteend = () =>
+					handler null, file.toURL()
+				writer.onerror = (err) =>
+					log 'Write failed', err
+					handler 'Write error'
+				bb = new WebKitBlobBuilder()
+				bb.append data
+				writer.write bb.getBlob()
+			, (err) =>
+				log 'Write failed', err
+				handler 'Write error'
+		openForWrite = (name, data) =>
+			@cacheDir.getFile name, {create: true}, (file) =>
+				readWrite data, file
+			, (err) =>
+					log 'Create file failed', err
+					handler 'Write error'
+		openForRead path
 
 	# Downloads? and Returns path to file in cache
 	get: (name, handler) ->
 		if not @cacheDir then return handler 'No filesystem'
-		@cacheDir.getFile name, {create: false}, (file) =>
-			log 'File found:', file, file.toURL()
-			handler null, file.toURL()
-		, (err) =>
+		downloadFile = (name) =>
 			log 'File not found, downloading', name
 			url = "/rest/file/download?name=#{name}&"
 			if _.endsWith name, '.jpg'
@@ -137,36 +172,88 @@ class HTML5CacheProvider extends CacheProvider
 			xhr.open 'GET', url, yes
 			xhr.responseType = 'blob'
 			xhr.onload = (e) =>
-				log 'onload', xhr, xhr.readyState, xhr.status
-				if xhr.readyState is 4
-					if xhr.status is 200
-						# log 'Download OK', xhr, status
-						@cacheDir.getFile name, {create: true}, (file) =>
-							file.createWriter (writer) =>
-								writer.onwriteend = () =>
-									# log 'Write done, yea!'
-									handler null, file.toURL()
-								writer.onerror = (err) =>
-									log 'Write failed', err
-									handler 'Write error'
-								writer.write xhr.response
-							, (err) =>
+				log 'Load', xhr.response, e
+				if xhr.response
+					# log 'Download OK', xhr, status
+					@cacheDir.getFile name, {create: true}, (file) =>
+						file.createWriter (writer) =>
+							writer.onwriteend = () =>
+								# log 'Write done, yea!'
+								handler null, file.toURL()
+							writer.onerror = (err) =>
 								log 'Write failed', err
 								handler 'Write error'
+							writer.write xhr.response
 						, (err) =>
-								log 'Create file failed', err
-								handler 'Write error'
-					else
-						handler 'HTTP error'
+							log 'Write failed', err
+							handler 'Write error'
+					, (err) =>
+							log 'Create file failed', err
+							handler 'Write error'
+				else
+					handler 'HTTP error'
+			xhr.onerror = (e) =>
+				log 'XHR error', e, arguments
 			xhr.send()
-
+		@cacheDir.getFile name, {create: false}, (file) =>
+			log 'File found:', file, file.toURL()
+			file.getMetadata (meta) =>
+				if meta.size>0
+					handler null, file.toURL()
+				else
+					downloadFile name
+			, (err) =>
+				log 'Error getting metadata', err
+				handler 'File error'
+		, (err) =>
+			downloadFile name
+	
 	# Uploads file from cache
 	upload: (name, handler) ->
-		handler 'Not supported yet'
+		if not @cacheDir then return handler 'No filesystem'
+		getFileContents = (name) =>
+			@cacheDir.getFile name, {create: false}, (file) =>
+				# log 'File found:', file
+				file.file (file) =>
+					getUploadURL file
+				, (err) =>
+					log 'Error reading', err
+					handler 'Read error'
+			, (err) =>
+				handler null, -2
+		getUploadURL = (file) =>
+			@oauth.rest @app, "/rest/file/upload?name=#{name}&", null, (err, data) => 
+				# log 'getUploadURL done', data
+				if err then return handler 'Error uploading file'
+				doUpload file, data.u
+		doUpload = (data, url) =>
+			xhr = new XMLHttpRequest()
+			xhr.open 'POST', url, yes
+			formData = new FormData()
+			formData.append 'file', data
+			xhr.onload = (e) =>
+				log 'Upload done', e, xhr.status
+				if xhr.status isnt 200
+					handler 'HTTP error'
+				else
+					handler null, -1
+			xhr.onerror = (e) =>
+				log 'XHR error', e, arguments
+				handler 'HTTP error'
+			xhr.send formData
+		getFileContents name
 
 	# Removes file from cache
 	remove: (name, handler) ->
-		handler null
+		if not @cacheDir then return handler 'No filesystem'
+		@cacheDir.getFile name, {create: false}, (file) =>
+			log 'File found:', file, file.toURL()
+			file.remove () =>
+				handler null
+			, (err) =>
+				handler 'File error'
+		, (err) =>
+			handler null
 
 class PhoneGapCacheProvider extends CacheProvider
 
@@ -197,7 +284,6 @@ class PhoneGapCacheProvider extends CacheProvider
 				handler err ? 'PhoneGap error'
 			, 'Cache', 'download', [name, @oauth.getFullURL(@app, url)]
 		, 'Cache', 'get', [name]
-		handler null
 
 	# Uploads file from cache
 	upload: (name, handler) ->
@@ -232,9 +318,12 @@ class AirCacheProvider extends CacheProvider
 			folder.createDirectory()
 		return folder
 
+	path_to_name: (path) ->
+		return path.nativePath
+
 	# Copies file to cache
 	store: (name, path, handler) ->
-		file  = new air.File path
+		file  = new air.File path.nativePath
 		if not file.exists then return handler 'File not found'
 		file.addEventListener 'complete', () =>
 			handler null
@@ -542,7 +631,7 @@ class StorageProvider
 			if handler then handler err
 	
 	sync: (app, oauth, handler, force_clean, progress_handler) ->
-		log 'Starting sync...', app
+		# log 'Starting sync...', app
 		oauth.token = @token
 		reset_schema = no
 		clean_sync = no
@@ -716,6 +805,7 @@ class StorageProvider
 				@schema = schema
 				reset_schema = yes
 				clean_sync = yes
+				
 			get_last_sync null
 		, {
 			check: true
@@ -750,13 +840,14 @@ class StorageProvider
 
 	uploadFile: (path, handler) ->
 		if not @cache then return handler 'Not supported'
-		dotloc = path.lastIndexOf '.'
-		ext = ''
-		if dotloc isnt -1 then ext = path.substr dotloc
+		fileName = @cache.path_to_name path
+		dotloc = fileName.lastIndexOf '.'
+		ext = '.bin'
+		if dotloc isnt -1 then ext = fileName.substr dotloc
 		name = ''+@_id()+ext.toLowerCase()
 		@cache.store name, path, (err) =>
 			if err then return handler err
-			@db.query 'insert into uploads (id, path, name, status) values (?, ?, ?, ?)', [@_id(), path, name, 1], (err) =>
+			@db.query 'insert into uploads (id, path, name, status) values (?, ?, ?, ?)', [@_id(), fileName, name, 1], (err) =>
 				if err then return handler err
 				handler null, name
 

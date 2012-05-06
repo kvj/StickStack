@@ -13,6 +13,7 @@ var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
     if (!this.autotags && this.data.id) {
         this.autotags = 's:'+this.data.id+' ';
     };
+    this.tagConfig = {};
     this.root = element;
     this.topDiv = $(document.createElement('div')).appendTo(this.root);
     this.dropTargetsDiv = $(document.createElement('div')).appendTo(this.topDiv).hide();
@@ -839,7 +840,9 @@ Sheet.prototype.importNotes = function(provider) {
                                 this.proxy('createAttachment', _.bind(function (err) {
                                     if (!err) {
                                         this.reload(id);
-                                    };
+                                    } else {
+                                        _showInfo('Media not supported');
+                                    }
                                 }, this), [id, media]);
                             };
                             provider.done(item.taskID, function (err) {
@@ -953,7 +956,11 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
     var tag = $(document.createElement('div')).addClass('note_tag draggable').attr('draggable', 'true').appendTo(parent);
     if (t.tag_display) {
         tag.addClass('note_tag_display_'+t.tag_display);
-    };
+    } else {
+        if (this.tagConfig[t.id]) {
+            tag.addClass('note_tag_display_'+this.tagConfig[t.id]);
+        };
+    }
     applyColor(tag, t.color, true);
     t.div = tag;
     tag.text(t.caption);
@@ -1116,7 +1123,11 @@ Sheet.prototype.enableNoteDrop = function(div, handler, id, special_drop_handler
             e.preventDefault();
             return false;
         };
-        drop = dd.getDDTarget(e, filesDD);
+        if (CURRENT_PLATFORM == PLATFORM_AIR) {
+            drop = dd.getDDTarget(e, filesDD);
+        } else {
+            drop = e.originalEvent.dataTransfer.files;
+        }
         if (drop) {//URL - new note
             //log('Drop file', e.ctrlKey, e.shiftKey, ctrlKey, e.originalEvent.dataTransfer.dropEffect);
             // if (ctrlKey) {//Copy links
@@ -1138,8 +1149,12 @@ Sheet.prototype.enableNoteDrop = function(div, handler, id, special_drop_handler
             // };
             if (drop.length == 1) {
                 this.proxy('createAttachment', _.bind(function (err) {
-                    this.reload(id);
-                }, this), [id, drop[0].nativePath]);
+                    if (err) {
+                        _showInfo('Upload not supported');
+                    } else {
+                        this.reload(id);
+                    }
+                }, this), [id, drop[0]]);
             };
             e.stopPropagation();
             e.preventDefault();
@@ -1454,7 +1469,7 @@ Sheet.prototype.resizeGrid = function() {
     if (this.gridItems.length == 0) {
         return; //Nothing to show
     };
-    var minColWidth = ui.em()*12;
+    var minColWidth = ui.em()*17;
     var cols = this.gridConfig.cols || this.gridItems.length;
     if (this.gridBody.width()/cols<minColWidth) { // Width not enough
         cols = Math.floor(this.gridBody.width()/minColWidth);
@@ -1534,6 +1549,9 @@ Sheet.prototype.createGridColumn = function(index, config) {
     config.div = div;
     config.notesDiv = notesDiv;
     config._tag = this.proxy('adoptTag', null, [config.tag]);
+    if (config._tag) {
+        this.tagConfig[config._tag] = 'selected';
+    };
     this.enableTagDrop(div, _.bind(function(tag, text) {
         this.startNoteWithTag({tags_captions: []}, tag+' '+config.tag, notesDiv);
     }, this));
@@ -1548,7 +1566,7 @@ Sheet.prototype.createGridColumn = function(index, config) {
             }, this), [n, this.autotags+' '+config.tag]);
         };
     }, this));
-    log('Col', config);
+    // log('Col', config);
 
 };
 
