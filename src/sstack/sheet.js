@@ -919,7 +919,7 @@ Sheet.prototype.selectNote = function(note) {
     if (note_inline) {
         note_inline.appendTo(note.div);
     };
-    log('Select note', note.tags, note);
+    // log('Select note', note.tags, note);
     this.moveNowLine();
     this.updated();
 };

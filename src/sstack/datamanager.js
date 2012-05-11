@@ -101,20 +101,45 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
         return true;
     };
     if (method == 'createNote') {
-        datamanager.updateNote(null, params[0], null, function(id, err) {
-            if (id) {//Add notes
-                var tags = datamanager.noteToSheet(params[1], []);
-                datamanager.updateTags(id, tags, function(id, err) {
-                    if (id) {
-                        handler(id);
-                    } else {
-                        handler(null, err);
-                    };
-                });
-            } else {
+        var splitByStr = function (text, delim) {
+            var result = [];
+            var index = text.indexOf(delim);
+            while (index != -1) {
+                result.push(text.substr(0, index));
+                text = text.substr(index+delim.length);
+                index = text.indexOf(delim);
+            }
+            result.push(text);
+            return result;
+        };
+        var texts = splitByStr(params[0] || '', '\n...\n');
+        // log('Texts: ', texts);
+        var gr = new AsyncGrouper(texts.length, function (gr) {
+            var err = gr.findError();
+            if (err) {//Found error
                 handler(null, err);
+            } else {//No error
+                // log('Results:', gr.results[0]);
+                handler(gr.results[0][0]);
             };
         });
+        for (var i = 0; i < texts.length; i++) {
+            var txt = texts[i];
+            datamanager.updateNote(null, txt, null, function(id, err) {
+                if (id) {//Add notes
+                    var tags = datamanager.noteToSheet(params[1], []);
+                    datamanager.updateTags(id, tags, function(id, err) {
+                        if (id) {
+                            gr.fn(null, id);
+                        } else {
+                            gr.fn(err);
+                        };
+                    });
+                } else {
+                    gr.fn(err);
+                };
+            });
+        };
         return true;
     };
     if (method == 'putNote') {
