@@ -19,7 +19,7 @@ var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
     this.dropTargetsDiv = $(document.createElement('div')).appendTo(this.topDiv).hide();
     this.dropTargets = new Buttons({
         root: this.dropTargetsDiv,
-        maxElements: 2,
+        maxElements: 3,
         readonly: true
     });
     var copyButton = this.dropTargets.addButton({
@@ -27,6 +27,9 @@ var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
     });
     var moveButton = this.dropTargets.addButton({
         caption: 'Move here'
+    });
+    var importButton = this.dropTargets.addButton({
+        caption: 'Import here'
     });
     this.enableTagDrop(copyButton.element, _.bind(function(tag, text) {
         this.startNoteWithTag({tags_captions: []}, tag);
@@ -61,9 +64,28 @@ var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
             }, this), [n.id, autotags]);
         };
     }, this));
-    if (CURRENT_PLATFORM_MOBILE) {
-        this.topDiv.hide();
-    };
+    this.enableNoteDrop(importButton.element, _.bind(function(n, e) {
+        log('Drop to import', n);
+        if (n.id) {//note drop
+            this.proxy('getNote', _.bind(function (err, note) {
+                if (!err) {
+                    this.proxy('createNote', _.bind(function(id, err) {//
+                        if (id) {
+                            this.reload(id);
+                        };
+                    }, this), [note.text, this.autotags]);
+                } else {
+                    _showInfo('Note not found');
+                }
+            }, this), [n.id]);
+        } else {
+            this.proxy('putNote', _.bind(function(id, err) {//
+                if (id) {
+                    this.reload(id);
+                };
+            }, this), [n, this.autotags]);            
+        }
+    }, this));
     this.proxy = proxy;
     this.mediaGap = 8;
     this.menuPlace = menuPlace;
@@ -1115,6 +1137,7 @@ Sheet.prototype.enableNoteDrop = function(div, handler, id, special_drop_handler
             e.preventDefault();
         };
     }, this)).bind('drop', _.bind(function(e) {//Dropped
+        log('enableNoteDrop::drop', e);
         var drop = dd.getDDTarget(e, noteDDType);
         if (drop) {//Only ID - note drop
             // log('Dropped note', drop);
@@ -1695,6 +1718,21 @@ Sheet.prototype.prepare_cards = function() {
                 caption: 'Last item',
                 handler: _.bind(function () {
                     this.currentCard = this.cards.length-1;
+                    this.showCard();
+                    return true;
+                }, this)
+            });
+            items.push({
+                caption: 'Randomize',
+                handler: _.bind(function () {
+                    var arr = [];
+                    while (this.cards.length>0) {
+                        var index = Math.floor(Math.random()*this.cards.length);
+                        arr.push(this.cards[index]);
+                        this.cards.splice(index, 1);
+                    }
+                    this.cards = arr;
+                    this.currentCard = 0;
                     this.showCard();
                     return true;
                 }, this)

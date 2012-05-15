@@ -1181,7 +1181,7 @@ var InlineSheet = function(sheet, panel, datamanager, forcenew) {//
             this.sheet.reload();
         }, this),
     });
-    this.topMenu.addButton({
+    var menuButton = this.topMenu.addButton({
         row: 1,
         caption: '|',
         width: 3,
@@ -1225,6 +1225,9 @@ var InlineSheet = function(sheet, panel, datamanager, forcenew) {//
             // this.sheet.reload();
         }, this),
     });
+    this.panel.onmenu = _.bind(function () {
+        this.topMenu.click(menuButton);
+    }, this)
     var root = $('<div/>').addClass('inline_sheet').appendTo(this.panel.element);
     this.sheet = new Sheet(sheet, root, _.bind(function(method, handler, params) {//
         if (method == 'openTag') {//Handle here

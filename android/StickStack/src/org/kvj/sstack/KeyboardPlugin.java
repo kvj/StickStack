@@ -86,6 +86,9 @@ public class KeyboardPlugin extends Plugin {
 			case KeyEvent.KEYCODE_S:
 				sendEvent(obj, 83);
 				return true;
+			case KeyEvent.KEYCODE_M:
+				sendEvent(obj, 77);
+				return true;
 			}
 		} catch (JSONException e) {
 			e.printStackTrace();

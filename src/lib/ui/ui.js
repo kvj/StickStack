@@ -826,7 +826,6 @@ PanelManager.prototype.onKeyDown = function(e) {
         return false;
     };
     if (e.altKey) {
-        // log('Key down', e.keyCode);
         // 39 ->
         // 37 <-
         // 38 ^
@@ -851,7 +850,15 @@ PanelManager.prototype.onKeyDown = function(e) {
             case 38:
                 this.goBack(this.getFocused());
                 return false;
+            case 77:  // m - menu
+                var panel = this.getFocused();
+                if (panel && panel.onmenu) {
+                    panel.onmenu();
+                    return false;
+                }
+                break;
         };
+        // log('Key down panel', e.keyCode);
     };
     if (this.focused == -1 && this.nav_visible) {
         return this.nav_buttons.keypress(e);
