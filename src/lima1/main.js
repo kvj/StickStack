@@ -884,7 +884,6 @@
     StorageProvider.prototype.sync = function(app, oauth, handler, force_clean, progress_handler) {
       var clean_sync, do_reset_schema, finish_sync, get_last_sync, in_from, in_items, out_from, out_items, receive_out, reset_schema, schema_uri, send_in, upload_file,
         _this = this;
-      log('Starting sync...', app);
       oauth.token = this.token;
       reset_schema = false;
       clean_sync = false;
@@ -1357,7 +1356,11 @@
             i++;
           }
         }
-        return result.join(" " + op + " ");
+        if (result.length > 0) {
+          return '(' + (result.join(") " + op + " (")) + ')';
+        } else {
+          return null;
+        }
       };
       where = array_to_query(fields, query != null ? query : []);
       order = [];

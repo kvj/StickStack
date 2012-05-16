@@ -974,7 +974,10 @@ class StorageProvider
 							result.push fields[name]+'=?'
 							values.push value ? null
 					i++
-			result.join " #{op} "
+			if result.length>0
+				return '('+(result.join ") #{op} (")+')'
+			else
+				return null
 		where = array_to_query fields, query ? []
 		order = []
 		need_id = yes

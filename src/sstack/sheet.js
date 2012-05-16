@@ -1645,6 +1645,15 @@ Sheet.prototype.prepare_grid = function() {
 
 Sheet.prototype.prepare_cards = function() {
     this.hiddenLines = {};
+    this.cardConfig = {};
+    if (this.displayConfig) {
+        try {
+            this.cardConfig = JSON.parse(this.displayConfig);
+        } catch (e) {
+            log('Error parsing', e);
+            _showInfo('Error loading display config');
+        }
+    };
     this.showList = false;
     this.navigationDiv = $(document.createElement('div')).insertAfter(this.root.children('.clear'));
     this.navigation = new Buttons({
@@ -1775,6 +1784,26 @@ Sheet.prototype.showCard = function() {
     };
     this.unselectNote(this.selected);
     this.showNote(note, this.root, false, true);
+};
+
+Sheet.prototype.do_reload_cards = function(tags, sort) {
+    if (this.showList) {
+        // Default
+        return false;
+    };
+    tags = this.data.tags || '';
+    if (this.cardConfig.tags) {
+        tags += ' '+this.cardConfig.tags;
+    } else {
+        // Default
+        return false;
+    }
+    this.proxy('loadNotes', _.bind(function(list, err) {//
+        if (list) {//Display list
+            this.reload_cards(list);
+        };
+    }, this), [tags, sort, this.extra]);
+    return true;
 };
 
 Sheet.prototype.reload_cards = function(list, beforeID) {
@@ -2128,9 +2157,12 @@ Sheet.prototype.reload = function(beforeID, forceNoSelect) {//Asks for items
             sort = 's:'+this.data.id;
         };
     };
+    var mode = this.display;
+    if (this['do_reload_'+mode] && this['do_reload_'+mode].call(this, tags, sort)) {//Have do reload
+        return;
+    };
     this.proxy('loadNotes', _.bind(function(list, err) {//
         if (list) {//Display list
-            var mode = this.display;
             if (!beforeID && list.length>0 && !forceNoSelect && mode == 'default') {
                 beforeID = list[0].id;
             };
