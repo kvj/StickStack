@@ -588,7 +588,9 @@ class HTML5Provider extends DBProvider
 				handler null, false
 
 	get: (name, def) ->
-		return window?.localStorage[env.prefix+name] ? def
+		val = window?.localStorage[env.prefix+name]
+		if not val then val = def
+		return val
 
 	is: (name, def = no) ->
 		val = window?.localStorage[env.prefix+name] ? def

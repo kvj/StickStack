@@ -817,8 +817,10 @@
     };
 
     HTML5Provider.prototype.get = function(name, def) {
-      var _ref;
-      return (_ref = typeof window !== "undefined" && window !== null ? window.localStorage[env.prefix + name] : void 0) != null ? _ref : def;
+      var val;
+      val = typeof window !== "undefined" && window !== null ? window.localStorage[env.prefix + name] : void 0;
+      if (!val) val = def;
+      return val;
     };
 
     HTML5Provider.prototype.is = function(name, def) {

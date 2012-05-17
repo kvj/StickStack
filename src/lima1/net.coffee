@@ -8,7 +8,7 @@ class NetTransport
 class jQueryTransport extends NetTransport
 
 	request: (config, handler) -> 
-		log 'Doing request', @uri, config?.uri, config?.type
+		# log 'Doing request', @uri, config?.uri, config?.type
 		$.ajax({
 			url: @uri+config?.uri
 			type: config?.type ? 'GET'

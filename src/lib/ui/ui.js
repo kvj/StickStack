@@ -1009,17 +1009,10 @@ Buttons.prototype.addButton = function(button, before) {//Adds button
         button.innerElement.attr('disabled', 'disabled');
         button.element.addClass('button_readonly');
     };
-    button.innerElement.bind('click', {buttons: this, button: button, index: this.buttons.length}, function(e) {//Click on button
+    button.innerElement.bind(this.config.fast? CURRENT_EVENT_DOWN: 'click', {buttons: this, button: button, index: this.buttons.length}, function(e) {//Click on button
         if (e.data.button.disabled || e.data.buttons.readonly) {//Ignore click
             return false;
         };
-        // e.data.button.element.addClass('button_pressed');
-        // setTimeout(_.bind(function() {//Call handler
-        //     this.data.button.element.removeClass('button_pressed');
-        //     if (this.data.button.handler) {//We have handler
-        //         return this.data.button.handler(this, this.data.button, this);
-        //     };
-        // }, e), e.data.button.delay);
         e.data.buttons.focus(e.data.index);
         if (e.data.button.handler) {//We have handler
             e.data.button.handler(e, e.data.button, e);
@@ -1410,9 +1403,6 @@ AutoForm.prototype.saveForm = function(old) {//Saves values
 var _locker = null;
 
 var _initScreenLocker = function(element, timeout, password, startLock) {
-    if (CURRENT_PLATFORM_MOBILE) {//No screen lock
-        return null;
-    };
     _locker = new ScreenLocker({
         element: element,
         timeout: timeout,
@@ -1526,6 +1516,7 @@ ScreenLocker.prototype.doLock = function() {//Hides element and draws lock
     var btns = $('<div/>').appendTo(this.locker);
     this.buttons = new Buttons({
         maxElements: 3,
+        fast: true,
         root: btns
     });
     var arr = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', 'X', 'OK'];

@@ -1,7 +1,7 @@
 {
   "name": "Stick Stack",
   "description": "Super tasks",
-  "version": "1",
+  "version": "2",
   "app": {
     "launch": {
       "local_path": "sstack.html"
