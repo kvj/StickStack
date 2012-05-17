@@ -27,6 +27,10 @@
       return null;
     };
 
+    DBProvider.prototype.is = function(name, def) {
+      return def != null ? def : false;
+    };
+
     DBProvider.prototype.set = function(name, value) {
       return null;
     };
@@ -666,6 +670,18 @@
       return def;
     };
 
+    AirDBProvider.prototype.is = function(name, def) {
+      var arr;
+      arr = air.EncryptedLocalStore.getItem(name);
+      if (!name) return def != null ? def : false;
+      try {
+        return arr.readUTF();
+      } catch (error) {
+
+      }
+      return def === true || def === 'true' || def === 'yes';
+    };
+
     AirDBProvider.prototype.set = function(name, value) {
       var arr;
       if (!name) return false;
@@ -803,6 +819,14 @@
     HTML5Provider.prototype.get = function(name, def) {
       var _ref;
       return (_ref = typeof window !== "undefined" && window !== null ? window.localStorage[env.prefix + name] : void 0) != null ? _ref : def;
+    };
+
+    HTML5Provider.prototype.is = function(name, def) {
+      var val, _ref;
+      if (def == null) def = false;
+      val = (_ref = typeof window !== "undefined" && window !== null ? window.localStorage[env.prefix + name] : void 0) != null ? _ref : def;
+      if (!val) return def != null ? def : false;
+      return val === true || val === 'true' || val === 'yes';
     };
 
     HTML5Provider.prototype.set = function(name, value) {
@@ -1505,6 +1529,10 @@
 
     DataManager.prototype.get = function(name, def) {
       return this.storage.db.get(name, def);
+    };
+
+    DataManager.prototype.is = function(name, def) {
+      return this.storage.db.is(name, def);
     };
 
     DataManager.prototype.set = function(name, value) {

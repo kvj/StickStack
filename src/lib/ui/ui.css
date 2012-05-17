@@ -259,13 +259,7 @@ textarea {
 }
 
 .locker {
-    position: absolute;
-    width: 90%;
-    max-width: 300px;
-    margin: 0pt auto;
-    left: 0px;
-    right: 0px;
-    margin-top: 30%;
+    margin-top: 10%;
     border: 1px solid #aaaaaa;
     padding: 2px;
     background-color: #ffffff;

@@ -13,6 +13,9 @@ class DBProvider
 	get: (name, def) ->
 		null
 
+	is: (name, def) ->
+		def ? no
+
 	set: (name, value) ->
 		null
 
@@ -476,6 +479,14 @@ class AirDBProvider extends DBProvider
 		catch error
 		return def  
 
+	is: (name, def) ->
+		arr = air.EncryptedLocalStore.getItem name
+		if not name then return def ? no
+		try
+		  return arr.readUTF()
+		catch error
+		return def is yes or def is 'true' or def is 'yes'
+
 	set: (name, value) ->
 		if not name then return no
 		if not value
@@ -578,6 +589,12 @@ class HTML5Provider extends DBProvider
 
 	get: (name, def) ->
 		return window?.localStorage[env.prefix+name] ? def
+
+	is: (name, def = no) ->
+		val = window?.localStorage[env.prefix+name] ? def
+		if not val
+			return def ? no
+		return val is yes or val is 'true' or val is 'yes'
 
 	set: (name, value) ->
 		window?.localStorage[env.prefix+name] = value
@@ -1078,6 +1095,9 @@ class DataManager
 
 	get: (name, def) ->
 		return @storage.db.get name, def
+
+	is: (name, def) ->
+		return @storage.db.is name, def
 
 	set: (name, value) ->
 		return @storage.db.set name, value

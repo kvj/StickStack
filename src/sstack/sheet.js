@@ -9,7 +9,9 @@ var _buildIcon = function(name, cl) {//Builds img html
 var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
     this.data = sheet;
     this.panel = panel;
+    this.panel.wide = false;
     this.autotags = this.data.autotags;
+    this.canToggleWide = true;
     if (!this.autotags && this.data.id) {
         this.autotags = 's:'+this.data.id+' ';
     };
@@ -65,7 +67,7 @@ var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
         };
     }, this));
     this.enableNoteDrop(importButton.element, _.bind(function(n, e) {
-        log('Drop to import', n);
+        // log('Drop to import', n);
         if (n.id) {//note drop
             this.proxy('getNote', _.bind(function (err, note) {
                 if (!err) {
@@ -199,6 +201,16 @@ Sheet.prototype.removeNote = function(note) {
     this.updated();    
 };
 
+
+Sheet.prototype.toggleWide = function() {
+    if (this.canToggleWide) {
+        this.panel.wide = !this.panel.wide;
+        this.panel.onPanelChanged();
+        return true;
+    };
+    return false;
+};
+
 Sheet.prototype.onSheetMenu = function(items) {
     items.push({
         caption: 'Toggle drop targets',
@@ -208,6 +220,15 @@ Sheet.prototype.onSheetMenu = function(items) {
             return true;
         }, this),
     });
+    if (this.canToggleWide) {
+        items.push({
+            caption: 'Toggle wide panel',
+            handler: _.bind(function() {
+                this.toggleWide();
+                return true;
+            }, this),
+        });        
+    };
 };
 
 Sheet.prototype.showNoteMenu = function() {
@@ -328,6 +349,9 @@ Sheet.prototype.keypress = function(e) {
                 return false;
             };
             break;
+        case 69: //e
+            this.toggleWide();
+            return false;
         case 13:
             if (this.selected) {
                 if (this.selected.selectedTag) {
@@ -1620,6 +1644,7 @@ Sheet.prototype.prepare_grid = function() {
     // log('Prepare grid', this.displayConfig);
     if (this.panel) {
         this.panel.wide = true;
+        this.canToggleWide = false;
         this.panel.onResize = _.bind(function () {
             setTimeout(_.bind(function () {
                 this.resizeGrid();

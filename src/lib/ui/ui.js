@@ -17,11 +17,12 @@ var _showInfo = function(message, timeout) {//Shows info dialog
 var _showError = function(message) {//Shows error
     log('Error:', message);
     //css('top', 80+document.body.scrollTop).
-    $('#error_dialog').html(message || 'No error message provided').show();
     _disableUI();
+    $('#error_dialog').html(message || 'No error message provided').show();
 };
 
 var _disableUI = function () {
+    $('#error_dialog_background').children().hide();
     setTimeout(function () {
         $('#error_dialog_background').show();
     }, 1);
@@ -288,6 +289,38 @@ ui.buildIcon = function (name, size) {
 ui.em = function () {
     return $('#__em').width() || 10;
 };
+
+ui.settingsPane = function (config, storage, handler, panel) {
+    _createEsentials(this, 'System settings', 2);
+    _goBackFactory(this.topMenu, this.panel, '');
+    this.topMenu.addButton({
+        caption: 'Save',
+        handler: _.bind(function() {
+            var data = form.saveForm();
+            var keys = _.keys(data);
+            for (var i = 0; i < keys.length; i++) {
+                var key = keys[i];
+                storage.set(key, data[key]);
+            };
+            if (handler) {
+                handler();
+            };
+            _getManager().goBack(this.panel);
+        }, this),
+    });
+    var formDiv = $(document.createElement('div')).appendTo(this.panel.element);
+    var keys = _.keys(config);
+    for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        if (config[key].type == 'checkbox') {
+            config[key].value = storage.is(key);
+        } else {
+            config[key].value = storage.get(key, config[key].default);
+        }
+    };
+    var form = new AutoForm(formDiv, config);
+    _getManager().show(this.panel, panel);
+}
 
 var widgets = {};
 
@@ -1353,16 +1386,22 @@ AutoForm.prototype.saveForm = function(old) {//Saves values
         var value = this.element.find('#'+this.formid+id);
         if (this.conf[id].type == 'checkbox') {//Special case
             value = value.attr('checked')? true: false;
-        } else if (this.conf[id].type == 'password' && this.conf[id].password == 'md5' && old) {//Special case - md5 password
+            result[id] = value;
+        } else if (this.conf[id].type == 'password' && this.conf[id].password == 'sha1') {//Special case - sha1 password
             var pass = value.val();
             if (pass) {//Make hash
-                value = sha1.hex_md5(pass);
+                value = hex_sha1(pass);
             } else {//Old
-                value = old[id];
+                if (old) {
+                    value = old[id];
+                } else {
+                    continue;
+                }
             };
         } else {//Simple edit
             value = _.trim(value.val());
         };
+        log('Save', id, value);
         result[id] = value;
     };
     return result;
@@ -1380,7 +1419,7 @@ var _initScreenLocker = function(element, timeout, password, startLock) {
         password: password
     });
     if (startLock) {//Lock now
-        setTimeout(_.bind(_locker.doLock, _locker), 100);
+        setTimeout(_.bind(_locker.doLock, _locker), 1);
     };
     return _locker;
 };
@@ -1416,7 +1455,7 @@ ScreenLocker.prototype.checkTimeout = function() {//Interval
         if (secsLeft>this.config.timeout) {//Reached timeout
             log('Secs left', secsLeft);
             this.doLock();
-            _showInfo('Locked by timeout: '+secsLeft, 0);
+            // _showInfo('Locked by timeout: '+secsLeft, 0);
         };
     };
 };
@@ -1424,7 +1463,7 @@ ScreenLocker.prototype.checkTimeout = function() {//Interval
 ScreenLocker.prototype.keyPressed = function(e) {//Key handler
     this.lastActive = new Date().getTime();
     if (!this.locked) {//Normal mode
-        if (e.which == 119) {//F8
+        if (e.which == 121) {//F10
             this.doLock();
             return false;
         };
@@ -1458,15 +1497,15 @@ ScreenLocker.prototype.mousePressed = function(e) {//Mouse handler
 };
 
 ScreenLocker.prototype.checkPassword = function() {//Check and unlock
-    var hash = sha1.hex_md5(this.password);
+    var hash = hex_sha1(this.password);
     if (hash == this.config.password) {//Unlock
         this.locked = false;
         this.locker.remove();
         this.locker = null;
-        this.config.element.show();
-        setTimeout(function() {
-            layout.resize();
-        }, 100);
+        this.config.element.css('visibility', 'visible');
+        // setTimeout(function() {
+        //     layout.resize();
+        // }, 1);
     } else {//Show error
         this.resetPassword();
         _showError('Invalid password');
@@ -1479,10 +1518,10 @@ ScreenLocker.prototype.doLock = function() {//Hides element and draws lock
         return false;
     };
     this.locked = true;
-    this.config.element.hide();
+    this.config.element.css('visibility', 'hidden');
     this.password = '';
     this.stars = '';
-    this.locker = $('<div/>').addClass('locker').appendTo(document.body);
+    this.locker = $('<div/>').addClass('locker popup_dialog').appendTo(document.body);
     this.lockerPass = $('<div/>').addClass('locker_pass').appendTo(this.locker).html('&nbsp;');
     var btns = $('<div/>').appendTo(this.locker);
     this.buttons = new Buttons({
@@ -1495,6 +1534,7 @@ ScreenLocker.prototype.doLock = function() {//Hides element and draws lock
             caption: arr[i],
             action: arr[i],
             className: 'locker_btn',
+            classNameInner: arr[i] == 'X'? 'button_remove': arr[i] == 'OK'? 'button_create': null,
             handler: _.bind(function(btns, btn) {//Click on button
                 if (btn.action == 'X') {//Reset pass
                     this.resetPassword();

@@ -145,3 +145,13 @@
     z-index: 12;
 }
 
+.locker {
+    margin-top: 15%;
+    border: 1px solid #CC2A41;
+    background-color: transparent;
+}
+
+.locker_pass {
+    border: 1px solid #351330;
+    color: #efefef;
+}

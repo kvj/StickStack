@@ -5,7 +5,7 @@ var sheetWindows = {};
 var db = null;
 
 yepnope({
-    load: ['lib/custom-web/cross-utils.js', 'lib/common-web/jquery-1.7.1.min.js', 'lib/common-web/underscore-min.js', 'lib/common-web/underscore.strings.js', 'lib/custom-web/date.js', 'lib/common-web/json2.js', 'lib/custom-web/layout.js', 'lib/custom-web/pending.js', 'lib/custom-web/calendar.js', 'lib/ui/ui.css', 'lib/ui/theme-default.css', 'lib/ui/ui.js', 'lima1/net.js', 'lima1/main.js'],
+    load: ['lib/custom-web/cross-utils.js', 'lib/common-web/jquery-1.7.1.min.js', 'lib/common-web/underscore-min.js', 'lib/common-web/underscore.strings.js', 'lib/custom-web/date.js', 'lib/common-web/json2.js', 'lib/custom-web/layout.js', 'lib/custom-web/pending.js', 'lib/custom-web/calendar.js', 'lib/ui/ui.css', 'lib/ui/theme-default.css', 'lib/ui/ui.js', 'lima1/net.js', 'lima1/main.js', 'lib/common-web/sha1.js'],
     complete: function () {
         yepnope([{
             load: ['lib/common-web/jquery.autogrow.js', 'lib/common-web/jquery.mousewheel.js']
@@ -236,7 +236,14 @@ var TopManager = function(nav) {//Manages top panel
             items.push({
                 caption: 'App config',
                 handler: _.bind(function() {
-                    config.editAppConfig();
+                    ui.settingsPane({
+                        sync_url: {label: 'Sync URL'},
+                        lock: {label: 'Screen lock', type: 'checkbox'},
+                        lock_timeout: {label: 'Screen lock timeout', default: '60'},
+                        lock_password: {label: 'Lock password', type: 'password', password: 'sha1'}
+                    }, this.syncManager, _.bind(function () {
+                        _showInfo('Reload application to take effect')
+                    }, this), this.panel);
                     return true;
                 }, this),
             });
@@ -462,7 +469,7 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
         this.topMenu.setDisabled(this.disabledButtons[i], true);
     };
     var storage = new StorageProvider(db)
-    var jqnet = new jQueryTransport('http://lima1sync.appspot.com')
+    var jqnet = new jQueryTransport(storage.get('sync_url', 'http://lima1sync.appspot.com'))
     var oauth = new OAuthProvider({
         clientID: 'sstack'
     }, jqnet);
@@ -470,6 +477,9 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
         this.login();
     }, this);
     this.syncManager = new Lima1DataManager('sstack', oauth, storage);
+    if (this.syncManager.is('lock')) {
+        this.locker = _initScreenLocker($('#main'), this.syncManager.get('lock_timeout'), this.syncManager.get('lock_password'), true);
+    };
     if (CURRENT_PLATFORM == PLATFORM_AIR) {
         storage.cache = new AirCacheProvider(oauth, 'sstack', manager.minColWidth*2);
     };
@@ -1246,6 +1256,10 @@ var InlineSheet = function(sheet, panel, datamanager, forcenew) {//
     this.panel.keypress = _.bind(function (e) {
         return this.sheet.keypress(e);
     }, this);
+    this.panel.onPanelChanged = _.bind(function () {
+        manager.resize(true);
+        manager.focusByID(this.panel.id);
+    }, this)
     manager.show(this.panel, forcenew? null: panel);
 };
 
