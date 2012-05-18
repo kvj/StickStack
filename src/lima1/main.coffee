@@ -218,20 +218,20 @@ class HTML5CacheProvider extends CacheProvider
 			@cacheDir.getFile name, {create: false}, (file) =>
 				# log 'File found:', file
 				file.file (file) =>
-					getUploadURL file
+					doUpload file, "/rest/file/upload?name=#{name}&"
 				, (err) =>
 					log 'Error reading', err
 					handler 'Read error'
 			, (err) =>
 				handler null, -2
-		getUploadURL = (file) =>
-			@oauth.rest @app, "/rest/file/upload?name=#{name}&", null, (err, data) => 
-				# log 'getUploadURL done', data
-				if err then return handler 'Error uploading file'
-				doUpload file, data.u
+		# getUploadURL = (file) =>
+		# 	@oauth.rest @app, "/rest/file/upload?name=#{name}&", null, (err, data) => 
+		# 		# log 'getUploadURL done', data
+		# 		if err then return handler 'Error uploading file'
+		# 		doUpload file, data.u
 		doUpload = (data, url) =>
 			xhr = new XMLHttpRequest()
-			xhr.open 'POST', url, yes
+			xhr.open 'POST', @oauth.getFullURL(@app, url), yes
 			formData = new FormData()
 			formData.append 'file', data
 			xhr.onload = (e) =>
