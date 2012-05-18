@@ -524,9 +524,12 @@ class HTML5Provider extends DBProvider
 			handler error.message
 
 	query: (query, params, handler, transaction) ->
-		return handler "DB isn't opened" unless @db
+		if not @db
+			handler "DB isn't opened" unless @db
+			return
 		if transaction
 			@_query query, params, transaction, handler
+			return transaction
 		else
 			@db.transaction (transaction) =>
 				# log 'Ready to query', transaction
@@ -534,6 +537,7 @@ class HTML5Provider extends DBProvider
 			, (error) =>
 				log 'Error transaction', error
 				handler error.message
+			return null
 
 	verify: (schema, handler) ->
 		# log 'verify', schema
@@ -545,7 +549,7 @@ class HTML5Provider extends DBProvider
 			for row in res
 				if row.type is 'table' and not (_.startsWith(row.name, 'sqlite_') or _.startsWith(row.name, '_'))
 					@tables.push row.name
-			# log '@tables', @tables, @version_match, @clean
+			# log 'verify @tables', @tables, @version_match, @clean
 			if not @version_match or @clean or (@tables.length is 0)
 				@clean = yes
 				# drop tables/etc
@@ -575,6 +579,7 @@ class HTML5Provider extends DBProvider
 					if index < res.length
 						if res[index].name.substr(0, 2) is '__' or res[index].name.substr(0, 7) is 'sqlite_'
 							return drop_at index+1
+						# log 'Drop ', res[index].type, res[index].name
 						@query 'drop '+res[index].type+' if exists '+res[index].name, [], (err) =>
 							if err
 								return handler err
@@ -696,13 +701,13 @@ class StorageProvider
 						if err then return finish_sync err
 						remove_entry null
 
-		receive_out = () =>
+		receive_out = (transaction) =>
 			url = "/rest/out?from=#{out_from}&"
 			if not clean_sync
 				url += "inc=yes&"
 			progress_handler @SYNC_NETWORK
 			oauth.rest app, url, null, (err, res) =>
-				# log 'After out:', err, res
+				# log 'receive_out', transaction
 				if err then return finish_sync err
 				progress_handler @SYNC_WRITE_DATA
 				arr = res.a
@@ -721,9 +726,10 @@ class StorageProvider
 							log 'Error parsing object', e
 						do (last) =>
 							# log 'Saving', item
-							@create item.s, object, (err) =>
+							tr = @create item.s, object, (err, _data, tr) =>
 								# log 'After create', err
-								if last then receive_out null
+								if last
+									receive_out null
 							, {
 								status: item.st
 								updated: item.u
@@ -743,7 +749,7 @@ class StorageProvider
 				vars.push 1
 				vars.push in_from
 			if sql.length is 0 then return do_reset_schema null
-			@db.query sql.join(' union ')+' order by updated limit '+slots, vars, (err, data) =>
+			@db.query sql.join(' union ')+' order by updated limit '+slots, vars, (err, data, tr) =>
 				if err then return finish_sync err
 				result = []
 				slots_used = 0
@@ -770,7 +776,7 @@ class StorageProvider
 					send_in null
 		do_reset_schema = () =>
 			progress_handler @SYNC_WRITE_DATA
-			@db.clean = true
+			@db.clean = yes
 			new_schema = []
 			for item in @db_schema
 				new_schema.push item
@@ -796,7 +802,7 @@ class StorageProvider
 				# log 'Verify result', err, reset
 				if err then return finish_sync err
 				out_from = 0
-				@db.query 'insert into schema (id, token, schema) values (?, ?, ?)', [@_id(), @token, JSON.stringify @schema], (err) =>
+				@db.query 'insert into schema (id, token, schema) values (?, ?, ?)', [@_id(), @token, JSON.stringify @schema], (err, data, tr) =>
 					if err then return handler err
 					receive_out null
 		get_last_sync = () =>
@@ -910,12 +916,13 @@ class StorageProvider
 			questions += ', ?'
 			fields += ', f_'+texts[i]
 			values.push object[texts[i]] ? null
-		@db.query 'insert or replace into t_'+stream+' ('+fields+') values ('+questions+')', values, (err) =>
+		return @db.query 'insert or replace into t_'+stream+' ('+fields+') values ('+questions+')', values, (err, _data, transaction) =>
 			if err
 				handler err
 			else 
 				if not options?.internal then @on_change 'create', stream, object.id
-				handler null, object
+				handler null, object, transaction
+		, options?.transaction
 
 	update: (stream, object, handler) ->
 		if not @_precheck stream, handler then return
@@ -1115,6 +1122,27 @@ class DataManager
 				@unschedule_sync null
 			handler err, data
 		, force_clean, progress_handler
+
+	restore: (files, handler) ->
+		xhr = new XMLHttpRequest()
+		url = '/rest/restore?'
+		xhr.open 'POST', @oauth.getFullURL(@app, url), yes
+		formData = new FormData()
+		i = 0
+		for file in files
+			formData.append "file#{i}", file
+			i++
+		xhr.onload = (e) =>
+			log 'Upload done', e, xhr.status
+			if xhr.status isnt 200
+				handler 'HTTP error'
+			else
+				handler null
+		xhr.onerror = (e) =>
+			log 'XHR error', e, arguments
+			handler 'HTTP error'
+		xhr.send formData
+
 
 window.HTML5Provider = HTML5Provider
 window.AirDBProvider = AirDBProvider

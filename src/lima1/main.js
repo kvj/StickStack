@@ -301,7 +301,7 @@
     };
 
     HTML5CacheProvider.prototype.upload = function(name, handler) {
-      var doUpload, getFileContents, getUploadURL,
+      var doUpload, getFileContents,
         _this = this;
       if (!this.cacheDir) return handler('No filesystem');
       getFileContents = function(name) {
@@ -309,7 +309,7 @@
           create: false
         }, function(file) {
           return file.file(function(file) {
-            return getUploadURL(file);
+            return doUpload(file, "/rest/file/upload?name=" + name + "&");
           }, function(err) {
             log('Error reading', err);
             return handler('Read error');
@@ -318,16 +318,10 @@
           return handler(null, -2);
         });
       };
-      getUploadURL = function(file) {
-        return _this.oauth.rest(_this.app, "/rest/file/upload?name=" + name + "&", null, function(err, data) {
-          if (err) return handler('Error uploading file');
-          return doUpload(file, data.u);
-        });
-      };
       doUpload = function(data, url) {
         var formData, xhr;
         xhr = new XMLHttpRequest();
-        xhr.open('POST', url, true);
+        xhr.open('POST', _this.oauth.getFullURL(_this.app, url), true);
         formData = new FormData();
         formData.append('file', data);
         xhr.onload = function(e) {
@@ -743,16 +737,21 @@
 
     HTML5Provider.prototype.query = function(query, params, handler, transaction) {
       var _this = this;
-      if (!this.db) return handler("DB isn't opened");
+      if (!this.db) {
+        if (!this.db) handler("DB isn't opened");
+        return;
+      }
       if (transaction) {
-        return this._query(query, params, transaction, handler);
+        this._query(query, params, transaction, handler);
+        return transaction;
       } else {
-        return this.db.transaction(function(transaction) {
+        this.db.transaction(function(transaction) {
           return _this._query(query, params, transaction, handler);
         }, function(error) {
           log('Error transaction', error);
           return handler(error.message);
         });
+        return null;
       }
     };
 
@@ -973,7 +972,7 @@
           }
         });
       };
-      receive_out = function() {
+      receive_out = function(transaction) {
         var url;
         url = "/rest/out?from=" + out_from + "&";
         if (!clean_sync) url += "inc=yes&";
@@ -1000,7 +999,8 @@
                 log('Error parsing object', e);
               }
               _results.push((function(last) {
-                return _this.create(item.s, object, function(err) {
+                var tr;
+                return tr = _this.create(item.s, object, function(err, _data, tr) {
                   if (last) return receive_out(null);
                 }, {
                   status: item.st,
@@ -1031,7 +1031,7 @@
           vars.push(in_from);
         }
         if (sql.length === 0) return do_reset_schema(null);
-        return _this.db.query(sql.join(' union ') + ' order by updated limit ' + slots, vars, function(err, data) {
+        return _this.db.query(sql.join(' union ') + ' order by updated limit ' + slots, vars, function(err, data, tr) {
           var i, item, result, slots_needed, slots_used, _ref3, _ref4;
           if (err) return finish_sync(err);
           result = [];
@@ -1112,7 +1112,7 @@
         return _this.db.verify(new_schema, function(err, reset) {
           if (err) return finish_sync(err);
           out_from = 0;
-          return _this.db.query('insert into schema (id, token, schema) values (?, ?, ?)', [_this._id(), _this.token, JSON.stringify(_this.schema)], function(err) {
+          return _this.db.query('insert into schema (id, token, schema) values (?, ?, ?)', [_this._id(), _this.token, JSON.stringify(_this.schema)], function(err, data, tr) {
             if (err) return handler(err);
             return receive_out(null);
           });
@@ -1270,16 +1270,16 @@
         fields += ', f_' + texts[i];
         values.push((_ref9 = object[texts[i]]) != null ? _ref9 : null);
       }
-      return this.db.query('insert or replace into t_' + stream + ' (' + fields + ') values (' + questions + ')', values, function(err) {
+      return this.db.query('insert or replace into t_' + stream + ' (' + fields + ') values (' + questions + ')', values, function(err, _data, transaction) {
         if (err) {
           return handler(err);
         } else {
           if (!(options != null ? options.internal : void 0)) {
             _this.on_change('create', stream, object.id);
           }
-          return handler(null, object);
+          return handler(null, object, transaction);
         }
-      });
+      }, options != null ? options.transaction : void 0);
     };
 
     StorageProvider.prototype.update = function(stream, object, handler) {
@@ -1553,6 +1553,34 @@
         if (!err && _this.timeout_id) _this.unschedule_sync(null);
         return handler(err, data);
       }, force_clean, progress_handler);
+    };
+
+    DataManager.prototype.restore = function(files, handler) {
+      var file, formData, i, url, xhr, _i, _len,
+        _this = this;
+      xhr = new XMLHttpRequest();
+      url = '/rest/restore?';
+      xhr.open('POST', this.oauth.getFullURL(this.app, url), true);
+      formData = new FormData();
+      i = 0;
+      for (_i = 0, _len = files.length; _i < _len; _i++) {
+        file = files[_i];
+        formData.append("file" + i, file);
+        i++;
+      }
+      xhr.onload = function(e) {
+        log('Upload done', e, xhr.status);
+        if (xhr.status !== 200) {
+          return handler('HTTP error');
+        } else {
+          return handler(null);
+        }
+      };
+      xhr.onerror = function(e) {
+        log('XHR error', e, arguments);
+        return handler('HTTP error');
+      };
+      return xhr.send(formData);
     };
 
     return DataManager;

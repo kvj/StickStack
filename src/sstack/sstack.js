@@ -256,6 +256,13 @@ var TopManager = function(nav) {//Manages top panel
             });
             if (!CURRENT_PLATFORM_MOBILE && CURRENT_PLATFORM == PLATFORM_WEB) {
                 items.push({
+                    caption: 'Restore data and files',
+                    handler: _.bind(function() {
+                        this.startRestore();
+                        return true;
+                    }, this),
+                });
+                items.push({
                     caption: 'Backup data',
                     handler: _.bind(function() {
                         window.open(this.syncManager.get_backup_url('data'));
@@ -378,13 +385,51 @@ TopManager.prototype.backupFiles = function() {
                 dt.setMonth(parseInt(m[2], 10)-1);
                 dt.setDate(parseInt(m[3], 10));
                 from = dt.getTime();
-                window.open(this.syncManager.get_backup_url('file', from));
                 log('dt', dt, from);
-                return;
             };
         };
-        _showError('Invalid date');
+        window.open(this.syncManager.get_backup_url('file', from));
+        return;
     }, this));
+};
+
+TopManager.prototype.startRestore = function() {
+    var body = $(document.createElement('div'));
+    var input = _addInput('Files:', 'file', body);
+    input.attr('multiple', 'multiple');
+    _showQuestion('Restore from file(s):', _.bind(function (result) {
+        if (0 == result) {
+            var files = input.get(0).files;
+            log('Files', files);
+            if (!files || files.length == 0) {
+                _showError('File(s) not selected');
+                return;
+            };
+            var fileNames = [];
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                fileNames.push(file.name);
+            };
+            _showQuestion('Are you sure want to restore data from: '+(fileNames.join(', ')), _.bind(function (result) {
+                if (result == 0) {
+                    this.syncManager.restore(files, _.bind(function (err) {
+                        if (err) {
+                            _showError(err);
+                        } else {
+                            _showQuestion('Reset local data?', _.bind(function (result) {
+                                if (0 == result) {
+                                    this.sync(true);
+                                };
+                            }, this))
+                        }
+                    }, this))
+                };
+            }, this))
+        };
+    }, this), null, body);
+    setTimeout(function () {
+        input.click();
+    }, 10);    
 };
 
 TopManager.prototype.sync = function(force_clean) {//Run sync
@@ -503,10 +548,10 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
             div.addClass('channel_ok');
         };
     }, this));
-    if (!CURRENT_PLATFORM_MOBILE) {
-        // Channel API
-        storage.set_channel_provider(new DesktopChannelProvider(oauth));
-    };
+    // if (!CURRENT_PLATFORM_MOBILE) {
+    //     // Channel API
+    //     storage.set_channel_provider(new DesktopChannelProvider(oauth));
+    // };
     this.syncManager.on_scheduled_sync = _.bind(function () {
         this.sync();
     }, this);

@@ -1442,7 +1442,7 @@ ScreenLocker.prototype.checkTimeout = function() {//Interval
     };
     if (this.config.timeout>0) {//Have timeout
         var secsLeft = Math.round((new Date().getTime()-this.lastActive)/1000);
-        if (secsLeft>this.config.timeout) {//Reached timeout
+        if (secsLeft>parseInt(this.config.timeout, 10)) {//Reached timeout
             log('Secs left', secsLeft);
             this.doLock();
             // _showInfo('Locked by timeout: '+secsLeft, 0);
