@@ -1463,7 +1463,7 @@ ScreenLocker.prototype.keyPressed = function(e) {//Key handler
         e.stopPropagation();
         e.stopImmediatePropagation();
         if (e.which == 13) {//Enter
-            this.checkPassword();
+            this.checkPassword(true);
         };
         if (e.which == 27) {//Esc
             this.resetPassword();
@@ -1486,7 +1486,7 @@ ScreenLocker.prototype.mousePressed = function(e) {//Mouse handler
     return true;
 };
 
-ScreenLocker.prototype.checkPassword = function() {//Check and unlock
+ScreenLocker.prototype.checkPassword = function(handle_error) {//Check and unlock
     var hash = hex_sha1(this.password);
     if (hash == this.config.password) {//Unlock
         this.locked = false;
@@ -1497,8 +1497,10 @@ ScreenLocker.prototype.checkPassword = function() {//Check and unlock
         //     layout.resize();
         // }, 1);
     } else {//Show error
-        this.resetPassword();
-        _showError('Invalid password');
+        if (handle_error) {
+            this.resetPassword();
+            _showError('Invalid password');            
+        };
     };
 };
 
@@ -1530,7 +1532,7 @@ ScreenLocker.prototype.doLock = function() {//Hides element and draws lock
                 if (btn.action == 'X') {//Reset pass
                     this.resetPassword();
                 } else if (btn.action == 'OK') {//Check pass
-                    this.checkPassword();
+                    this.checkPassword(true);
                 } else {//Numbers
                     this.addNumber(btn.action);
                 };
@@ -1551,6 +1553,7 @@ ScreenLocker.prototype.addNumber = function(num) {
     this.password += num;
     this.stars += 'X';
     this.lockerPass.text(this.stars);
+    this.checkPassword(false);
 };
 
 var installSwipeHandler = function(element, handler, data) {//Sets gesture event

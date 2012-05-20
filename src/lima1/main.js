@@ -405,15 +405,11 @@
     PhoneGapCacheProvider.prototype.upload = function(name, handler) {
       var _this = this;
       return PhoneGap.exec(function() {
-        return _this.oauth.rest(_this.app, "/rest/file/upload?name=" + name + "&", null, function(err, data) {
-          if (err) return handler('Error uploading file');
-          log('Uploading:', _this.oauth.transport.uri, data.u);
-          return PhoneGap.exec(function() {
-            return handler(null, -1);
-          }, function(err) {
-            return handler(err != null ? err : 'PhoneGap error');
-          }, 'Cache', 'upload', [name, data.u]);
-        });
+        return PhoneGap.exec(function() {
+          return handler(null, -1);
+        }, function(err) {
+          return handler(err != null ? err : 'PhoneGap error');
+        }, 'Cache', 'upload', [name, _this.oauth.getFullURL(_this.app, "/rest/file/upload?name=" + name + "&")]);
       }, function(err) {
         return handler(null, -2);
       }, 'Cache', 'get', [name]);

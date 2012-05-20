@@ -514,7 +514,8 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
         this.topMenu.setDisabled(this.disabledButtons[i], true);
     };
     var storage = new StorageProvider(db)
-    var jqnet = new jQueryTransport(storage.get('sync_url', 'http://lima1sync.appspot.com'))
+    // old http://lima1sync.appspot.com
+    var jqnet = new jQueryTransport(storage.get('sync_url', 'http://lima1-kvj.rhcloud.com'))
     var oauth = new OAuthProvider({
         clientID: 'sstack'
     }, jqnet);

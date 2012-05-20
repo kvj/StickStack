@@ -291,15 +291,12 @@ class PhoneGapCacheProvider extends CacheProvider
 	# Uploads file from cache
 	upload: (name, handler) ->
 		PhoneGap.exec () =>
-			@oauth.rest @app, "/rest/file/upload?name=#{name}&", null, (err, data) => 
-				if err then return handler 'Error uploading file'
-				log 'Uploading:', @oauth.transport.uri, data.u
-				PhoneGap.exec () =>
-					# Uploaded
-					handler null, -1
-				, (err) =>
-					handler err ? 'PhoneGap error'
-				, 'Cache', 'upload', [name, data.u]
+			PhoneGap.exec () =>
+				# Uploaded
+				handler null, -1
+			, (err) =>
+				handler err ? 'PhoneGap error'
+			, 'Cache', 'upload', [name, @oauth.getFullURL(@app, "/rest/file/upload?name=#{name}&")]
 		, (err) =>
 			# File not in cache - give a chance to skip
 			handler null, -2

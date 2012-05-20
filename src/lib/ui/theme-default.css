@@ -19,7 +19,6 @@
 }
 
 .popup_menu_item:active {
-    padding-left: 0.6em;
     background-color: #CC2A41;
 }
 
