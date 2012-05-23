@@ -56,7 +56,6 @@ div {
 
 .tab_button_selected .button_inner {
     background-color: #aaaaaa;
-    border-color: #aaaaaa;
 }
 
 .button_outer {
@@ -71,15 +70,19 @@ div {
 }
 
 .button_inner {
-    left: 0px;
-    right: 1px;
-    position: absolute;
     overflow: hidden;
     cursor: pointer;
+    width: 100%;
+    border-width: 0px;
+    box-sizing: border-box;
+    background-clip: padding-box;
+    border-right: 0.2em solid transparent;
 }
 
 .button_text {
     text-align: center;
+    padding-left: 0.1em;
+    padding-right: 0.1em;
     white-space: nowrap;
     -webkit-text-overflow: ellipsis;
     vertical-align: middle;
@@ -103,6 +106,10 @@ div {
     position: relative;
     padding: 2px;
     height: 2em;
+}
+
+.input_autocomplete {
+    margin-top: 2em;
 }
 
 input[type=text], input[type=password], input[type=color] {
@@ -180,9 +187,13 @@ textarea {
 .popup_menu_item {
     padding-left: 0.8em;
     height: 2.4em;
-    vertical-align: center;
+    width: 100%;
+    border-width: 0px;
+    text-align: left;
+    vertical-align: middle;
     border-top: 1px solid #dddddd;
     cursor: pointer;
+    font-size: 1em;
 }
 
 .popup_menu_item_pressed {
@@ -217,7 +228,6 @@ textarea {
 
 .button_pressed .button_inner {
     background-color: #aaaaaa;
-    border-color: #aaaaaa;
 }
 
 .icon {
@@ -250,6 +260,7 @@ textarea {
 
 .button_outer_32 {
     height: 9em;
+    text-align: center;
 }
 
 .button_inner_32 {

@@ -26,7 +26,6 @@
 	color: #fff !important;
 	font-weight: normal;
 	background-color: #424254;
-	border-width: 0px;
 	min-height: 2.3em;
 }
 
@@ -54,7 +53,7 @@
     border-bottom-color: transparent;
     border-right-color: transparent;
     left: 0;
-    top: 0;
+    top: 2px;
 }
 
 .button_list .focus_indicator, .button_create .focus_indicator {

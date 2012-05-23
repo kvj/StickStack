@@ -6,6 +6,17 @@ var _buildIcon = function(name, cl) {//Builds img html
     return '<div class="icon'+(cl? ' '+cl: '')+'" style="background-image: url(\'img/icons/'+name+'.png\');"/>';
 };
 
+var _parseTagCaption = function (caption, element) { // Parses tag caption and puts html into element
+    while (caption && caption.charAt(0) == ':' && caption.charAt(2) == ':') { // Parse and render icon
+        var span = $(document.createElement('div')).addClass('tag_icon').appendTo(element);
+        span.text(caption.substr(1, 1));
+        caption = caption.substr(3);
+    };
+    if (caption) { // Have caption
+        $(document.createElement('span')).appendTo(element).text(caption);
+    };
+}
+
 var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
     this.data = sheet;
     this.panel = panel;
@@ -41,13 +52,13 @@ var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
             var autotags = this.autotags;
             this.proxy('moveNote', _.bind(function(id, err) {//
                 if (id) {
-                    this.reload(id);
+                    this.reload();
                 };
             }, this), [n.id, autotags]);
         } else {//Put note
             this.proxy('putNote', _.bind(function(id, err) {//
                 if (id) {
-                    this.reload(id);
+                    this.reload();
                 };
             }, this), [n, this.autotags]);
         };
@@ -61,7 +72,7 @@ var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
             };
             this.proxy('moveNote', _.bind(function(id, err) {//
                 if (id) {
-                    this.reload(id);
+                    this.reload();
                 };
             }, this), [n.id, autotags]);
         };
@@ -73,7 +84,7 @@ var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
                 if (!err) {
                     this.proxy('createNote', _.bind(function(id, err) {//
                         if (id) {
-                            this.reload(id);
+                            this.reload();
                         };
                     }, this), [note.text, this.autotags]);
                 } else {
@@ -83,7 +94,7 @@ var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
         } else {
             this.proxy('putNote', _.bind(function(id, err) {//
                 if (id) {
-                    this.reload(id);
+                    this.reload();
                 };
             }, this), [n, this.autotags]);            
         }
@@ -152,13 +163,9 @@ var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
     }, this));
     this.textPanel = $(document.createElement('div')).addClass('input_wrap').appendTo(this.root).hide();
     this.text = $('<input type="text"/>').addClass('form_control').appendTo(this.textPanel);
-    this.text.bind('keydown', _.bind(function(e) {
-        if (e.which == 13) {//Enter
-            this.editTextDone(this.text.val());
-            return false;
-        };
-        return true;
-    }, this))
+    this.proxy('tagsAutoComplete', _.bind(function (value) { // Entered
+        this.editTextDone(value);
+    }, this), [this.text]);
     this.editing = false;
     this.selected = null;
     this.expandedNotes = {};
@@ -252,7 +259,7 @@ Sheet.prototype.showNoteMenu = function() {
         items.push({
             caption: 'Select tag',
             handler: _.bind(function() {
-                this.proxy('openTag', null, [this.selected.selectedTag.id]);
+                this.proxy('openTag', null, [this.selected.selectedTag.id.replace(' ', '+')]);
                 return true;
             }, this),
         });
@@ -355,7 +362,7 @@ Sheet.prototype.keypress = function(e) {
         case 13:
             if (this.selected) {
                 if (this.selected.selectedTag) {
-                    this.proxy('openTag', null, [this.selected.selectedTag.id]);
+                    this.proxy('openTag', null, [this.selected.selectedTag.id.replace(' ', '+')]);
                 } else {
                     this.openNote(this.selected, e.ctrlKey? false: true);
                 }
@@ -697,11 +704,11 @@ Sheet.prototype.tag_show_note_fcard = function(note, tag, text, lines) {
     return true;
 };
 
-Sheet.prototype.tag_show_note_contact = function(note, tag, text, lines) {
+Sheet.prototype.tag_show_note_card = function(note, tag, text, lines) {
     var first_line = $(document.createElement('div')).addClass('note_line').appendTo(text);
-    $(document.createElement('div')).addClass('note_contact_title').appendTo(first_line).text(tag.substr('contact:'.length));
+    // $(document.createElement('div')).addClass('note_card_title').appendTo(first_line).text(this.launchTagMethod(note, 'get_name'));
     var second_line = $(document.createElement('div')).addClass('note_line').appendTo(text);
-    var table = $(document.createElement('div')).addClass('note_contact_table').css('display', 'table').appendTo(second_line);
+    var table = $(document.createElement('div')).addClass('note_card_table').css('display', 'table').appendTo(second_line);
     for (var i = 0; i < lines.length; i++) {
         var line = lines[i]
         var nameWords = [];
@@ -718,22 +725,23 @@ Sheet.prototype.tag_show_note_contact = function(note, tag, text, lines) {
                 valueWords.push(word);
             }
         };
-        var row = $(document.createElement('div')).addClass('note_contact_row').css('display', 'table-row').appendTo(table);
-        var nameCell = $(document.createElement('div')).addClass('note_contact_cell note_contact_name_cell').css('display', 'table-cell').appendTo(row);
-        var valueCell = $(document.createElement('div')).addClass('note_contact_cell note_contact_value_cell').css('display', 'table-cell').appendTo(row);
+        var row = $(document.createElement('div')).addClass('note_card_row').css('display', 'table-row').appendTo(table);
+        var nameCell = $(document.createElement('div')).addClass('note_card_cell note_card_name_cell').css('display', 'table-cell').appendTo(row);
+        var valueCell = $(document.createElement('div')).addClass('note_card_cell note_card_value_cell').css('display', 'table-cell').appendTo(row);
         this.renderLine(note, nameWords, nameCell);
         this.renderLine(note, valueWords, valueCell);
     };
     return true;
 };
 
-Sheet.prototype.tag_edit_note_contact = function(note, tag) {
-    this.proxy('editContact', _.bind(function(text, name) {
+Sheet.prototype.tag_edit_note_card = function(note, tag) {
+    this.proxy('editCard', _.bind(function(text) {
         this.proxy('editNoteField', _.bind(function(id, err) {//
             if (id) {
-                this.proxy('addTag', _.bind(function(id, err) {//
-                    this.reload(note.id);
-                }, this), [id, tag, 'contact:'+name]);
+                this.reload(id);
+                // this.proxy('addTag', _.bind(function(id, err) {//
+                //     this.reload(note.id);
+                // }, this), [id, tag, 'contact:'+name]);
             };
         }, this), [note.id, text]);
         this.reload(note.id);
@@ -929,13 +937,17 @@ Sheet.prototype.editAreaDone = function(val) {//Creates new note
     };
 };
 
-var applyColor = function (div, color, gradient) {
+var applyColor = function (div, color, gradient, property) {
     if (!color) {
         return false;
     }
     var step = 32;
-    // if (!gradient) {
+    if (property) { // Have explicit property
+        div.css(property, 'rgb('+color[0]+', '+color[1]+', '+color[2]+')');
+    } else {
         div.css('background-color', 'rgb('+color[0]+', '+color[1]+', '+color[2]+')').css('border-color', 'rgb('+(color[0]-3*step)+', '+(color[1]-3*step)+', '+(color[2]-3*step)+')');
+    };
+    // if (!gradient) {
     // } else {
     //     div.addClass('has_gradient').css('background-image', '-webkit-gradient(linear, left top, left bottom, color-stop(0%, rgb('+(color[0]+step)+', '+(color[1]+step)+', '+(color[2]+step)+')), color-stop(20%, rgb('+(color[0]-step)+', '+(color[1]-step)+', '+(color[2]-step)+')), color-stop(100%, rgb('+(color[0]+step)+', '+(color[1]+step)+', '+(color[2]+step)+')))').css('border-color', 'rgb('+(color[0]-3*step)+', '+(color[1]-3*step)+', '+(color[2]-3*step)+')')
     // }
@@ -1008,8 +1020,12 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
         };
     }
     applyColor(tag, t.color, true);
+    if (t.text_color) { // Have text color
+        applyColor(tag, t.text_color, true, 'color');
+    };
     t.div = tag;
-    tag.text(t.caption);
+    var caption = t.caption;
+    _parseTagCaption(caption, tag);
     this.launchTagMethod(note, 'show', t.id, tag);
     tag.bind('dblclick', {tag: t}, _.bind(function(e) {
         this.startNoteWithTag(note, t.id);
@@ -1025,39 +1041,9 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
             this.startTextEdit(this.selected.id, this.selected.div, 'tag', t.id);
             return false;
         };
-        //e.data.div.siblings('.note_tag').find('.note_button').hide();
-        //e.data.div.find('.note_button').show();
-        // if (note.selectedTag == t && CURRENT_PLATFORM_MOBILE) {//Show menu
-        //     new PopupMenu({
-        //         element: this.root,
-        //         items: [{
-        //             caption: 'Select notes',
-        //             handler: _.bind(function() {
-        //                 this.proxy('openTag', null, [t.id]);
-        //                 return true;
-        //             }, this),
-        //         }, {
-        //             caption: 'Remove tag',
-        //             handler: _.bind(function() {
-        //                 this.proxy('removeTag', _.bind(function(id, err) {//
-        //                     if (id) {
-        //                         this.reload();
-        //                     };
-        //                 }, this), [note.id, t.id]);
-        //                 return true;
-        //             }, this),
-        //         }, {
-        //             caption: 'Create note',
-        //             handler: _.bind(function() {
-        //                 this.newNote(t.id);
-        //                 return true;
-        //             }, this),
-        //         }]
-        //     });
-        // };
         this.selectTag(t);
         if (e.ctrlKey) {
-            this.proxy('openTag', null, [e.data.tag.id]);
+            this.proxy('openTag', null, [e.data.tag.id.replace(' ', '+')]);
         };
         return false;
     }, this));
@@ -1176,24 +1162,6 @@ Sheet.prototype.enableNoteDrop = function(div, handler, id, special_drop_handler
             drop = e.originalEvent.dataTransfer.files;
         }
         if (drop) {//URL - new note
-            //log('Drop file', e.ctrlKey, e.shiftKey, ctrlKey, e.originalEvent.dataTransfer.dropEffect);
-            // if (ctrlKey) {//Copy links
-            //     for (var i = 0; i < drop.length; i++) {//Copy and create file
-            //         var f = drop[i];
-            //         log('Dropped file link', f.nativePath);
-            //         handler({text: f.name, link: f.nativePath});
-            //     };
-            // } else {//Copy files
-            //     var files = this.proxy('copyFile', drop);
-            //     if (!files) {
-            //         log('File copy error');
-            //         return false;
-            //     };
-            //     for (var i = 0; i < files.length; i++) {//
-            //         log('Dropped file storage', files[i].text);
-            //         handler(files[i]);
-            //     };
-            // };
             if (drop.length == 1) {
                 this.proxy('createAttachment', _.bind(function (err) {
                     if (err) {
@@ -1334,6 +1302,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {
         return true;
     }, this));
     var tags = $(document.createElement('div')).addClass('note_tags');
+    var tags_left = $(document.createElement('div')).addClass('note_tags note_tags_left');
     if (note.subnotes>1) {
         $(ui.buildIcon('ic_notes')).appendTo(tags).addClass('left_icon').bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
             this.openNote(note, e.ctrlKey);
@@ -1364,6 +1333,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {
         };        
     };
     text.children().eq(0).prepend(tags);
+    text.children().eq(0).prepend(tags_left);
     if (note.display) {
         var displays = note.display.split(' ');
         for (var i = 0; i < displays.length; i++) {
@@ -1374,6 +1344,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {
             };
             if (disp== 'notags') {//Hide tags
                 tags.addClass('note_line_hide');
+                tags_left.addClass('note_line_hide');
             };
             if (disp == 'title') {//Hide all except first line
                 text.find('.note_line').not(text.find('.note_line').first()).addClass('note_line_hide');
@@ -1388,7 +1359,8 @@ Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {
     for (var j = 0; j < note.tags_captions.length; j++) {//Display tags
         var t = _.clone(note.tags_captions[j]);
         note.tag_objects.push(t);
-        this.showTag(note, t, tags, true);
+        log('Render tag', t);
+        this.showTag(note, t, t.tag_display == 'left'? tags_left: tags, true);
 
     };
     if (lastSelected) {
@@ -2120,7 +2092,7 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
         var div = this.showNote(list[i], this.noHour, list[i].id == beforeID);
         if (target) {
             var timeDown = $(ui.buildIcon('ic_time_down')).addClass('note_time_down');
-            div.find('.note_tags').prepend(timeDown);
+            div.find('.note_tags').eq(1).prepend(timeDown);
             timeDown.addClass('draggable').attr('draggable', 'true').bind('dragstart', {hour: list[i].hour}, _.bind(function(e) {//
                 dd.setDDTarget(e, timeDDType, e.data.hour);
                 e.stopPropagation();

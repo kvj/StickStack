@@ -697,7 +697,6 @@
       if (!(window && window.openDatabase)) {
         return handler('HTML5 DB not supported');
       }
-      log('Ready to open');
       try {
         this.db = window.openDatabase(env.prefix + this.name, '', env.prefix + this.name, 1024 * 1024 * 10);
         log('Opened', this.db.version, this.version);
@@ -1314,7 +1313,7 @@
     };
 
     StorageProvider.prototype.select = function(stream, query, handler, options) {
-      var ar, arr, array_to_query, asc, extract_fields, fields, limit, need_id, order, values, where, _i, _len,
+      var ar, arr, array_to_query, asc, extract_fields, fields, limit, need_id, order, sql, values, where, _i, _len,
         _this = this;
       if (!this._precheck(stream, handler)) return;
       extract_fields = function(stream) {
@@ -1408,16 +1407,29 @@
       if (options != null ? options.limit : void 0) {
         limit = ' limit ' + (options != null ? options.limit : void 0);
       }
-      return this.db.query('select data from t_' + stream + ' where status<>? ' + (where ? 'and ' + where : '') + ' order by ' + (order.join(',')) + limit, values, function(err, data) {
-        var item, result, _j, _len2;
+      sql = 'select ';
+      if (options != null ? options.field : void 0) {
+        if (options != null ? options.distinct : void 0) sql += 'distinct ';
+        sql += 'f_' + (options != null ? options.field : void 0);
+      } else {
+        sql += 'data';
+      }
+      return this.db.query(sql + ' from t_' + stream + ' where status<>? ' + (where ? 'and ' + where : '') + ' order by ' + (order.join(',')) + limit, values, function(err, data) {
+        var item, itm, result, _j, _len2;
         if (err) return handler(err);
         result = [];
         for (_j = 0, _len2 = data.length; _j < _len2; _j++) {
           item = data[_j];
-          try {
-            result.push(JSON.parse(item.data));
-          } catch (err) {
+          if (options != null ? options.field : void 0) {
+            itm = {};
+            itm[options != null ? options.field : void 0] = item['f_' + (options != null ? options.field : void 0)];
+            result.push(itm);
+          } else {
+            try {
+              result.push(JSON.parse(item.data));
+            } catch (err) {
 
+            }
           }
         }
         return handler(null, result);

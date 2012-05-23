@@ -61,6 +61,10 @@
     min-height: 1.2em;
 }
 
+.note_tags_left {
+    float: left;
+}
+
 .tag_button {
     color: #222;
 }
@@ -91,7 +95,6 @@
 
 .note_tag_selected {
     -webkit-box-shadow: 0px 1px 1px #888888;
-    font-weight: bold;
 }
 
 .inline_sheet {
@@ -416,11 +419,11 @@
     background-image: url(img/marker/question.png);
 }
 
-.note_contact_table {
+.note_card_table {
     width: 100%;
 }
 
-.note_contact_name_cell .note_word {
+.note_card_name_cell .note_word {
     float: right;
     font-weight: bold;
 }
@@ -433,7 +436,7 @@
     display: block;
 }
 
-.note_contact_cell {
+.note_card_cell {
     vertical-align: top;
 }
 
@@ -493,4 +496,22 @@
     margin: 0.1em;
     padding: 0.1em;
     border: 1px dotted #888888;
+}
+
+@font-face {
+    font-family: 'IcoMoon';
+    src: url('IcoMoon.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.tag_icon {
+    font-family: 'IcoMoon';
+    font-size: 1.1em;
+    height: 1.2em;
+    width: 1.5em;
+    text-align: center;
+    float: left;
+    overflow: hidden;
+    padding-top: 0.2em;
 }

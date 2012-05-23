@@ -724,10 +724,10 @@ PanelManager.prototype.getVisiblePanels = function() {
     var i = this.panels.length-1;
     while (i>=0) {
         var panel = this.panels[i];
-        if (panel.wide && result.length>1) {
-            // Wide panel and two panels displayed - stop
-            return result;
-        };
+        // if (panel.wide && result.length>1) {
+        //     // Wide panel and two panels displayed - stop
+        //     return result;
+        // };
         result.splice(0, 0, panel);
         if (result.length == this.columns.length) {
             // All columns
@@ -939,6 +939,64 @@ Panel.prototype.addKeyHandler = function(key, obj, handler, data) {
     this.keys[key] = o;
     return o;
 };
+
+ui.installAutoCompleteSupport = function (config) { // Adds auto complete support to input
+    var element = config.element;
+    var parent = element.parent();
+    var div = $(document.createElement('div')).addClass('input_autocomplete').insertAfter(element);
+    var redrawCandidates = function (result) { // Creates buttons
+        div.children('.button_outer').remove();
+        candidates = [];
+        for (var i = 0; i < result.length; i++) { // Create buttons
+            var outer = $(document.createElement('div')).appendTo(div).addClass('button_outer');
+            var inner = $(document.createElement('button')).appendTo(outer).addClass('button_inner');
+            if (i == 0) { // Add class to first button
+                inner.addClass('button_create');
+            };
+            var caption = result[i].caption;
+            var text = $(document.createElement('div')).appendTo(inner).addClass('button_text');
+            if (config.onrender) { // Have onrender handler - call external
+                config.onrender(text, caption, result[i].value);
+            } else { // Use HTML
+                text.html(caption);
+            };
+            candidates.push(result[i].value);
+            outer.bind('click', {index: i}, function (e) { // Click handler
+                if (e.ctrlKey) { // Ctrl pressed - replace input with candidate
+                    element.val(candidates[e.data.index]);
+                } else { // Finish input
+                    config.onfinish(candidates[e.data.index]);
+                };
+                return false; // Prevent default
+            });
+        };
+    };
+    var candidates = [];
+    element.bind('keydown', function (e) { // Intersect keyboard
+        if (e.which == 13) { // Enter pressed
+            if (e.ctrlKey && candidates.length>0) { // Ctrl pressed and have candidate - search
+                config.onfinish(candidates[0]);
+                return false;
+            };
+            config.onfinish(_.trim(element.val()));
+            return false; // Prevent default
+        };
+        setTimeout(function () { // Need a time to process button
+            var val = _.trim(element.val());
+            if (!val) { // Empty input - empty candidates
+                redrawCandidates([]);
+            } else { // Do search
+                config.onsearch(val, function (err, result) { // Search done
+                    if (err) { // Show error
+                        _showInfo('Error while searching: '+err);
+                    } else { // Show results
+                        redrawCandidates(result);
+                    };
+                })
+            };
+        }, 0);
+    });
+}
 
 var Buttons = function(config) {//Cool buttons
     this.config = config || {};
@@ -1235,7 +1293,7 @@ var PopupMenu = function(config) {//Shows popup menu
     this.items = this.config.items || [];
     this.items.push({caption: 'Cancel'});
     for (var i = 0; i < this.items.length; i++) {//Create menu items
-        var mitem = $('<div/>').addClass('popup_menu_item').appendTo(this.menu);
+        var mitem = $('<button/>').addClass('popup_menu_item').appendTo(this.menu);
         var prefix = '';
         if (this.config.numbering != false) {
             prefix = i<9 ? ''+(i+1)+': ': '';
@@ -1551,7 +1609,7 @@ ScreenLocker.prototype.resetPassword = function() {
 ScreenLocker.prototype.addNumber = function(num) {
     _hideError();
     this.password += num;
-    this.stars += 'X';
+    this.stars += '*';
     this.lockerPass.text(this.stars);
     this.checkPassword(false);
 };

@@ -18,10 +18,15 @@ var _proxy = function(datamanager, method, handler, params) {//Proxy to DataMana
         new MapsEditor(datamanager, params[0], handler);
         return true;
     };
-    if (method == 'editContact') {
-        new ContactEditor(datamanager, params[0], params[1], handler);
+    if (method == 'editCard') {
+        new CardEditor(datamanager, params[0], params[1], handler);
+        return true;
+    };    
+    if (method == 'tagsAutoComplete') {
+        tagsAutoComplete(datamanager, params[0], handler);
         return true;
     };
+    
     if (method == 'getNote') {
         datamanager.getNote(params[0], function (err, note) {
             if (params[1] && !err) {
@@ -362,7 +367,7 @@ var DataManager = function(database) {//Do DB operations
     };
 
     GeoTag.prototype.format = function(text) {
-        return 'geo';
+        return ':&:';
     };
 
     GeoTag.prototype.select = function(text, values) {//Default 
@@ -459,7 +464,7 @@ var DataManager = function(database) {//Do DB operations
             return this.config.format;
         };
         if (text.length>this.name.length+1) {
-            return text.substr(this.name.length+1);
+            return (this.config.prefix || '')+text.substr(this.name.length+1).replace('+', ' ');
         };
         return this.name;
     };
@@ -524,7 +529,7 @@ var DataManager = function(database) {//Do DB operations
     };
 
     PathTag.prototype.format = function(text) {
-        return 'path';
+        return ':7:';
     };
 
     PathTag.prototype.select = function(text, values) {//Default 
@@ -551,12 +556,16 @@ var DataManager = function(database) {//Do DB operations
 
     AttachmentTag.prototype.format = function(text) {
         if (_.endsWith(text, '.jpg')) {
-            return 'image'
+            return ':":'
         };
         return 'file';
     };
 
     AttachmentTag.prototype.select = function(text, values) {//Default 
+        if (text == 'a:*') {
+            values.push('id', this._in(['text', {op: 'like', 'var': 'a:%'}]));
+            return 'like';
+        };
         values.push('id', this._in(['text', text]));
         return '(nt.type=? and nt.value=?) or n.id=?';
     };
@@ -734,7 +743,7 @@ var DataManager = function(database) {//Do DB operations
         };
         var dt = this._toDate(text);
         var dinfo = this.info(text);
-        log('Select DateTag', dinfo);
+        // log('Select DateTag', dinfo);
         if (dinfo) {
             var dtstart = dinfo.dstart;
             var dtend = dinfo.dend;
@@ -752,6 +761,7 @@ var DataManager = function(database) {//Do DB operations
                     ]
                 })
             }
+            return '';
         };
         return DefaultTag.prototype.select(this.adopt(text), values);
     };
@@ -914,11 +924,12 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new AttachmentTag());
     this.tagControllers.push(new OKTag());
     this.tagControllers.push(new SheetTag());
-    this.tagControllers.push(new MarkTag({name: 'contact', format: 'contact'}));
+    this.tagControllers.push(new MarkTag({name: 'contact', prefix: ':,:'}));
     this.tagControllers.push(new MarkTag({name: 'sort', format: 'sort'}));
     this.tagControllers.push(new MarkTag({name: 'display', format: 'display'}));
     this.tagControllers.push(new MarkTag({name: 'autotags', format: 'tags'}));
     this.tagControllers.push(new MarkTag({name: 'fcard', format: 'fcard', simple: true}));
+    this.tagControllers.push(new MarkTag({name: 'card', format: 'card', simple: true}));
     this.tagControllers.push(new DefaultTag());
 
     this.sheetsConfig = {};
@@ -1370,7 +1381,7 @@ DataManager.prototype.noteToSheet = function(text, tags) {
 };
 
 DataManager.prototype.parseColor = function (color, def) {
-    if (!color) {
+    if (!color || color == '#000000' || color == 'transparent') {
         if (def) {
             color = def;
         } else {
@@ -1383,7 +1394,7 @@ DataManager.prototype.parseColor = function (color, def) {
     return [parseInt(color.substr(1, 2), 16), parseInt(color.substr(3, 2), 16), parseInt(color.substr(5, 2), 16)];
 };
 
-DataManager.prototype.loadTagConfig = function(handler) {//Selects from tags
+DataManager.prototype.loadTagConfig = function(handler, raw) {//Selects from tags
     this.db.storage.select('tags', [], _.bind(function (err, data) {
         if(err) {
             return handler(null, err);
@@ -1392,15 +1403,10 @@ DataManager.prototype.loadTagConfig = function(handler) {//Selects from tags
         for (var i = 0; i < data.length; i++) {//
             var row = _.clone(data[i]);
             row.weight = parseInt(row.weight || 0);
-            row.caption = (row.weight? '('+row.weight+') ': '') + (row.text || 'No pattern!');
-            if (row.tag_color == 'transparent' || row.tag_color == '#00000000') {
-                row.tag_color = null;
-            };
-            if (row.note_color == 'transparent' || row.note_color == '#00000000') {
-                row.note_color = null;
-            };
+            row.caption = (row.weight? '('+row.weight+') ': '') + (row.text || 'No pattern!')+ (row.label? ' ['+row.label+']': '');
             row.note_color = this.parseColor(row.note_color, null);
-            row.tag_color = this.parseColor(row.tag_color, '#dddddd');
+            row.text_color = this.parseColor(row.text_color, null);
+            row.tag_color = this.parseColor(row.tag_color, raw? null: '#dddddd');
             list.push(row);
         };
         this.tagConfig = list;
@@ -1577,12 +1583,13 @@ DataManager.prototype.loadTags = function(list, handler) {//Loads tags to this
             for (var j = 0; j < tags.length; j++) {//Create text repr.
                 var controller = this.findTagController(tags[j]);
                 var tag_info = {id: tags[j], caption: tags[j]};
+                tag_info.config = this.findTagConfig(tag_info.id);
                 if (controller) {
-                    tag_info.caption = controller.format(tags[j]);
+                    tag_info.caption = tag_info.config.label || controller.format(tags[j]);
                     tag_info.display = controller.display || '';
                 };
-                tag_info.config = this.findTagConfig(tag_info.id);
                 tag_info.color = tag_info.config.tag_color;
+                tag_info.text_color = tag_info.config.text_color;
                 tag_info.tag_display = tag_info.config.tag_display;
                 tag_display.push(tag_info);
             };
@@ -1683,6 +1690,25 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
     return result;
 };
 
+DataManager.prototype.selectTags = function(query, handler, extra) { // Selects tags by query (for auto-complete)
+    extra.distinct = true;
+    extra.field = 'text';
+    this.db.storage.select('notes_tags', query, _.bind(function (err, data) { // Search done
+        if (err) { // Error - stop
+            return handler(err);
+        };
+        var result = [];
+        for (var i = 0; i < data.length; i++) { // Iterate over query result
+            var item = data[i];
+            result.push({
+                value: item.text.replace(' ', '+'), 
+                caption: this.formatTag(item.text)
+            });
+        };
+        handler(null, result);
+    }, this), extra);
+};
+
 DataManager.prototype.selectNotes = function(tags, handler, parse, extra) {//Selects and sorts notes
     var queries = [];
     var arr = (tags || '').split(' ');
@@ -1692,6 +1718,7 @@ DataManager.prototype.selectNotes = function(tags, handler, parse, extra) {//Sel
         if (!line || line == '!') {
             continue;
         };
+        line = line.replace('+', ' ');
         var exclude = false;
         if (_.startsWith(line, '!')) {//Not
             line = line.substr(1);

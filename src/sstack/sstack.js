@@ -647,6 +647,24 @@ var DateTimeSheet = function(panel, datamanager) {//
     manager.show(this.panel, panel);
 };
 
+var tagsAutoComplete = function (datamanager, element, handler) { // Installs tags auto-complete
+    ui.installAutoCompleteSupport({
+        element: element, 
+        onsearch: function (value, handler) { // Do auto-complete
+            datamanager.selectTags(['text', {op: 'like', 'var': 'contact:%'+value+'%'}], function (err, result) { // Search done
+
+                handler(err, result);
+            }, {limit: 5, order: ['text']});
+        }, 
+        onfinish: function (value) { // Do search
+            handler(value);
+        },
+        onrender: function (element, caption, value) { // Parse tag
+            _parseTagCaption(caption, element);
+        }
+    });
+};
+
 var SheetsManager = function(panel, datamanager) {
     this.manager = datamanager;
     _createEsentials(this, 'Sheets:', 3);
@@ -718,16 +736,21 @@ var SheetsManager = function(panel, datamanager) {
     });
     this.textPanel = $('<div/>').addClass('input_wrap').appendTo(this.panel.element);
     this.text = $('<input type="text"/>').addClass('form_control').appendTo(this.textPanel);
-    this.text.bind('keydown', _.bind(function(e) {
-        if (e.which == 13) {//Enter
-            var val = this.text.val();
-            if (val) {
-                openTag(val, this.panel, datamanager, null, 'timeline');
-            };
-            return false;
+    tagsAutoComplete(datamanager, this.text, _.bind(function (value) { // Entered
+        if (value) {
+            openTag(value, this.panel, datamanager, null, 'timeline');
         };
-        return true;
-    }, this))
+    }, this));
+    // this.text.bind('keydown', _.bind(function(e) {
+    //     if (e.which == 13) {//Enter
+    //         var val = this.text.val();
+    //         if (val) {
+    //             openTag(val, this.panel, datamanager, null, 'timeline');
+    //         };
+    //         return false;
+    //     };
+    //     return true;
+    // }, this))
     this.sheetList = new Buttons({
         root: this.panel.element,
         maxElements: 2,
@@ -902,6 +925,9 @@ TagsManager.prototype.showList = function() {//
             applyColor(button.innerElement, this.config[i].tag_color, true);
             // caption = '<span style="background-color: '+this.config[i].tag_color+';">&nbsp;&nbsp;'+caption+'&nbsp;&nbsp;</span>';
         };
+        if (this.config[i].text_color) { // Tag has text color
+            applyColor(button.textElement, this.config[i].text_color, true, 'color');
+        };
 
     };
 };
@@ -914,7 +940,7 @@ TagsManager.prototype.reload = function() {
         } else {
             _showError('Error loading list: '+err);
         };
-    }, this));
+    }, this), true);
 };
 
 
@@ -953,10 +979,12 @@ var TagsEditor = function(config, panel, datamanager) {
     manager.show(this.panel, panel);
     this.form = new AutoForm(this.panel.element, {
         text: {label: 'Pattern:'},
+        label: {label: 'Label (override caption):'},
         weight: {label: 'Weight:'},
         display: {label: 'Display:'},
         tag_display: {label: 'Tag display:'},
         tag_color: {label: 'Tag color:', type: 'color'},
+        text_color: {label: 'Text color:', type: 'color'},
         note_color: {label: 'Note color:', type: 'color'},
     }, 'tag', config);
 };
@@ -1373,8 +1401,8 @@ var _gmapsLoaded = function () {
     log('Maps loaded');
 }
 
-var ContactEditor = function (datamanager, note, tag, handler) {
-    _createEsentials(this, 'Contact editor', 2);
+var CardEditor = function (datamanager, note, tag, handler) {
+    _createEsentials(this, 'Card editor', 2);
     _goBackFactory(this.topMenu, this.panel, '');
     this.topMenu.addButton({
         caption: 'Save',
@@ -1385,11 +1413,11 @@ var ContactEditor = function (datamanager, note, tag, handler) {
                 var item = items[i];
                 result.push(item.name+': '+item.value);
             };
-            handler(result.join('\n'), _.trim(nameInput.val()));
+            handler(result.join('\n'));
             manager.goBack(this.panel);
         }, this),
     });
-    var nameInput = _addInput('Name', 'text', this.panel.element).val(tag.substr('contact:'.length));
+    // var nameInput = _addInput('Name', 'text', this.panel.element).val(tag.substr('contact:'.length));
     var forPlace = $(document.createElement('div')).appendTo(this.panel.element).css('display', 'table').css('width', '100%');
     var data = [];
     var emptyItem = {};
@@ -1444,7 +1472,7 @@ var ContactEditor = function (datamanager, note, tag, handler) {
 
             if (candrag) {
                 row.addClass('draggable').attr('draggable', 'true');
-                var ddType = 'sstack/contact-row';
+                var ddType = 'sstack/card-row';
                 row.bind('dragstart', _.bind(function(e) {//
                     dd.setDDTarget(e, ddType, index);
                     e.stopPropagation();

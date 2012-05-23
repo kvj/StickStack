@@ -495,7 +495,7 @@ class AirDBProvider extends DBProvider
 class HTML5Provider extends DBProvider
 	open: (clean, handler) ->
 		return handler 'HTML5 DB not supported' unless window and window.openDatabase
-		log 'Ready to open'
+		# log 'Ready to open'
 		try
 			@db = window.openDatabase env.prefix+@name, '', env.prefix+@name, 1024 * 1024 * 10
 			log 'Opened', @db.version, @version
@@ -1020,13 +1020,25 @@ class StorageProvider
 		limit = ''
 		if options?.limit
 			limit = ' limit '+options?.limit
-		@db.query 'select data from t_'+stream+' where status<>? '+(if where then 'and '+where else '')+' order by '+(order.join ',')+limit, values, (err, data) =>
+		sql = 'select '
+		if options?.field # have field - not data
+			if options?.distinct # distinct
+				sql += 'distinct '
+			sql += 'f_'+options?.field
+		else
+			sql += 'data'
+		@db.query sql+' from t_'+stream+' where status<>? '+(if where then 'and '+where else '')+' order by '+(order.join ',')+limit, values, (err, data) =>
 			if err then return handler err
 			result = []
 			for item in data
-				try
-					result.push JSON.parse(item.data)
-				catch err
+				if options?.field # Only one field - no parse
+					itm = {}
+					itm[options?.field] = item['f_'+options?.field]
+					result.push itm
+				else # default - parse
+					try
+						result.push JSON.parse(item.data)
+					catch err
 			handler null, result		
 
 class DataManager
