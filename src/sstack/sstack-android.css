@@ -6,6 +6,10 @@ body {
     font-size: 1em;
 }
 
+.note_tag_text {
+    padding-top: 0.2em;
+}
+
 .note {
     min-height: 1.3em;
     padding-top: 0.2em;

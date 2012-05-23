@@ -81,8 +81,8 @@
     border: 1px solid #aaaaaa;
     background-color: #dddddd;
     border-radius: 1em;
-    min-width: 1em;
     float: left;
+    height: 1.5em;
 }
 
 .note_bottom_bg .note_tags  {
@@ -500,7 +500,7 @@
 
 @font-face {
     font-family: 'IcoMoon';
-    src: url('IcoMoon.woff') format('woff');
+    src: url('IcoMoon.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
 }
@@ -514,4 +514,9 @@
     float: left;
     overflow: hidden;
     padding-top: 0.2em;
+}
+
+.note_tag_text {
+    float: left;
+    padding-top: 0.1em;
 }

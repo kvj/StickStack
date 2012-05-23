@@ -13,7 +13,7 @@ var _parseTagCaption = function (caption, element) { // Parses tag caption and p
         caption = caption.substr(3);
     };
     if (caption) { // Have caption
-        $(document.createElement('span')).appendTo(element).text(caption);
+        $(document.createElement('span')).addClass('note_tag_text').appendTo(element).text(caption);
     };
 }
 
