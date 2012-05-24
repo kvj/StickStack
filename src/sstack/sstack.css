@@ -69,14 +69,23 @@
     color: #222;
 }
 
+.tag_button_label {
+    font-size: 1.1em;
+    float: left;
+}
+
+.tag_button_inner {
+    background-color: #dddddd;
+}
+
 .note_tags_button {
     float: left;
 }
 
 .note_tag {
     margin: 0.1em;
-    padding: 0px 0.2em 0px 0.2em;
-    font-size: 0.8em;
+    padding: 0px 0.4em 0px 0.4em;
+    font-size: 0.86em;
     text-align: center;
     border: 1px solid #aaaaaa;
     background-color: #dddddd;
@@ -334,6 +343,11 @@
     border: 1px solid #888888;
 }
 
+.note_image_load {
+    position: absolute;
+    visibility: hidden;
+}
+
 .map_editor {
     margin: 5px;
 }
@@ -509,14 +523,27 @@
     font-family: 'IcoMoon';
     font-size: 1.1em;
     height: 1.2em;
-    width: 1.5em;
+    --width: 1.5em;
     text-align: center;
     float: left;
     overflow: hidden;
     padding-top: 0.2em;
 }
 
+.tag_icon_shadow {
+    text-shadow: #555555 1px 1px 1px;
+}
+
 .note_tag_text {
     float: left;
     padding-top: 0.1em;
+}
+
+.tag_editor_icons {
+    color: #ffffff;
+    padding: 0.5em;
+}
+
+.tag_editor_icon {
+    float: left;
 }

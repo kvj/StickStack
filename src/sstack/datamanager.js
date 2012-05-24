@@ -367,7 +367,7 @@ var DataManager = function(database) {//Do DB operations
     };
 
     GeoTag.prototype.format = function(text) {
-        return ':&:';
+        return 'geo';
     };
 
     GeoTag.prototype.select = function(text, values) {//Default 
@@ -529,7 +529,7 @@ var DataManager = function(database) {//Do DB operations
     };
 
     PathTag.prototype.format = function(text) {
-        return ':7:';
+        return 'path';
     };
 
     PathTag.prototype.select = function(text, values) {//Default 
@@ -556,7 +556,7 @@ var DataManager = function(database) {//Do DB operations
 
     AttachmentTag.prototype.format = function(text) {
         if (_.endsWith(text, '.jpg')) {
-            return ':":'
+            return ':1:'
         };
         return 'file';
     };
@@ -924,7 +924,7 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new AttachmentTag());
     this.tagControllers.push(new OKTag());
     this.tagControllers.push(new SheetTag());
-    this.tagControllers.push(new MarkTag({name: 'contact', prefix: ':,:'}));
+    this.tagControllers.push(new MarkTag({name: 'contact', prefix: ':b:'}));
     this.tagControllers.push(new MarkTag({name: 'sort', format: 'sort'}));
     this.tagControllers.push(new MarkTag({name: 'display', format: 'display'}));
     this.tagControllers.push(new MarkTag({name: 'autotags', format: 'tags'}));
@@ -1403,7 +1403,7 @@ DataManager.prototype.loadTagConfig = function(handler, raw) {//Selects from tag
         for (var i = 0; i < data.length; i++) {//
             var row = _.clone(data[i]);
             row.weight = parseInt(row.weight || 0);
-            row.caption = (row.weight? '('+row.weight+') ': '') + (row.text || 'No pattern!')+ (row.label? ' ['+row.label+']': '');
+            row.caption = (row.weight? '('+row.weight+') ': '') + (row.text || 'No pattern!');
             row.note_color = this.parseColor(row.note_color, null);
             row.text_color = this.parseColor(row.text_color, null);
             row.tag_color = this.parseColor(row.tag_color, raw? null: '#dddddd');
@@ -1653,7 +1653,7 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
             } else if (_.startsWith(words[j], '@') && words[j].length>1) {//Tag
                 var tag = this.adoptTag(words[j].substr(1));
                 var conf = this.findTagConfig(tag);
-                parts.push({type: 'tag', at: chars, tag: {id: tag, caption: this.formatTag(tag), color: conf.tag_color}});
+                parts.push({type: 'tag', at: chars, tag: {id: tag, caption: conf.label || this.formatTag(tag), color: conf.tag_color}});
             } else {
                 var skip = false;
                 if (j == 0 && words[j].length == 1) {

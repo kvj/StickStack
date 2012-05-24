@@ -7,15 +7,29 @@ var _buildIcon = function(name, cl) {//Builds img html
 };
 
 var _parseTagCaption = function (caption, element) { // Parses tag caption and puts html into element
-    while (caption && caption.charAt(0) == ':' && caption.charAt(2) == ':') { // Parse and render icon
+    var reg = /^(.*?):([0-9a-f]{1,2})(\+)?:(.*)$/;
+    var m = null;
+    var addText = function (text) { // Creates text HTML element
+        $(document.createElement('div')).addClass('note_tag_text').appendTo(element).html(text);
+    }
+    while (caption && (m = caption.match(reg))) { // Replace icons
+        if (m[1]) { // Prepend text
+            addText(m[1]);
+        };
+        var number = parseInt(m[2], 16);
         var span = $(document.createElement('div')).addClass('tag_icon').appendTo(element);
-        span.text(caption.substr(1, 1));
-        caption = caption.substr(3);
+        span.html('&#x00'+(number+0x21).toString(16)+';');
+        if (m[3]) { // Add shadow
+            span.addClass('tag_icon_shadow');
+        };
+        caption = m[4];
     };
     if (caption) { // Have caption
-        $(document.createElement('span')).addClass('note_tag_text').appendTo(element).text(caption);
+        addText(caption);
     };
-}
+};
+
+var _tagCaptions = 102;
 
 var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
     this.data = sheet;
@@ -503,7 +517,7 @@ Sheet.prototype.tag_select_file = function(note, tag) {
                 if (err) {
                     return _showInfo(err);
                 };
-                var img = $(document.createElement('img')).addClass('file_image note_image').appendTo(frame);
+                var img = $(document.createElement('img')).addClass('file_image note_image note_image_load').appendTo(frame);
                 img.bind('load', _.bind(function () {
                     var width = note.div.innerWidth()-2*this.mediaGap;
                     var iw = img.width();
@@ -511,7 +525,7 @@ Sheet.prototype.tag_select_file = function(note, tag) {
                     var mul = width / iw;
                     iw *= mul;
                     ih *= mul;
-                    img.width(Math.floor(iw)).height(Math.floor(ih));
+                    img.width(Math.floor(iw)).height(Math.floor(ih)).removeClass('note_image_load');
                     this.updated();
                 }, this));
                 img.attr('src', uri);
@@ -1359,7 +1373,6 @@ Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {
     for (var j = 0; j < note.tags_captions.length; j++) {//Display tags
         var t = _.clone(note.tags_captions[j]);
         note.tag_objects.push(t);
-        log('Render tag', t);
         this.showTag(note, t, t.tag_display == 'left'? tags_left: tags, true);
 
     };
@@ -1378,22 +1391,22 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
     var markers = [
         {
             text: '#',
-            cls: 'ic_sharp'
+            cls: ':15:'
         }, {
             text: '*',
-            cls: 'ic_star'            
+            cls: ':29:'
         }, {
             text: '-',
-            cls: 'ic_minus'
+            cls: ':3b:'
         }, {
             text: '+',
-            cls: 'ic_plus'            
+            cls: ':3c:'            
         }, {
             text: '!',
-            cls: 'ic_exclamation'            
+            cls: ':4c:'            
         }, {
             text: '?',
-            cls: 'ic_question'            
+            cls: ':4a:'            
         }
     ];
     var findMarker = function (text) {
@@ -1406,7 +1419,7 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
     }
 
     var addText = function (text, parent) {
-        $(document.createTextNode(text)).appendTo(parent);
+        return $(document.createTextNode(text)).appendTo(parent);
     }
 
     for (var k = 0; k < line.length; k++) {//Add words
@@ -1415,7 +1428,9 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
             $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(word.text);
             addText(' ', line_div);
         } else if (word.type == 'checkbox') {
-            var cbox = $(ui.buildIcon(word.checked? 'ic_check_yes': 'ic_check_no')).appendTo(line_div).css('float', 'left');
+            var cbox = $(document.createElement('div')).addClass('note_word').appendTo(line_div);
+            _parseTagCaption(word.checked? ':3a:': ':38:', cbox);
+            // var cbox = $(ui.buildIcon(word.checked? 'ic_check_yes': 'ic_check_no')).appendTo(line_div).css('float', 'left');
             cbox.bind('click', {note: note, box: word}, _.bind(function(e) {
                 var new_text = e.data.note.text.substr(0, e.data.box.at)+(e.data.box.checked? '[ ]': '[X]')+e.data.note.text.substr(e.data.box.at+3);
                 this.proxy('editNoteField', _.bind(function(id, err) {//
@@ -1429,7 +1444,8 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
             // $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(' ');
         } else if (word.type == 'marker') {
             var m = findMarker(word.text);
-            var cbox = $(ui.buildIcon(markers[m].cls)).appendTo(line_div).css('float', 'left');
+            var cbox = $(document.createElement('div')).addClass('note_word').appendTo(line_div);
+            _parseTagCaption(markers[m].cls, cbox);
             cbox.bind('click', {note: note, box: word, next: markers[(m+1) % markers.length]}, _.bind(function(e) {
                 var new_text = e.data.note.text.substr(0, e.data.box.at)+e.data.next.text+e.data.note.text.substr(e.data.box.at+1);
                 this.proxy('editNoteField', _.bind(function(id, err) {//

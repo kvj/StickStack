@@ -916,6 +916,8 @@ TagsManager.prototype.showList = function() {//
         var button = this.list.addButton({
             caption: caption,
             classNameText: 'tag_button',
+            className: 'button_left',
+            classNameInner: 'tag_button_inner',
             config: this.config[i],
             handler: _.bind(function(btns, btn) {
                 new TagsEditor(btn.config, this.panel, this.manager);
@@ -928,7 +930,10 @@ TagsManager.prototype.showList = function() {//
         if (this.config[i].text_color) { // Tag has text color
             applyColor(button.textElement, this.config[i].text_color, true, 'color');
         };
-
+        if (this.config[i].label) { // Have label => parse
+            var div = $(document.createElement('div')).addClass('tag_button_label').appendTo(button.textElement);
+            _parseTagCaption(' ['+this.config[i].label+']', div)
+        };
     };
 };
 
@@ -987,6 +992,13 @@ var TagsEditor = function(config, panel, datamanager) {
         text_color: {label: 'Text color:', type: 'color'},
         note_color: {label: 'Note color:', type: 'color'},
     }, 'tag', config);
+    var icons = $(document.createElement('div')).addClass('tag_editor_icons').appendTo(this.panel.element);
+    for (var i = 0; i < _tagCaptions; i++) { // Create icons
+        var div = $(document.createElement('div')).appendTo(icons).addClass('tag_editor_icon');
+        var text = ''+i.toString(16)+'::'+i.toString(16)+':';
+        _parseTagCaption(text, div);
+
+    };
 };
 
 var WindowSheet = function(sheet, panel, datamanager) {//Open window
