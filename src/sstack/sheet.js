@@ -178,7 +178,7 @@ var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
     this.textPanel = $(document.createElement('div')).addClass('input_wrap').appendTo(this.root).hide();
     this.text = $('<input type="text"/>').addClass('form_control').appendTo(this.textPanel);
     this.proxy('tagsAutoComplete', _.bind(function (value) { // Entered
-        this.editTextDone(value);
+        this.editTextDone(value.replace('+', ' '));
     }, this), [this.text]);
     this.editing = false;
     this.selected = null;

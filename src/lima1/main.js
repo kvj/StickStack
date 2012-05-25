@@ -1313,7 +1313,7 @@
     };
 
     StorageProvider.prototype.select = function(stream, query, handler, options) {
-      var ar, arr, array_to_query, asc, extract_fields, fields, limit, need_id, order, sql, values, where, _i, _len,
+      var ar, arr, array_to_query, asc, extract_fields, fields, group_by, limit, need_id, order, sql, values, where, _i, _j, _len, _len2,
         _this = this;
       if (!this._precheck(stream, handler)) return;
       extract_fields = function(stream) {
@@ -1384,13 +1384,22 @@
         }
       };
       where = array_to_query(fields, query != null ? query : []);
+      group_by = [];
+      if (options != null ? options.group : void 0) {
+        arr = options != null ? options.group : void 0;
+        if (!$.isArray(arr)) arr = [arr];
+        for (_i = 0, _len = arr.length; _i < _len; _i++) {
+          ar = arr[_i];
+          if (fields[ar] || 'id' === ar) group_by.push(fields[ar]);
+        }
+      }
       order = [];
       need_id = true;
       if (options != null ? options.order : void 0) {
         arr = options != null ? options.order : void 0;
         if (!$.isArray(arr)) arr = [arr];
-        for (_i = 0, _len = arr.length; _i < _len; _i++) {
-          ar = arr[_i];
+        for (_j = 0, _len2 = arr.length; _j < _len2; _j++) {
+          ar = arr[_j];
           asc = 'asc';
           if (ar.charAt(0) === '!') {
             ar = ar.substr(1);
@@ -1402,6 +1411,7 @@
           }
         }
       }
+      if (options != null ? options.group : void 0) need_id = false;
       if (need_id) order.push('id asc');
       limit = '';
       if (options != null ? options.limit : void 0) {
@@ -1414,12 +1424,12 @@
       } else {
         sql += 'data';
       }
-      return this.db.query(sql + ' from t_' + stream + ' where status<>? ' + (where ? 'and ' + where : '') + ' order by ' + (order.join(',')) + limit, values, function(err, data) {
-        var item, itm, result, _j, _len2;
+      return this.db.query(sql + ' from t_' + stream + ' where status<>? ' + (where ? 'and ' + where : '') + (group_by.length > 0 ? ' group by ' + group_by.join(',') : '') + ' order by ' + (order.join(',')) + limit, values, function(err, data) {
+        var item, itm, result, _k, _len3;
         if (err) return handler(err);
         result = [];
-        for (_j = 0, _len2 = data.length; _j < _len2; _j++) {
-          item = data[_j];
+        for (_k = 0, _len3 = data.length; _k < _len3; _k++) {
+          item = data[_k];
           if (options != null ? options.field : void 0) {
             itm = {};
             itm[options != null ? options.field : void 0] = item['f_' + (options != null ? options.field : void 0)];

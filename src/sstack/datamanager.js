@@ -1691,8 +1691,8 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
 };
 
 DataManager.prototype.selectTags = function(query, handler, extra) { // Selects tags by query (for auto-complete)
-    extra.distinct = true;
     extra.field = 'text';
+    extra.group = ['text'];
     this.db.storage.select('notes_tags', query, _.bind(function (err, data) { // Search done
         if (err) { // Error - stop
             return handler(err);

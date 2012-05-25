@@ -508,13 +508,13 @@ class HTML5Provider extends DBProvider
 	_query: (query, params, transaction, handler) ->
 		# log 'SQL:', query, params
 		transaction.executeSql query, params, (transaction, result) =>
-			# log 'Query result:', result, query
 			data = []
 			for i in [0...result.rows.length]
 				obj = {}
 				for own key, value of result.rows.item i
 					obj[key] = value if value
 				data.push obj
+			# log 'Query result:', data
 			handler null, data, transaction
 		, (transaction, error) =>
 			log 'Error SQL', query, error
@@ -1002,6 +1002,12 @@ class StorageProvider
 			else
 				return null
 		where = array_to_query fields, query ? []
+		group_by = []
+		if options?.group # Have group by
+			arr = options?.group
+			if not $.isArray(arr) then arr = [arr]
+			for ar in arr
+				if fields[ar] or 'id' == ar then group_by.push fields[ar]
 		order = []
 		need_id = yes
 		if options?.order
@@ -1016,6 +1022,8 @@ class StorageProvider
 				if fields[ar] or 'id' == ar 
 					order.push fields[ar]+' '+asc
 					if ar is 'id' then need_id = no
+		if options?.group # Have group by -> don't need id in order
+			need_id = no
 		if need_id then order.push 'id asc'
 		limit = ''
 		if options?.limit
@@ -1027,7 +1035,7 @@ class StorageProvider
 			sql += 'f_'+options?.field
 		else
 			sql += 'data'
-		@db.query sql+' from t_'+stream+' where status<>? '+(if where then 'and '+where else '')+' order by '+(order.join ',')+limit, values, (err, data) =>
+		@db.query sql+' from t_'+stream+' where status<>? '+(if where then 'and '+where else '')+(if group_by.length>0 then ' group by '+group_by.join(',') else '')+' order by '+(order.join ',')+limit, values, (err, data) =>
 			if err then return handler err
 			result = []
 			for item in data
