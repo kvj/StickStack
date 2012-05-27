@@ -925,6 +925,7 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new OKTag());
     this.tagControllers.push(new SheetTag());
     this.tagControllers.push(new MarkTag({name: 'contact', prefix: ':b:'}));
+    this.tagControllers.push(new MarkTag({name: 'place', prefix: ':12:'}));
     this.tagControllers.push(new MarkTag({name: 'sort', format: 'sort'}));
     this.tagControllers.push(new MarkTag({name: 'display', format: 'display'}));
     this.tagControllers.push(new MarkTag({name: 'autotags', format: 'tags'}));

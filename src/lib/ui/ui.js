@@ -1460,11 +1460,12 @@ AutoForm.prototype.saveForm = function(old) {//Saves values
 
 var _locker = null;
 
-var _initScreenLocker = function(element, timeout, password, startLock) {
+var _initScreenLocker = function(element, timeout, password, startLock, showTime) {
     _locker = new ScreenLocker({
         element: element,
         timeout: timeout,
-        password: password
+        password: password,
+        time: showTime
     });
     if (startLock) {//Lock now
         setTimeout(_.bind(_locker.doLock, _locker), 1);
@@ -1501,7 +1502,7 @@ ScreenLocker.prototype.checkTimeout = function() {//Interval
     if (this.config.timeout>0) {//Have timeout
         var secsLeft = Math.round((new Date().getTime()-this.lastActive)/1000);
         if (secsLeft>parseInt(this.config.timeout, 10)) {//Reached timeout
-            log('Secs left', secsLeft);
+            // log('Secs left', secsLeft);
             this.doLock();
             // _showInfo('Locked by timeout: '+secsLeft, 0);
         };
@@ -1551,6 +1552,9 @@ ScreenLocker.prototype.checkPassword = function(handle_error) {//Check and unloc
         this.locker.remove();
         this.locker = null;
         this.config.element.css('visibility', 'visible');
+        if (this.timeID) {
+            clearInterval(this.timeID);
+        };
         // setTimeout(function() {
         //     layout.resize();
         // }, 1);
@@ -1560,6 +1564,11 @@ ScreenLocker.prototype.checkPassword = function(handle_error) {//Check and unloc
             _showError('Invalid password');            
         };
     };
+};
+
+ScreenLocker.prototype.showTime = function() {
+    var dt = new Date();
+    this.timeDiv.text(dt.format('!HH/MM/ss'));
 };
 
 ScreenLocker.prototype.doLock = function() {//Hides element and draws lock
@@ -1572,6 +1581,11 @@ ScreenLocker.prototype.doLock = function() {//Hides element and draws lock
     this.password = '';
     this.stars = '';
     this.locker = $('<div/>').addClass('locker popup_dialog').appendTo(document.body);
+    if (this.config.time) {
+        this.timeDiv = $(document.createElement('div')).addClass('lock_icon locker_time').appendTo(this.locker);
+        this.timeID = setInterval(_.bind(this.showTime, this), 1000);
+        this.showTime();
+    };
     this.lockerPass = $('<div/>').addClass('locker_pass').appendTo(this.locker).html('&nbsp;');
     var btns = $('<div/>').appendTo(this.locker);
     this.buttons = new Buttons({
@@ -1579,17 +1593,18 @@ ScreenLocker.prototype.doLock = function() {//Hides element and draws lock
         fast: true,
         root: btns
     });
-    var arr = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', 'X', 'OK'];
+    var arr = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0', 'X', 'O'];
     for (var i = 0; i < arr.length; i++) {//Add buttons
         this.buttons.addButton({
             caption: arr[i],
             action: arr[i],
             className: 'locker_btn',
-            classNameInner: arr[i] == 'X'? 'button_remove': arr[i] == 'OK'? 'button_create': null,
+            classNameText: 'lock_icon',
+            classNameInner: arr[i] == 'X'? 'button_remove': arr[i] == 'O'? 'button_create': null,
             handler: _.bind(function(btns, btn) {//Click on button
                 if (btn.action == 'X') {//Reset pass
                     this.resetPassword();
-                } else if (btn.action == 'OK') {//Check pass
+                } else if (btn.action == 'O') {//Check pass
                     this.checkPassword(true);
                 } else {//Numbers
                     this.addNumber(btn.action);

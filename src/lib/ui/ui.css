@@ -291,3 +291,21 @@ textarea {
 .locker_btn {
     font-size: 2em;
 }
+
+@font-face {
+    font-family: 'LockScreen';
+    src: url('LockScreen.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.locker_time {
+    padding: 0.5em;
+    font-size: 2em;
+}
+
+.lock_icon {
+    font-family: 'LockScreen';
+    text-align: center;
+    font-size: 2.5em;
+}

@@ -52,3 +52,7 @@ input, textarea {
     position: fixed;
     right: 0;
 }
+
+.lock_icon {
+    padding-right: 25%;
+}

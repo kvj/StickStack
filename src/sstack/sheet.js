@@ -29,7 +29,7 @@ var _parseTagCaption = function (caption, element) { // Parses tag caption and p
     };
 };
 
-var _tagCaptions = 102;
+var _tagCaptions = 93;
 
 var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
     this.data = sheet;
@@ -493,9 +493,9 @@ Sheet.prototype.tag_start_contact = function(note, tag) {
     return true;
 };
 
-Sheet.prototype.tag_get_name_contact = function(note, tag) {
-    return tag.substr('contact:'.length);
-};
+// Sheet.prototype.tag_get_name_contact = function(note, tag) {
+//     return tag.substr('contact:'.length);
+// };
 
 Sheet.prototype.tag_unselect_file = function(note, tag) {
     if (note.fileCreated) {

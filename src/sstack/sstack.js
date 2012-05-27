@@ -524,7 +524,7 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
     }, this);
     this.syncManager = new Lima1DataManager('sstack', oauth, storage);
     if (this.syncManager.is('lock')) {
-        this.locker = _initScreenLocker($('#main'), this.syncManager.get('lock_timeout'), this.syncManager.get('lock_password'), true);
+        this.locker = _initScreenLocker($('#main'), this.syncManager.get('lock_timeout'), this.syncManager.get('lock_password'), true, true);
     };
     if (CURRENT_PLATFORM == PLATFORM_AIR) {
         storage.cache = new AirCacheProvider(oauth, 'sstack', manager.minColWidth*2);
@@ -651,7 +651,7 @@ var tagsAutoComplete = function (datamanager, element, handler) { // Installs ta
     ui.installAutoCompleteSupport({
         element: element, 
         onsearch: function (value, handler) { // Do auto-complete
-            datamanager.selectTags(['text', {op: 'like', 'var': 'contact:%'+value+'%'}], function (err, result) { // Search done
+            datamanager.selectTags([{'op': 'or', 'var': ['text', {op: 'like', 'var': 'contact:%'+value+'%'}, 'text', {op: 'like', 'var': 'place:%'+value+'%'}]}], function (err, result) { // Search done
 
                 handler(err, result);
             }, {limit: 5, order: ['text']});

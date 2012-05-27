@@ -29,20 +29,16 @@ body {
     font-size: 1.1em;
 }
 
+.note_line {
+    vertical-align: bottom;
+}
+
 .timeline_header {
     font-size: 0.8em;
     min-height: 0.9em;
 }
 
 @media screen and (-webkit-device-pixel-ratio: 2) {
-    .ic_check_yes {
-        background-image: url(img/x2/check_yes.png);
-    }
-
-    .ic_check_no {
-        background-image: url(img/x2/check_no.png);
-    }
-
     .ic_notes {
         background-image: url(img/x2/notes.png);
     }
@@ -57,30 +53,6 @@ body {
 
     .note_bottom_bg {
         background-image: url(img/x2/note_bottom.png);
-    }
-
-    .ic_sharp {
-        background-image: url(img/x2/marker/sharp.png);
-    }
-
-    .ic_star {
-        background-image: url(img/x2/marker/star.png);
-    }
-
-    .ic_minus {
-        background-image: url(img/x2/marker/minus.png);
-    }
-
-    .ic_plus {
-        background-image: url(img/x2/marker/plus.png);
-    }
-
-    .ic_exclamation {
-        background-image: url(img/x2/marker/exclamation.png);
-    }
-
-    .ic_question {
-        background-image: url(img/x2/marker/question.png);
     }
 
 }
