@@ -651,7 +651,7 @@ var tagsAutoComplete = function (datamanager, element, handler) { // Installs ta
     ui.installAutoCompleteSupport({
         element: element, 
         onsearch: function (value, handler) { // Do auto-complete
-            datamanager.selectTags([{'op': 'or', 'var': ['text', {op: 'like', 'var': 'contact:%'+value+'%'}, 'text', {op: 'like', 'var': 'place:%'+value+'%'}]}], function (err, result) { // Search done
+            datamanager.selectTags([{'op': 'or', 'var': ['text', {op: 'like', 'var': 'contact:%'+value+'%'}, 'text', {op: 'like', 'var': 'place:%'+value+'%'}, 'text', {op: 'like', 'var': 'project:%'+value+'%'}]}], function (err, result) { // Search done
 
                 handler(err, result);
             }, {limit: 5, order: ['text']});

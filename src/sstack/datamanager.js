@@ -464,7 +464,8 @@ var DataManager = function(database) {//Do DB operations
             return this.config.format;
         };
         if (text.length>this.name.length+1) {
-            return (this.config.prefix || '')+text.substr(this.name.length+1).replace('+', ' ');
+            var caption = text.substr(this.name.length+1).replace('+', ' ');
+            return (this.config.prefix || '')+caption;
         };
         return this.name;
     };
@@ -926,6 +927,7 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new SheetTag());
     this.tagControllers.push(new MarkTag({name: 'contact', prefix: ':b:'}));
     this.tagControllers.push(new MarkTag({name: 'place', prefix: ':12:'}));
+    this.tagControllers.push(new MarkTag({name: 'project', prefix: ':26:'}));
     this.tagControllers.push(new MarkTag({name: 'sort', format: 'sort'}));
     this.tagControllers.push(new MarkTag({name: 'display', format: 'display'}));
     this.tagControllers.push(new MarkTag({name: 'autotags', format: 'tags'}));
@@ -1644,6 +1646,7 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
         var words = line.split(' ');
         var schemas = ['http://', 'https://', 'geo:', 'tel:', 'sms:', 'mailto:'];
         var markers = ['#', '*', '-', '+', '!', '?'];
+        var textStarted = false;
         for (var j = 0; j < words.length; j++) {//Add words
             if (words[j] == '[X]') {//Checked
                 parts.push({type: 'checkbox', checked: true, at: chars});
@@ -1652,12 +1655,13 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
                 j++;
                 chars += 2;
             } else if (_.startsWith(words[j], '@') && words[j].length>1) {//Tag
+                textStarted = true;
                 var tag = this.adoptTag(words[j].substr(1));
                 var conf = this.findTagConfig(tag);
                 parts.push({type: 'tag', at: chars, tag: {id: tag, caption: conf.label || this.formatTag(tag), color: conf.tag_color}});
             } else {
                 var skip = false;
-                if (j == 0 && words[j].length == 1) {
+                if (!textStarted && words[j].length == 1) {
                     for (var k = 0; k < markers.length; k++) {
                         var m = markers[k];
                         if (words[j] == m) {
@@ -1676,11 +1680,15 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
                         };
                         parts.push({type: 'link', at: chars, text: caption, link: words[j]});
                         skip = true;
+                        textStarted = true;
                         break;
                     };
                 };
                 if (!skip) {
                     parts.push({type: 'text', at: chars, text: words[j]});
+                    if (words[j]) { // Have text - no markers anymore
+                        textStarted = true;
+                    };
                 };
             }
             chars++;

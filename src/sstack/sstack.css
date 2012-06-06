@@ -312,8 +312,8 @@
 }
 
 .note_word {
-    display: inline;
-    padding-left: 0.1em;
+    float: left;
+    margin-right: 0.4em;
     font-size: 0.9em;
 }
 

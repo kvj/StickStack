@@ -1346,8 +1346,6 @@ Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {
             // };
         };        
     };
-    text.children().eq(0).prepend(tags);
-    text.children().eq(0).prepend(tags_left);
     if (note.display) {
         var displays = note.display.split(' ');
         for (var i = 0; i < displays.length; i++) {
@@ -1370,11 +1368,24 @@ Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {
         };
     };
     note.tag_objects = [];
+    var tagsLeftAdded = 0;
+    var tagsRightAdded = 0;
     for (var j = 0; j < note.tags_captions.length; j++) {//Display tags
         var t = _.clone(note.tags_captions[j]);
         note.tag_objects.push(t);
-        this.showTag(note, t, t.tag_display == 'left'? tags_left: tags, true);
+        if (t.tag_display == 'left') { // Left side
+            tagsLeftAdded++;
+            this.showTag(note, t, tags_left, true);
+        } else { // Default - right
+            tagsRightAdded++;
+            this.showTag(note, t, tags, true);
+        }
 
+    };
+    text.children().eq(0).prepend(tags);
+    text.children().eq(0).prepend(tags_left);
+    if (tagsLeftAdded>0) { // Add clear div after tags
+        $(document.createElement('div')).addClass('clear').insertAfter(tags);
     };
     if (lastSelected) {
         this.selectNote(note);
@@ -1425,7 +1436,12 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
     for (var k = 0; k < line.length; k++) {//Add words
         var word = line[k];
         if (word.type == 'text') {//Add word
-            $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(word.text);
+            var div = $(document.createElement('div')).addClass('note_word').appendTo(line_div);
+            if (word.text) { // Have text
+                div.text(word.text);
+            } else {
+                div.html('&nbsp;');
+            }
             addText(' ', line_div);
         } else if (word.type == 'checkbox') {
             var cbox = $(document.createElement('div')).addClass('note_word').appendTo(line_div);
@@ -1446,6 +1462,7 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
             var m = findMarker(word.text);
             var cbox = $(document.createElement('div')).addClass('note_word').appendTo(line_div);
             _parseTagCaption(markers[m].cls, cbox);
+            // cbox.children().css('display', 'inline').css('float', 'none');
             cbox.bind('click', {note: note, box: word, next: markers[(m+1) % markers.length]}, _.bind(function(e) {
                 var new_text = e.data.note.text.substr(0, e.data.box.at)+e.data.next.text+e.data.note.text.substr(e.data.box.at+1);
                 this.proxy('editNoteField', _.bind(function(id, err) {//
