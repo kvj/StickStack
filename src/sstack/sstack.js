@@ -129,7 +129,7 @@ var run = function() {
     } else {//Simple layout
         layout = new Layout({id: 'main', children: [{id: 'panel_manager', stretch: true}]});
     };
-    $('<div id="sync_indicator"/>').appendTo($('#main')).hide();
+    $('<div id="sync_indicator"/>').appendTo(document.body).hide();
     $('<div id="channel_indicator"/>').appendTo($('#main'));
     var navProvider = new NavProvider(db);
     manager = new PanelManager({
@@ -437,11 +437,11 @@ TopManager.prototype.sync = function(force_clean) {//Run sync
         //this.jsonHelper.config.url = config.appConfig.sync_url;
         //this.jsonHelper.config.key = config.appConfig.sync_key;
         $('#sync_indicator').show();
-        $('.ic_sync').addClass('rotating');
+        // $('.ic_sync').addClass('rotating');
         _showInfo('Sync started...', 15000);
         this.syncManager.sync(_.bind(function(err) {//Run sync
             $('#sync_indicator').hide();
-            $('.ic_sync').removeClass('rotating');
+            // $('.ic_sync').removeClass('rotating');
             if (err) {//Error
                 _showInfo('Error sync: '+err);
             } else {//Sync done

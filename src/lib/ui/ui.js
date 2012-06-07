@@ -1568,7 +1568,7 @@ ScreenLocker.prototype.checkPassword = function(handle_error) {//Check and unloc
 
 ScreenLocker.prototype.showTime = function() {
     var dt = new Date();
-    this.timeDiv.text(dt.format('!HH/MM/ss'));
+    this.timeDiv.text(dt.format('HH:MM:ss'));
 };
 
 ScreenLocker.prototype.doLock = function() {//Hides element and draws lock

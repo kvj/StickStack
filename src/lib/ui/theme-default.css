@@ -62,16 +62,10 @@
 }
 
 .button_inner:active {
-    left: 1px;
-    top: 1px;
-    right: 0px;
     background-color: #351330;
 }
 
 .button_readonly .button_inner:active {
-    left: 0px;
-    top: 0px;
-    right: 1px;
     background-color: #424254;
 }
 

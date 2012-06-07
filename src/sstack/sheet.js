@@ -2123,7 +2123,7 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
         var target = this.hours[list[i].hour];
         // target? target.children('.day_hour_notes'): 
         var div = this.showNote(list[i], this.noHour, list[i].id == beforeID);
-        if (target) {
+        if (target && !CURRENT_PLATFORM_MOBILE) {
             var timeDown = $(ui.buildIcon('ic_time_down')).addClass('note_time_down');
             div.find('.note_tags').eq(1).prepend(timeDown);
             timeDown.addClass('draggable').attr('draggable', 'true').bind('dragstart', {hour: list[i].hour}, _.bind(function(e) {//
