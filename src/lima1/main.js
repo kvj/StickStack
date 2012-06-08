@@ -550,6 +550,7 @@
         return handler(event.error.message);
       };
       this.db.addEventListener(air.SQLEvent.OPEN, function(event) {
+        log('Open in open');
         _this.db.removeEventListener(air.SQLErrorEvent.ERROR, err);
         return handler(null);
       });
@@ -564,19 +565,22 @@
     };
 
     AirDBProvider.prototype.verify = function(schema, handler) {
-      var do_reset_schema, err,
+      var do_reset_schema, err, on_schema,
         _this = this;
+      log('Verify from here');
       err = function() {
         log('verify error', event);
         return do_reset_schema();
       };
       do_reset_schema = function() {
         var afterClose;
+        log('Reset called');
         _this.db.removeEventListener(air.SQLErrorEvent.ERROR, err);
         afterClose = function() {
           if (_this.dbFile.exists) _this.dbFile.deleteFile();
           return _this.open(false, function(err) {
             var createStmt, sql, sqlsDone, _i, _len, _results;
+            log('Open in verify:', err);
             if (err) return handler(err);
             sqlsDone = 0;
             _results = [];
@@ -597,15 +601,21 @@
           });
         };
         _this.db.addEventListener('close', function(event) {
+          log('Closed event');
           return setTimeout(function() {
+            log('Should be closed');
             return afterClose();
           }, 1000);
         });
-        return _this.db.close();
+        _this.db.close();
+        return log('DB closed');
       };
-      this.db.addEventListener(air.SQLEvent.SCHEMA, function(event) {
+      on_schema = function(event) {
         var table, tables, _i, _len, _ref, _ref2;
+        _this.db.removeEventListener(air.SQLEvent.SCHEMA, on_schema);
         tables = (_ref = (_ref2 = _this.db.getSchemaResult()) != null ? _ref2.tables : void 0) != null ? _ref : [];
+        log('Got schema', tables, schema, _this.clean);
+        _this.clean = false;
         _this.tables = [];
         for (_i = 0, _len = tables.length; _i < _len; _i++) {
           table = tables[_i];
@@ -616,9 +626,11 @@
         } else {
           return handler(null);
         }
-      });
+      };
+      this.db.addEventListener(air.SQLEvent.SCHEMA, on_schema);
       this.db.addEventListener(air.SQLErrorEvent.ERROR, err);
-      return this.db.loadSchema(air.SQLTableSchema);
+      this.db.loadSchema(air.SQLTableSchema);
+      return log('Requested schema');
     };
 
     AirDBProvider.prototype.query = function(line, params, handler) {
@@ -1339,7 +1351,7 @@
       fields = extract_fields(stream);
       values = [3];
       array_to_query = function(fields, arr, op) {
-        var f, i, name, res, result, value, _ref, _ref2, _ref3, _ref4, _ref5;
+        var f, i, name, res, result, value, wherePart, _ref, _ref2, _ref3, _ref4, _ref5;
         if (arr == null) arr = [];
         if (op == null) op = 'and';
         result = [];
@@ -1360,7 +1372,8 @@
                 if (value.op === 'in') {
                   f = extract_fields(value.stream);
                   values.push(3);
-                  result.push('' + fields[name] + ' in (select ' + f[value.field] + ' from t_' + value.stream + ' where status<>? and ' + array_to_query(f, (_ref4 = value.query) != null ? _ref4 : []) + ')');
+                  wherePart = array_to_query(f, (_ref4 = value.query) != null ? _ref4 : []);
+                  result.push('' + fields[name] + ' in (select ' + f[value.field] + ' from t_' + value.stream + ' where status<>?' + (wherePart ? ' and ' + wherePart : '') + ')');
                 } else {
                   if (value["var"]) {
                     result.push(fields[name] + ' ' + value.op + ' ?');

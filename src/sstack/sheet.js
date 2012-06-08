@@ -34,7 +34,9 @@ var _tagCaptions = 93;
 var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
     this.data = sheet;
     this.panel = panel;
-    this.panel.wide = false;
+    if (this.panel) {
+        this.panel.wide = false;
+    };
     this.autotags = this.data.autotags;
     this.canToggleWide = true;
     if (!this.autotags && this.data.id) {
@@ -224,7 +226,7 @@ Sheet.prototype.removeNote = function(note) {
 
 
 Sheet.prototype.toggleWide = function() {
-    if (this.canToggleWide) {
+    if (this.canToggleWide && this.panel) {
         this.panel.wide = !this.panel.wide;
         this.panel.onPanelChanged();
         return true;

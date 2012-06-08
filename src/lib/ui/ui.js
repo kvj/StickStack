@@ -99,15 +99,13 @@ var _showQuestion = function(message, handler, buttons, element) {//Shows questi
         return true;
     };
     _keyHandler.marker = '_showQuestion';
-    _getManager().keyListener.on('keydown', _keyHandler, true);
-    _getManager().setIgnoreInput(true);
+    ui.keyListener.on('keydown', _keyHandler, true);
     _disableUI();
     for (var i = 0; i < buttons.length; i++) {//Add index and handler
         buttons[i].index = i;
         buttons[i].handler = _.bind(function(e, btn) {//Click on button
             this.div.hide();
-            _getManager().keyListener.off('keydown', _keyHandler);
-            _getManager().setIgnoreInput(false);
+            ui.keyListener.off('keydown', _keyHandler);
             _enableUI();
             if (this.handler) {//Have handler
                 this.handler(btn.index, btn);
@@ -200,15 +198,19 @@ var _initUI = function(storage) {//Creates root UI elements
         document.addEventListener('backbutton', function() {//Back button
             var e = {};
             e.keyCode = -10;// Back button
-            return _getManager().keyListener.emit('keydown', e);
+            return ui.keyListener.emit('keydown', e);
         }, true);
         document.addEventListener('searchbutton', function() {//Back button
             var e = {};
             e.keyCode = -11;// Search button
-            return _getManager().keyListener.emit('keydown', e);
+            return ui.keyListener.emit('keydown', e);
         }, true);
     };
     $('<div id="info_dialog"/>').appendTo(document.body).hide();
+    ui.keyListener = new EventEmitter(this);
+    $(document.body).bind('keydown', _.bind(function (e) { // Top level event handler
+        return ui.keyListener.emit('keydown', e);
+    }, this));
     if (CURRENT_PLATFORM == PLATFORM_AIR && storage) {//Only for air
         var w = parseInt(storage.get('window_width', '0'));
         var h = parseInt(storage.get('window_height', '0'));
@@ -266,13 +268,13 @@ var _initUI = function(storage) {//Creates root UI elements
             };
         });
         // log('OS:', air.Capabilities.os);
-        $(document.body).bind('keydown', _.bind(function(e) {//Fix handler
+        ui.keyListener.on('keydown', _.bind(function(e) {//Fix handler
             //log('UI keydown');
             if (_fixKeyEvent(this, 'fix', e)) {//Ignore
                 return false;
             };
             return true;
-        }, {}));
+        }, {}), true);
     };
     return main;
 };
@@ -315,7 +317,7 @@ ui.settingsPane = function (config, storage, handler, panel) {
         if (config[key].type == 'checkbox') {
             config[key].value = storage.is(key);
         } else {
-            config[key].value = storage.get(key, config[key].default);
+            config[key].value = storage.get(key, config[key]['default']);
         }
     };
     var form = new AutoForm(formDiv, config);
@@ -474,10 +476,9 @@ PanelManager = function(config) {
     $(window).resize(_.bind(function () {
         this.resize(true);
     }, this));
-    $(document.body).bind('keydown', _.bind(this.keyHandler, this));
-    this.keyListener = new EventEmitter(this);
-    this.keyListener.on('keydown', _.bind(this.onKeyDown, this));
-    this.ignoreInput = false;
+    // ui.keyListener.on('keydown', _.bind(this.keyHandler, this));
+    // this.keyListener = new EventEmitter(this);
+    ui.keyListener.on('keydown', _.bind(this.onKeyDown, this));
     if (this.config.navVisible && this.navProvider) {
         this.toggleNav();
     } else {
@@ -608,10 +609,6 @@ PanelManager.prototype.toggleNav = function() {
     this.resize(true);
 };
 
-PanelManager.prototype.setIgnoreInput = function(ignore) {
-    this.ignoreInput = ignore || false;
-};
-
 PanelManager.prototype.farRight = function() {
     return Math.min(this.panels.length, this.columns.length);
 };
@@ -693,7 +690,7 @@ PanelManager.prototype.resize = function(autoPut) {//Change layout
     var left = 0;
     var colWidths = $(window).width();
     if (this.nav_visible) {
-        colWidths -= this.nav.outerWidth();
+        colWidths -= this.nav.outerWidth()+2;
     };
     var colWidth = Math.floor(colWidths / newcolcount);
     for (var i = 0; i < this.columns.length; i++) {//Resize columns
@@ -710,9 +707,9 @@ PanelManager.prototype.resize = function(autoPut) {//Change layout
         if (i == newcolcount-1) {//Last column - fix width
             w = colWidths - left;
         };
-        this.columns[i].width(w);
+        this.columns[i].width(w-2);
         if (!CURRENT_PLATFORM_MOBILE) {
-            this.columns[i].height($(document.body).height()-2);
+            this.columns[i].height($(document.body).height()-4);
         };
         left += w;
     };
@@ -840,9 +837,6 @@ PanelManager.prototype.getFocused = function() {
 };
 
 PanelManager.prototype.onKeyDown = function(e) {
-    if (this.ignoreInput) {
-        return true;
-    };
     if (e.keyCode == -10) {
         //Back button
         if (this.goBack(this.getFocused())) {//Have go back
@@ -1340,8 +1334,7 @@ var PopupMenu = function(config) {//Shows popup menu
     __visiblePopupMenu = this;
     _disableUI();
     this.keyHandler = _.bind(this.keyPressed, this);
-    _getManager().keyListener.on('keydown', this.keyHandler, true);
-    _getManager().setIgnoreInput(true);
+    ui.keyListener.on('keydown', this.keyHandler, true);
 };
 
 PopupMenu.prototype.keyPressed = function(e) {//
@@ -1355,7 +1348,7 @@ PopupMenu.prototype.keyPressed = function(e) {//
         this.menu.children('.popup_menu_item').last().click();
         return false;
     };
-    return true;
+    return false;
 };
 
 PopupMenu.prototype.hide = function() {//Hides menu
@@ -1363,8 +1356,7 @@ PopupMenu.prototype.hide = function() {//Hides menu
         return false;
     };
     _enableUI();
-    _getManager().keyListener.off('keydown', this.keyHandler);
-    _getManager().setIgnoreInput(false);
+    ui.keyListener.off('keydown', this.keyHandler);
     this.menu.remove();
     this.visible = false;
     if (__visiblePopupMenu == this) {//

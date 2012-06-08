@@ -239,7 +239,7 @@ var TopManager = function(nav) {//Manages top panel
                     ui.settingsPane({
                         sync_url: {label: 'Sync URL'},
                         lock: {label: 'Screen lock', type: 'checkbox'},
-                        lock_timeout: {label: 'Screen lock timeout', default: '60'},
+                        lock_timeout: {label: 'Screen lock timeout', 'default': '60'},
                         lock_password: {label: 'Lock password', type: 'password', password: 'sha1'}
                     }, this.syncManager, _.bind(function () {
                         _showInfo('Reload application to take effect')
@@ -301,7 +301,7 @@ var TopManager = function(nav) {//Manages top panel
         }, this));
     }, this), 100);
 
-    manager.keyListener.on('keydown', _.bind(function (e) {
+    ui.keyListener.on('keydown', _.bind(function (e) {
         if (e.keyCode == 120 || (e.ctrlKey && e.keyCode == 76)) {
             this.showLogAdd();
             return false;
@@ -848,13 +848,17 @@ var SheetEditor = function(sheet, panel, datamanager) {
         caption: 'Remove',
         classNameInner: 'button_remove',
         handler: _.bind(function() {
-            _proxy(this.manager, 'removeSheet', function(id, err) {//Removed
-                if (id) {
-                    manager.goBack(this.panel);
-                } else {
-                    _showError('Error removing sheet: '+err);
+            _showQuestion('Remove sheet?', _.bind(function (btn) {
+                if (0 == btn) {
+                    _proxy(this.manager, 'removeSheet', _.bind(function(id, err) {//Removed
+                        if (id) {
+                            manager.goBack(this.panel);
+                        } else {
+                            _showError('Error removing sheet: '+err);
+                        };
+                    }, this), [sheet.id]);
                 };
-            }, [sheet.id]);
+            }, this))
         }, this),
     });
     manager.show(this.panel, panel);

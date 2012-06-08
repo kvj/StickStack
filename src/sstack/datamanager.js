@@ -305,6 +305,41 @@ var DataManager = function(database) {//Do DB operations
     DefaultTag.prototype.formatNote = function(text, note) {//Default
     };
 
+    var NoTagsTag = function() {
+        this.name = 'no-tags';
+        this.display = 'no-tags';
+    };
+    NoTagsTag.prototype = new DefaultTag();
+
+    NoTagsTag.prototype.accept = function(text) {
+        if (text == this.name) {
+            return true;
+        };
+        return false;
+    };
+
+    NoTagsTag.prototype.store = function(text) {//Convert to Date
+        return [this.name, 0];
+    };
+
+    NoTagsTag.prototype.format = function(text) {
+        return this.display;
+    };
+
+    NoTagsTag.prototype.select = function(text, values) {//Default 
+        values.push({
+            op: 'or', 
+            'var': [
+                'id', this._in(['text', text]),
+                {
+                    op: 'not',
+                    'var': ['id', this._in([])]
+                }
+            ]
+        })
+        return '(nt.type=? and nt.value=?) or n.id=?';
+    };
+
     var NoteTag = function() {
         this.name = 'note';
         this.display = 'note';
@@ -933,6 +968,7 @@ var DataManager = function(database) {//Do DB operations
     this.tagControllers.push(new MarkTag({name: 'autotags', format: 'tags'}));
     this.tagControllers.push(new MarkTag({name: 'fcard', format: 'fcard', simple: true}));
     this.tagControllers.push(new MarkTag({name: 'card', format: 'card', simple: true}));
+    this.tagControllers.push(new NoTagsTag());
     this.tagControllers.push(new DefaultTag());
 
     this.sheetsConfig = {};
@@ -1105,12 +1141,23 @@ DataManager.prototype.removeSheet = function(id, handler) {//Removes sheet
         delete this.sheetsConfig[id];
         this._saveSheetsConfig();
     };
-    this.db.storage.remove('sheets', {id: id}, _.bind(function (err) {
+    this.db.storage.select('notes_tags', ['text', 's:'+id, 'type', 's:'], _.bind(function (err, data) { // Selected tags with this sheet
         if (err) {
             return handler(null, err);
-        }
-        this.modified();
-        handler(id);
+        };
+        var gr = new AsyncGrouper(data.length+1, _.bind(function() {
+            var err = gr.findError();
+            if (err) {//Found error
+                handler(null, err);
+            } else {//No error
+                handler(id);
+            };
+            this.modified();
+        }, this));
+        for (var i = 0; i < data.length; i++) {// Remove tags
+            this.db.storage.remove('notes_tags', data[i], gr.fn);
+        };
+        this.db.storage.remove('sheets', {id: id}, gr.fn);
     }, this));
 };
 
@@ -1174,19 +1221,27 @@ DataManager.prototype.removeNote = function(id, handler) {//Removes note & tags
         if (err) {
             return handler(null, err);
         };
-        var gr = new AsyncGrouper(data.length+1, _.bind(function() {
-            var err = gr.findError();
-            if (err) {//Found error
-                handler(null, err);
-            } else {//No error
-                handler(id);
+        this.db.storage.select('notes_tags', ['text', 'n:'+id, 'type', 'n:'], _.bind(function (err, data2) { // Selected tags with this note
+            if (err) {
+                return handler(null, err);
             };
-            this.modified();
-        }, this));
-        for (var i = 0; i < data.length; i++) {//Add tags
-            this.db.storage.remove('notes_tags', data[i], gr.fn);
-        };
-        this.db.storage.remove('notes', {id: id}, gr.fn);
+            var gr = new AsyncGrouper(data.length+data2.length+1, _.bind(function() {
+                var err = gr.findError();
+                if (err) {//Found error
+                    handler(null, err);
+                } else {//No error
+                    handler(id);
+                };
+                this.modified();
+            }, this));
+            for (var i = 0; i < data.length; i++) {// Remove tags
+                this.db.storage.remove('notes_tags', data[i], gr.fn);
+            };
+            for (var i = 0; i < data2.length; i++) {// Remove tags
+                this.db.storage.remove('notes_tags', data2[i], gr.fn);
+            };
+            this.db.storage.remove('notes', {id: id}, gr.fn);
+        }, this))
     }, this));
 };
 

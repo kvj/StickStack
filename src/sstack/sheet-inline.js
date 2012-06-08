@@ -57,6 +57,7 @@ $(function() {//
     $('<div style="float: left;"/>').appendTo(_top).text(sheet.caption || '');
     $('<div style="float: right; cursor: pointer;"/>').appendTo(_top).append($(_buildIcon('eye')).bind('click', function(e) {
         controller.root.find('.note_line_hide').addClass('note_line_show');
+        controller.root.find('.note').addClass('note_selected');
         controller.updated();
         return false;
     })).append($(_buildIcon('update')).bind('click', function(e) {
@@ -65,6 +66,14 @@ $(function() {//
     })).append($(_buildIcon('roll')).bind('click', function(e) {
         sheet_div.toggle();
         controller.updated();
+        return false;
+    })).append($(_buildIcon('menu')).bind('click', function(e) {
+        var items = [];
+        controller.onSheetMenu(items);
+        new PopupMenu({
+            items: items,
+            element: main
+        });
         return false;
     })).append($(_buildIcon('close')).bind('click', function(e) {
         closeWindow();
@@ -98,15 +107,8 @@ $(function() {//
             }, controller), [n, controller.data.autotags]);
         };
     })
-    $(document).bind('keydown', _.bind(function(e) {
-        //log('keydown', e.which);
-        if (this.editing) {
-            return true;
-        };
-        if (e.which == 45) {//Insert - new note
-            this.newNote();
-            return false;
-        };
+    ui.keyListener.on('keydown', _.bind(function (e) { // Key handler
+        return this.keypress(e);
     }, controller));
 });
 

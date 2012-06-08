@@ -397,6 +397,7 @@ class AirDBProvider extends DBProvider
 			log 'open error', event
 			handler event.error.message
 		@db.addEventListener air.SQLEvent.OPEN, (event) =>
+			log 'Open in open'
 			@db.removeEventListener air.SQLErrorEvent.ERROR, err
 			handler null
 		@db.addEventListener air.SQLErrorEvent.ERROR, err
@@ -408,14 +409,17 @@ class AirDBProvider extends DBProvider
 		@db.openAsync @dbFile, 'create', null, false, 1024
 
 	verify: (schema, handler) ->
+		log 'Verify from here'
 		err = () =>
 			log 'verify error', event
 			do_reset_schema()
 		do_reset_schema = () =>
+			log 'Reset called'
 			@db.removeEventListener air.SQLErrorEvent.ERROR, err
 			afterClose = () =>
 				if @dbFile.exists then @dbFile.deleteFile()
 				@open false, (err) =>
+					log 'Open in verify:', err
 					if err then return handler err
 					sqlsDone = 0
 					for sql in schema
@@ -429,13 +433,18 @@ class AirDBProvider extends DBProvider
 						createStmt.text = sql
 						createStmt.execute()
 			@db.addEventListener 'close', (event) =>
+				log 'Closed event'
 				setTimeout () =>
+					log 'Should be closed'
 					afterClose()
 				, 1000
 			@db.close()
-		@db.addEventListener air.SQLEvent.SCHEMA, (event) =>
+			log 'DB closed'
+		on_schema = (event) =>
+			@db.removeEventListener air.SQLEvent.SCHEMA, on_schema
 			tables = @db.getSchemaResult()?.tables ? []
-			# log 'Schema', tables, schema, @clean
+			log 'Got schema', tables, schema, @clean
+			@clean = no
 			@tables = []
 			for table in tables
 				# log 'Now schema:', table.name
@@ -445,8 +454,10 @@ class AirDBProvider extends DBProvider
 				do_reset_schema()
 			else
 				handler null
+		@db.addEventListener air.SQLEvent.SCHEMA, on_schema
 		@db.addEventListener air.SQLErrorEvent.ERROR, err
 		@db.loadSchema air.SQLTableSchema
+		log 'Requested schema'
 
 	query: (line, params, handler) ->
 		stmt = new air.SQLStatement()
@@ -984,7 +995,8 @@ class StorageProvider
 							if value.op is 'in'
 								f = extract_fields value.stream
 								values.push 3
-								result.push(''+fields[name]+' in (select '+f[value.field]+' from t_'+value.stream+' where status<>? and '+array_to_query(f, value.query ? [])+')')
+								wherePart = array_to_query(f, value.query ? [])
+								result.push(''+fields[name]+' in (select '+f[value.field]+' from t_'+value.stream+' where status<>?'+(if wherePart then ' and '+wherePart else '')+')')
 							else
 								# custom op
 								if value.var
@@ -1035,6 +1047,7 @@ class StorageProvider
 			sql += 'f_'+options?.field
 		else
 			sql += 'data'
+		# log 'query', sql, stream, where, values
 		@db.query sql+' from t_'+stream+' where status<>? '+(if where then 'and '+where else '')+(if group_by.length>0 then ' group by '+group_by.join(',') else '')+' order by '+(order.join ',')+limit, values, (err, data) =>
 			if err then return handler err
 			result = []
