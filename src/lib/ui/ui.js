@@ -1452,25 +1452,28 @@ AutoForm.prototype.saveForm = function(old) {//Saves values
 
 var _locker = null;
 
-var _initScreenLocker = function(element, timeout, password, startLock, showTime) {
-    _locker = new ScreenLocker({
+var _initScreenLocker = function(config) { // element, timeout, password, startLock, showTime
+    _locker = new ScreenLocker(config);
+    /*
+    {
         element: element,
         timeout: timeout,
         password: password,
         time: showTime
-    });
-    if (startLock) {//Lock now
+    }
+    */
+    if (config.startLock) {//Lock now
         setTimeout(_.bind(_locker.doLock, _locker), 1);
     };
     return _locker;
 };
 
-var _updateScreenLocker = function(timeout, password) {
-    if (_locker) {
-        _locker.config.timeout = timeout;
-        _locker.config.password = password;
-    };
-};
+// var _updateScreenLocker = function(timeout, password) {
+//     if (_locker) {
+//         _locker.config.timeout = timeout;
+//         _locker.config.password = password;
+//     };
+// };
 
 var _lockScreen = function() {
     if (_locker) {//Lock

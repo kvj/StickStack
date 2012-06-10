@@ -239,6 +239,7 @@ var TopManager = function(nav) {//Manages top panel
                     ui.settingsPane({
                         sync_url: {label: 'Sync URL'},
                         lock: {label: 'Screen lock', type: 'checkbox'},
+                        lock_show_time: {label: 'Show time on screen lock', type: 'checkbox'},
                         lock_timeout: {label: 'Screen lock timeout', 'default': '60'},
                         lock_password: {label: 'Lock password', type: 'password', password: 'sha1'}
                     }, this.syncManager, _.bind(function () {
@@ -524,7 +525,13 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
     }, this);
     this.syncManager = new Lima1DataManager('sstack', oauth, storage);
     if (this.syncManager.is('lock')) {
-        this.locker = _initScreenLocker($('#main'), this.syncManager.get('lock_timeout'), this.syncManager.get('lock_password'), true, true);
+        this.locker = _initScreenLocker({
+            element: $('#main'),
+            timeout: this.syncManager.get('lock_timeout'),
+            password: this.syncManager.get('lock_password'),
+            time: this.syncManager.get('lock_show_time'),
+            startLock: true 
+        });
     };
     if (CURRENT_PLATFORM == PLATFORM_AIR) {
         storage.cache = new AirCacheProvider(oauth, 'sstack', manager.minColWidth*2);

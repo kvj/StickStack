@@ -1,3 +1,7 @@
+.panel_column {
+    border-width: 0px;
+}
+
 .note {
     padding: 1px;
     margin: 1px 2px 2px 1px;
@@ -88,7 +92,7 @@
     border-radius: 1em;
     display: inline-block;
     height: 1.5em;
-    vertical-align: text-bottom;
+    vertical-align: middle;
 }
 
 .note_bottom_bg .note_tags  {
@@ -327,6 +331,7 @@
 }
 
 .left_icon {
+    vertical-align: middle;
 }
 
 .note_frame {
