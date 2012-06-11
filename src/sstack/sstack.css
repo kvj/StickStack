@@ -425,6 +425,7 @@
 
 .note_time_down {
     display: none;
+    vertical-align: middle;
 }
 
 .note_selected .note_time_down {

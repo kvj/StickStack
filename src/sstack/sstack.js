@@ -5,10 +5,10 @@ var sheetWindows = {};
 var db = null;
 
 yepnope({
-    load: ['lib/custom-web/cross-utils.js', 'lib/common-web/jquery-1.7.1.min.js', 'lib/common-web/underscore-min.js', 'lib/common-web/underscore.strings.js', 'lib/custom-web/date.js', 'lib/common-web/json2.js', 'lib/custom-web/layout.js', 'lib/custom-web/pending.js', 'lib/custom-web/calendar.js', 'lib/ui/ui.css', 'lib/ui/theme-default.css', 'lib/ui/ui.js', 'lima1/net.js', 'lima1/main.js', 'lib/common-web/sha1.js'],
+    load: ['lib/custom-web/cross-utils.js', 'lib/common-web/zepto.min.js', 'lib/common-web/underscore-min.js', 'lib/common-web/underscore.strings.js', 'lib/custom-web/date.js', 'lib/common-web/json2.js', 'lib/custom-web/layout.js', 'lib/custom-web/pending.js', 'lib/custom-web/calendar.js', 'lib/ui/ui.css', 'lib/ui/theme-default.css', 'lib/ui/ui.js', 'lima1/net.js', 'lima1/main.js', 'lib/common-web/sha1.js'],
     complete: function () {
         yepnope([{
-            load: ['lib/common-web/jquery.autogrow.js', 'lib/common-web/jquery.mousewheel.js']
+            load: ['lib/common-web/jquery.autogrow.js']
         }, {
             test: CURRENT_PLATFORM == PLATFORM_AIR,
             yep: ['lib/air/AIRAliases.js'] //, 'lib/air/AIRIntrospector.js'

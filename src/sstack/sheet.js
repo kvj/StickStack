@@ -441,9 +441,11 @@ Sheet.prototype.moveSelection = function(dir) {
             return false;
         };
     };
+    var selected = false;
     notes.each(_.bind(function (index, item) {
-        if ($(item).attr('id') == this.selected.divID) {
+        if ($(item).attr('id') == this.selected.divID && !selected) {
             // Found
+            selected = true;
             if (dir == -1 && index>0) {
                 // Move up
                 this.selectNote(this.notes[notes.eq(index-1).attr('id')]);
@@ -454,7 +456,8 @@ Sheet.prototype.moveSelection = function(dir) {
             };
             return false;
         };
-    }, this))
+        return true;
+    }, this));
 };
 
 Sheet.prototype.launchTagMethod = function(note, method, tag) {
@@ -621,6 +624,7 @@ Sheet.prototype.tag_select_geo = function(note, tag) {
                 };
                 this.proxy('openLink', _.bind(function(res) {
                 }, this), [link, e.ctrlKey]);
+                e.stopPropagation();
                 return false;
             }, this))
             img.width(width).height(height);
@@ -662,6 +666,7 @@ Sheet.prototype.tag_show_link = function(note, tag, div) {
         };
         this.proxy('openLink', _.bind(function(res) {
         }, this), [tag.substr(2), e.ctrlKey]);
+        e.stopPropagation();
         return false;
     }, this))
 };
@@ -980,20 +985,16 @@ Sheet.prototype.selectNote = function(note) {
     };
     this.selected = note;
     note.div.addClass('note_selected');
-    note.div.after(this.menu.element.detach().show());
+    note.div.after(this.menu.element.show());
     note.div.focus();
     note.selectedTag = null;
     this.root.find('.note_tag').removeClass('note_tag_selected');
     this.root.find('.note_line_show').removeClass('note_line_show');
     var note_inline = note.note_inline;
-    if (note_inline) {
-        note_inline.detach();
-    };
     note.div.children('.note_line_hide').add(note.div.children('.note_text').find('.note_line_hide')).addClass('note_line_show');
     if (note_inline) {
         note_inline.appendTo(note.div);
     };
-    // log('Select note', note.tags, note);
     this.moveNowLine();
     this.updated();
 };
@@ -1046,6 +1047,7 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
     tag.bind('dblclick', {tag: t}, _.bind(function(e) {
         this.startNoteWithTag(note, t.id);
         e.preventDefault();
+        e.stopPropagation();
         return false;
     }, this));
     tag.bind('click', {div: tag, tag: t}, _.bind(function(e) {//
@@ -1055,12 +1057,14 @@ Sheet.prototype.showTag = function(note, t, parent, remove) {//
         };
         if (e.shiftKey) {
             this.startTextEdit(this.selected.id, this.selected.div, 'tag', t.id);
+            e.stopPropagation();
             return false;
         };
         this.selectTag(t);
         if (e.ctrlKey) {
             this.proxy('openTag', null, [e.data.tag.id.replace(' ', '+')]);
         };
+        e.stopPropagation();
         return false;
     }, this));
     tag.bind('dragstart', {tag: t}, _.bind(function(e) {//
@@ -1102,7 +1106,7 @@ Sheet.prototype.editNote = function(note, div) {
         return;
     };
     this.editID = note.id;
-    this.areaPanel.detach().insertAfter(div);
+    this.areaPanel.insertAfter(div);
     this.areaPanel.show();
     this.editing = true;
     this.scrollTo(this.areaPanel);
@@ -1163,7 +1167,7 @@ Sheet.prototype.enableNoteDrop = function(div, handler, id, special_drop_handler
             e.preventDefault();
         };
     }, this)).bind('drop', _.bind(function(e) {//Dropped
-        log('enableNoteDrop::drop', e);
+        // log('enableNoteDrop::drop', e);
         var drop = dd.getDDTarget(e, noteDDType);
         if (drop) {//Only ID - note drop
             // log('Dropped note', drop);
@@ -1175,7 +1179,9 @@ Sheet.prototype.enableNoteDrop = function(div, handler, id, special_drop_handler
         if (CURRENT_PLATFORM == PLATFORM_AIR) {
             drop = dd.getDDTarget(e, filesDD);
         } else {
-            drop = e.originalEvent.dataTransfer.files;
+            if (e.originalEvent) { // Have originalEvent
+                drop = e.originalEvent.dataTransfer.files;
+            };
         }
         if (drop) {//URL - new note
             if (drop.length == 1) {
@@ -1260,11 +1266,13 @@ Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {
     div.bind('dblclick', {note: note, div: div}, _.bind(function(e) {
         this.editNote(note, div);
         e.preventDefault();
+        e.stopPropagation();
         return false;
     }, this));
-    div.bind('click', {div: div}, _.bind(function(e) {//
+    div.bind('click', {div: div}, _.bind(function(e) {
         if (e.ctrlKey) {//Open tag
             this.openNote(note);
+            e.stopPropagation();
             return false;
         };
         // log('Note', note);
@@ -1276,6 +1284,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {
         this.editing = false;
         this.root.find('.note').removeClass('note_selected');
         this.selectNote(note);
+        e.stopPropagation();
         return false;
     }, this));
     // div.bind('dragover', {note: note}, _.bind(function(e) {
@@ -1322,6 +1331,7 @@ Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {
     if (note.subnotes>1) {
         $(ui.buildIcon('ic_notes')).appendTo(tags).addClass('left_icon').bind('click', {note: note, div: div}, _.bind(function(e) {//Add tag
             this.openNote(note, e.ctrlKey);
+            e.stopPropagation();
             return false;
         }, this));
     }
@@ -1456,6 +1466,7 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
                         this.reload(id);
                     };
                 }, this), [e.data.note.id, new_text]);
+                e.stopPropagation();
                 return false;
             }, this));
             addText(' ', line_div);
@@ -1472,6 +1483,7 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
                         this.reload(id);
                     };
                 }, this), [e.data.note.id, new_text]);
+                e.stopPropagation();
                 return false;
             }, this));
             // $(document.createElement('div')).addClass('note_word').appendTo(line_div).text(' ');
@@ -1486,6 +1498,7 @@ Sheet.prototype.renderLine = function(note, line, line_div) {
             anchor.bind('click', word, _.bind(function (e) {
                 this.proxy('openLink', _.bind(function(res) {
                 }, this), [e.data.link, e.ctrlKey]);
+                e.stopPropagation();
                 return false;
             }, this));
             addText(' ', line_div);
@@ -1514,10 +1527,6 @@ Sheet.prototype.render_hour = function(hour, div) {
 };
 
 Sheet.prototype.resizeGrid = function() {
-    for (var i = 0; i < this.gridItems.length; i++) {
-        var col = this.gridItems[i];
-        col.div.detach();
-    };
     // Remove all rows
     this.gridBody.empty();
     if (this.gridItems.length == 0) {
@@ -1923,6 +1932,7 @@ Sheet.prototype._prepare_days = function(dstart, dend) {
         div.bind('dblclick', {tag: tag}, _.bind(function(e) {
             this.newNote(e.data.tag, true);
             e.preventDefault();
+            e.stopPropagation();
             return false;
         }, this));
         this.enableNoteDrop(div, _.bind(function(n) {
@@ -2000,7 +2010,14 @@ Sheet.prototype.reload_timeline = function(list, beforeID) {
                 var div = $(document.createElement('div')).addClass('timeline_header').text(headers[headerFound].caption);
                 div.insertBefore(this.root.children('.clear'));
                 div.bind('click', _.bind(function (e) {
-                    $(e.target).nextAll('.note').addClass('note_selected').find('.note_line_hide').addClass('note_line_show');
+                    var expand = function (el) { // Expands recursively
+                        $(el).next('.note').each(function (index, el) { // Found
+                            $(el).addClass('note_selected').find('.note_line_hide').addClass('note_line_show');
+                            expand(el);
+                        })
+                    }
+                    expand(e.target);
+                    // $(e.target).next('.note').addClass('note_selected').find('.note_line_hide').addClass('note_line_show');
                 }, this));
             };
         };
@@ -2048,12 +2065,12 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
             this.hours[i] = hr;
             var notes_place = $(document.createElement('div')).addClass('day_hour_notes').appendTo(hr);
             $(document.createElement('div')).addClass('clear').appendTo(notes_place);
-            if (CURRENT_PLATFORM_MOBILE) {
-                installSwipeHandler(hr, _.bind(function(hour) {//
-                    this.newNote('t:'+(hour*100));
-                    return false;
-                }, this), i);
-            };
+            // if (CURRENT_PLATFORM_MOBILE) {
+            //     installSwipeHandler(hr, _.bind(function(hour) {//
+            //         this.newNote('t:'+(hour*100));
+            //         return false;
+            //     }, this), i);
+            // };
             this.render_hour(i, hr);
             hr.bind('dragover', _.bind(function(e) {
                 if (dd.hasDDTarget(e, timeDDType)) {
@@ -2091,6 +2108,7 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
             hr.bind('dblclick', {hour: i}, _.bind(function(e) {
                 this.newNote('t:'+(e.data.hour*100));
                 e.preventDefault();
+                e.stopPropagation();
                 return false;
             }, this));
             hr.bind('click', _.bind(function(e) {//
@@ -2113,7 +2131,7 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
     } else {
         for (var i = this.hours.length-1; i >=0 ; i--) {
             var hr = this.hours[i];
-            hr.detach().insertAfter(this.noHour);
+            hr.insertAfter(this.noHour);
         };
         this.root.find('.note').remove();
     };
@@ -2121,10 +2139,14 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
     for (var i = this.startHour; i <= this.endHour; i++) {
         hrPlaces.push(null);
     };
+    var selectNote = null;
     for (var i = 0; i < list.length; i++) {//
         var target = this.hours[list[i].hour];
         // target? target.children('.day_hour_notes'): 
-        var div = this.showNote(list[i], this.noHour, list[i].id == beforeID);
+        if (beforeID == list[i].id) { // Have last selected - remember note
+            selectNote = list[i];
+        };
+        var div = this.showNote(list[i], this.noHour);
         if (target && !CURRENT_PLATFORM_MOBILE) {
             var timeDown = $(ui.buildIcon('ic_time_down')).addClass('note_time_down');
             div.find('.note_tags').eq(1).prepend(timeDown);
@@ -2136,7 +2158,7 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
         };
         if (!list[i].hours) {
             if (target) {
-                div.detach().insertBefore(target.children('.day_hour_notes').children('.clear'));
+                div.insertBefore(target.children('.day_hour_notes').children('.clear'));
             };
         } else {
             var hstart = list[i].hours[0];
@@ -2144,15 +2166,18 @@ Sheet.prototype.reload_day = function(list, beforeID) {//
             var hrsPlace = $(document.createElement('div')).addClass('note_inline_hours').appendTo(div);
             if (!hrPlaces[hstart]) {
                 //Not detached
-                div.detach().insertBefore(this.hours[hstart]);
+                div.insertBefore(this.hours[hstart]);
             } else {
-                div.detach().insertAfter(hrPlaces[hstart]);
+                div.insertAfter(hrPlaces[hstart]);
             }
             for (var j = hstart; j <= hend; j++) {
-                this.hours[j].detach().appendTo(hrsPlace);
+                this.hours[j].appendTo(hrsPlace);
                 hrPlaces[j] = div;
             };
         }
+    };
+    if (selectNote) { // Have selectNote - select
+        this.selectNote(selectNote);
     };
     this.moveNowLine();
     this.updated();
@@ -2214,7 +2239,7 @@ Sheet.prototype.scrollTo = function(element) {
 
 Sheet.prototype.startTextEdit = function(id, note, field, value, handler) {//Shows editor
     this.editing = true;
-    this.textPanel.detach().insertAfter(note);
+    this.textPanel.insertAfter(note);
     this.textEditHandler = handler || null;
     this.textPanel.show();
     this.scrollTo(this.textPanel);
@@ -2232,7 +2257,7 @@ Sheet.prototype.newNote = function(tags, ignoreAutoTags, place) {//Starts new no
     this.editing = true;
     this.newTags = tags || '';
     this.ignoreAutoTags = ignoreAutoTags;
-    (place || this.root).prepend(this.areaPanel.detach());
+    (place || this.root).prepend(this.areaPanel);
     this.areaPanel.show();
     this.scrollTo(this.areaPanel);
     this.area.val('').focus();

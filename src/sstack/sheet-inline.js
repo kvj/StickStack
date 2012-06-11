@@ -2,7 +2,26 @@ var main = null;
 
 var controller = null;
 
-$(function() {//
+yepnope({
+    load: ['lib/custom-web/cross-utils.js', 'lib/common-web/zepto.min.js', 'lib/common-web/underscore-min.js', 'lib/common-web/underscore.strings.js', 'lib/custom-web/date.js', 'lib/common-web/json2.js', 'lib/ui/ui.css', 'lib/ui/theme-default.css', 'lib/ui/ui.js', 'lib/ui/desktop.css'],
+    complete: function () {
+        yepnope([{
+            load: ['lib/common-web/jquery.autogrow.js']
+        }, {
+            test: CURRENT_PLATFORM == PLATFORM_AIR,
+            yep: ['lib/air/AIRAliases.js'] //, 'lib/air/AIRIntrospector.js'
+        }, {
+            load: ['sstack/sstack.css', 'sstack/sheet.js'],
+            complete: function () {
+                $(function() {//Ready
+                    return run();
+                });
+            }
+        }]);
+    }
+})
+
+run = function () { // 
     if (CURRENT_PLATFORM == PLATFORM_AIR) {
         window.nativeWindow.addEventListener(air.Event.CLOSE, function() {
         });
@@ -110,7 +129,7 @@ $(function() {//
     ui.keyListener.on('keydown', _.bind(function (e) { // Key handler
         return this.keypress(e);
     }, controller));
-});
+};
 
 var closeWindow = function() {
     controller.close(function() {

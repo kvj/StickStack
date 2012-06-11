@@ -5,12 +5,15 @@ var _showInfo = function(message, timeout) {//Shows info dialog
         timeout = 2000;
     };
     //css('top', 130+document.body.scrollTop).
-    var div = $('#info_dialog').text(message || '...').stop().clearQueue().show().css('opacity', 0.7);
+    var div = $('#info_dialog').text(message || '...').show().css('opacity', 0.7);
     div.click(function() {
         $(this).hide();
     })
     if (timeout>0) {//Fade
-        div.fadeOut(timeout);
+        // div.animate({opacity: 0}, timeout);
+        setTimeout(function () { // Hide
+            div.hide();
+        }, timeout);
     };
 };
 
@@ -185,6 +188,19 @@ var _getArgument = function(name) {//Returns list of values
 var _appEvents = new EventEmitter();
 
 var _initUI = function(storage) {//Creates root UI elements
+    if (window.$ && $.zepto) { // Fix bind
+        $._bind = $.fn.bind;
+        $.fn.bind = function (event, data, handler) { // Fix
+            if (arguments.length == 3) { // Fix data
+                return $._bind.call(this, event, function(e) {
+                    e.data = data;
+                    return handler.call(this, e);
+                });
+            } else {
+                return $._bind.apply(this, arguments);
+            }
+        }
+    };
     var main = $('<div id="main"/>').appendTo(document.body);
     var em = $('<div style="width: 1em; height: 1em; left: -2em; top: -2em; position: absolute; visibility: hidden;" id="__em"/>').appendTo(document.body);
     var err_bg = $('<div id="error_dialog_background"/>').appendTo(document.body).hide();
@@ -671,9 +687,6 @@ PanelManager.prototype.resize = function(autoPut) {//Change layout
     var resized = false;
     if (newcolcount != this.columns.length || forceResize) {//Number of cols is changed - recreate columns
         resized = true;
-        for (var i = 0; i < this.panels.length; i++) {//Detach panels
-            this.panels[i].element.detach();
-        };
         this.element.children('.panel_column').remove();//Remove columns
         this.columns = [];
         for (var i = 0; i < newcolcount; i++) {//Create columns
@@ -690,7 +703,7 @@ PanelManager.prototype.resize = function(autoPut) {//Change layout
     var left = 0;
     var colWidths = $(window).width();
     if (this.nav_visible) {
-        colWidths -= this.nav.outerWidth()+2;
+        colWidths -= this.nav.width()+2;
     };
     var colWidth = Math.floor(colWidths / newcolcount);
     for (var i = 0; i < this.columns.length; i++) {//Resize columns
@@ -752,15 +765,15 @@ PanelManager.prototype.focusByID = function(id) {
 
 PanelManager.prototype.putPanels = function() {//Put panels into columns
     for (var i = 0; i < this.panels.length; i++) {//Detach panels
-        this.panels[i].scroll = this.panels[i].element.parent().scrollTop();
-        this.panels[i].element.detach();
+        this.panels[i].scroll = this.panels[i].element.parent().attr('scrollTop');
+        this.panels[i].element.remove();
     };
     var arr = this.getVisiblePanels();
     for (var i = 0; i < arr.length; i++) {
         var panel = arr[i];
         panel.element.appendTo(this.columns[i]);
         if (panel.scroll || panel.scroll == 0) {//Restore
-            this.columns[i].scrollTop(panel.scroll);
+            this.columns[i].attr('scrollTop', panel.scroll);
         };
         panel.onResize();
     };
@@ -778,7 +791,7 @@ PanelManager.prototype.clearRightPanels = function(current) {
             if (this.panels[i] == current) {//Remove all others
                 for (var j = i+1; j < this.panels.length;) {//Remove panel
                     var p = this.panels[j];
-                    p.element.detach();
+                    p.element.remove();
                     this.panels.splice(j, 1);
                 };
             };
@@ -804,7 +817,7 @@ PanelManager.prototype.goBack = function(current) {
     }
     this.clearRightPanels(current);
     var p = this.panels.pop();
-    p.element.detach();
+    p.element.remove();
     var panel = this.panels[this.panels.length-1];
     this.panel = panel;
     this.resize();
@@ -1142,9 +1155,6 @@ Buttons.prototype.setDisabled = function(button, disabled) {//Changes disabled s
 Buttons.prototype.removeButton = function(button) {//Removes button
     for (var i = 0; i < this.buttons.length; i++) {
         if (this.buttons[i] == button) {//Found
-            if (i == this.focused) {
-                this.focusDiv.detach();
-            };
             button.element.remove();
             this.buttons.splice(i, 1);
             this.updateWidth();
@@ -1155,7 +1165,6 @@ Buttons.prototype.removeButton = function(button) {//Removes button
 };
 
 Buttons.prototype.clear = function() {//Removes all buttons
-    this.focusDiv.detach();
     this.focusedID = null;
     if (this.buttons[this.focused] && this.buttons[this.focused].id) {
         this.focusedID = this.buttons[this.focused].id;
@@ -1276,13 +1285,13 @@ var PopupMenu = function(config) {//Shows popup menu
     var body = $(document.body);
     var parent = this.config.element? this.config.element: body;
     this.menu = $('<div/>').addClass('popup_menu').appendTo(parent);
-    var width = Math.floor(parent.outerWidth()*0.8);
+    var width = Math.floor(parent.width()*0.8);
     var maxWidth = 20*ui.em();
     if (width>maxWidth) {
         width = maxWidth;
     };
     this.menu.data('instance', this);
-    this.menu.css('left', parent.offset().left+(parent.outerWidth()-width)/2).width(width);
+    this.menu.css('left', parent.offset().left+(parent.width()-width)/2).width(width);
 //    log('scroll', document.body.scrollTop, parent.parent().scrollTop(), parent.scrollTop());
     this.items = this.config.items || [];
     this.items.push({caption: 'Cancel'});
@@ -1338,14 +1347,13 @@ var PopupMenu = function(config) {//Shows popup menu
 };
 
 PopupMenu.prototype.keyPressed = function(e) {//
-    //log('Menu key', e.which);
     if (e.keyCode>=49 && e.keyCode<=57) {//1-9
         var index = e.which-49;//0-8
-        this.menu.children('.popup_menu_item').eq(index).click();
+        this.menu.children('.popup_menu_item').eq(index).trigger('click');
         return false;
     };
     if (e.keyCode == 27 || e.keyCode == -10) {//Esc or back
-        this.menu.children('.popup_menu_item').last().click();
+        this.menu.children('.popup_menu_item').last().trigger('click');
         return false;
     };
     return false;
