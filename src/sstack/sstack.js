@@ -17,18 +17,18 @@ yepnope({
             yep: ['lib/ui/android.css', 'lib/ui/theme-default-android.css', 'lib/common-web/phonegap-1.4.1.js'],
             nope: ['lib/ui/desktop.css'],
         }, {
-            load: ['sstack/sstack.css', 'sstack/datamanager.js', 'sstack/sheet.js'],
+            load: ['sstack/sstack.css', 'sstack/datamanager.js', 'sstack/sheet.js']
+        }, {
+            test: CURRENT_PLATFORM_MOBILE,
+            yep: ['sstack/sstack-android.css'],
             complete: function () {
                 $(function() {//Ready
+                    run();
                     if (CURRENT_PLATFORM != PLATFORM_AIR) {
                         ui.remoteScriptLoader('http://maps.googleapis.com/maps/api/js?key=AIzaSyDsX-iJNxBCxisojTuFsdHwkur6EhrUt7g&sensor=true&language=en&callback=_gmapsLoaded', 'google')
                     };
-                    return run();
                 });
             }
-        }, {
-            test: CURRENT_PLATFORM_MOBILE,
-            yep: ['sstack/sstack-android.css']
         }]);
     }
 })
