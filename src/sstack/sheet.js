@@ -524,7 +524,7 @@ Sheet.prototype.tag_select_file = function(note, tag) {
                 };
                 var img = $(document.createElement('img')).addClass('file_image note_image note_image_load').appendTo(frame);
                 img.bind('load', _.bind(function () {
-                    var width = note.div.innerWidth()-2*this.mediaGap;
+                    var width = note.div.width()-2*this.mediaGap;
                     var iw = img.width();
                     var ih = img.height();
                     var mul = width / iw;
@@ -610,7 +610,7 @@ Sheet.prototype.tag_select_geo = function(note, tag) {
         var point = splitPoint(tag);
         note.geoCreated = true;
         if (point.lat && point.lon) {
-            var width = note.div.innerWidth()-2*this.mediaGap;
+            var width = note.div.width()-2*this.mediaGap;
             var height = Math.floor(width*0.75);
             var frame = $(document.createElement('div')).addClass('geo note_frame note_line_hide').appendTo(note.div);
             var img = $(document.createElement('img')).addClass('geo_image note_image').appendTo(frame);
@@ -799,7 +799,7 @@ Sheet.prototype.tag_select_path = function(note, tag) {
                         path.push(''+point.lat+','+point.lon);
                     }
                 };
-                var width = note.div.innerWidth()-2*this.mediaGap;
+                var width = note.div.width()-2*this.mediaGap;
                 var height = Math.floor(width*0.75);
                 var img = $(document.createElement('img')).addClass('geo_image note_image').appendTo(frame);
                 img.attr('src', 'http://maps.google.com/maps/api/staticmap?size='+width+'x'+height+'&sensor=true&path='+path.join('|'));
@@ -939,6 +939,7 @@ Sheet.prototype.importNotes = function(provider) {
                 return true;
             }, this)
         });
+        this.updated();
     }, this))
 };
 
@@ -1604,6 +1605,7 @@ Sheet.prototype.createGridColumn = function(index, config) {
                 element: this.menuPlace || this.root,
                 items: items
             });
+            this.updated();
             return true;
         }, this)
     });
@@ -1791,6 +1793,7 @@ Sheet.prototype.prepare_cards = function() {
                 element: this.menuPlace || this.root,
                 items: items
             });
+            this.updated();
             return true;
         }, this)
     });

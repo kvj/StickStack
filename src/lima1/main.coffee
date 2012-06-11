@@ -679,7 +679,7 @@ class StorageProvider
 			progress_handler @SYNC_WRITE_DATA
 			@db.query 'insert into updates (id, version_in, version_out) values (?, ?, ?)', [@_id(), in_from, out_from], () =>
 				for name, item of @schema
-					if name.charAt(0) == '_' then continue
+					if name?.charAt(0) == '_' then continue
 					@db.query 'delete from t_'+name+' where status=?', [3], () =>
 				handler err, {
 					in: in_items
@@ -751,7 +751,7 @@ class StorageProvider
 			sql = []
 			vars = []
 			for name, item of @schema
-				if name.charAt(0) == '_' then continue
+				if name?.charAt(0) == '_' then continue
 				if _.indexOf(@db.tables, 't_'+name) is -1 then continue
 				sql.push 'select id, stream, data, updated, status from t_'+name+' where own=? and updated>?'
 				vars.push 1
@@ -790,7 +790,7 @@ class StorageProvider
 				new_schema.push item
 			for name, item of @schema
 				fields = id: 'id'
-				if name.charAt(0) == '_' then continue;
+				if name?.charAt(0) == '_' then continue;
 				numbers = item.numbers ? []
 				texts = item.texts ? []
 				sql = 'create table if not exists t_'+name+' '+@data_template
@@ -1028,7 +1028,8 @@ class StorageProvider
 				arr = [arr]
 			for ar in arr
 				asc = 'asc'
-				if ar.charAt(0) is '!'
+				# log 'ar', ar, ar?.charAt
+				if ar?.charAt and ar?.charAt(0) is '!'
 					ar = ar.substr 1
 					asc = 'desc'
 				if fields[ar] or 'id' == ar 

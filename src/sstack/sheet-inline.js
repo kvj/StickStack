@@ -11,7 +11,7 @@ yepnope({
             test: CURRENT_PLATFORM == PLATFORM_AIR,
             yep: ['lib/air/AIRAliases.js'] //, 'lib/air/AIRIntrospector.js'
         }, {
-            load: ['sstack/sstack.css', 'sstack/sheet.js'],
+            load: ['sstack/sstack.css', 'sstack/sheet.js', 'sstack/sheet.css'],
             complete: function () {
                 $(function() {//Ready
                     return run();
@@ -62,8 +62,8 @@ run = function () { //
             //e.preventDefault();
         //};
     //});
-    main.bind('mousewheel', function(e, delta){
-        var direction = delta>0? -1: 1;
+    main.bind('mousewheel', function(e){
+        var direction = e.wheelDelta>0? -1: 1;
         if (e.ctrlKey) {
             direction *= -1;
         };
@@ -104,11 +104,15 @@ run = function () { //
     controller.updated = function() {
         var maxHeight = 0;
         $(document.body).children().each(function (index, item) {
-            var h = $(item).offset().top+$(item).outerHeight();
+            var $item = $(item);
+            // log('updated', index, $item.offset().top, $item.height(), $item.attr('className'), $item.css('display'), $item.attr('id'));
+            var h = $item.offset().top+$item.height();
+            // && 'main' != $item.attr('id')
             if (h>maxHeight) {
                 maxHeight = h;
             };
         })
+        // log('updated', maxHeight);
         window.nativeWindow.height = maxHeight;
     };
     controller.enableNoteDrop(_top, function(n) {

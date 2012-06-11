@@ -950,7 +950,8 @@ Panel.prototype.addKeyHandler = function(key, obj, handler, data) {
 ui.installAutoCompleteSupport = function (config) { // Adds auto complete support to input
     var element = config.element;
     var parent = element.parent();
-    var div = $(document.createElement('div')).addClass('input_autocomplete').insertAfter(element);
+    var div = $(document.createElement('div')).addClass('input_autocomplete');
+    element.after(div);
     var redrawCandidates = function (result) { // Creates buttons
         div.children('.button_outer').remove();
         candidates = [];

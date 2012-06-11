@@ -937,7 +937,7 @@
           _ref = _this.schema;
           for (name in _ref) {
             item = _ref[name];
-            if (name.charAt(0) === '_') continue;
+            if ((name != null ? name.charAt(0) : void 0) === '_') continue;
             _this.db.query('delete from t_' + name + ' where status=?', [3], function() {});
           }
           return handler(err, {
@@ -1031,7 +1031,7 @@
         _ref2 = _this.schema;
         for (name in _ref2) {
           item = _ref2[name];
-          if (name.charAt(0) === '_') continue;
+          if ((name != null ? name.charAt(0) : void 0) === '_') continue;
           if (_.indexOf(_this.db.tables, 't_' + name) === -1) continue;
           sql.push('select id, stream, data, updated, status from t_' + name + ' where own=? and updated>?');
           vars.push(1);
@@ -1091,7 +1091,7 @@
           fields = {
             id: 'id'
           };
-          if (name.charAt(0) === '_') continue;
+          if ((name != null ? name.charAt(0) : void 0) === '_') continue;
           numbers = (_ref3 = item.numbers) != null ? _ref3 : [];
           texts = (_ref4 = item.texts) != null ? _ref4 : [];
           sql = 'create table if not exists t_' + name + ' ' + _this.data_template;
@@ -1414,7 +1414,7 @@
         for (_j = 0, _len2 = arr.length; _j < _len2; _j++) {
           ar = arr[_j];
           asc = 'asc';
-          if (ar.charAt(0) === '!') {
+          if ((ar != null ? ar.charAt : void 0) && (ar != null ? ar.charAt(0) : void 0) === '!') {
             ar = ar.substr(1);
             asc = 'desc';
           }
