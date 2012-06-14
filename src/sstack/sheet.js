@@ -818,6 +818,7 @@ Sheet.prototype.editTextDone = function(val) {//Edit tag/link/ref
     this.text.blur();
     if (this.textEditHandler) {
         this.textEditHandler(val);
+        return;
     };
     if (this.editField == 'tag') {
         method = 'addTag';
@@ -2251,9 +2252,9 @@ Sheet.prototype.startTextEdit = function(id, note, field, value, handler) {//Sho
     this.editField = field;
     this.editValue = value;
     this.updated();
-    // setTimeout(_.bind(function () {
-    //     this.text.focus();
-    // }, this), 10);
+    setTimeout(_.bind(function () {
+        this.text.focus();
+    }, this), 10);
 };
 
 Sheet.prototype.newNote = function(tags, ignoreAutoTags, place) {//Starts new note
@@ -2266,9 +2267,9 @@ Sheet.prototype.newNote = function(tags, ignoreAutoTags, place) {//Starts new no
     this.area.val('').focus();
     this.editID = null;
     this.updated();
-    // setTimeout(_.bind(function () {
-    //     this.area.focus();
-    // }, this), 10);
+    setTimeout(_.bind(function () {
+        this.area.focus();
+    }, this), 10);
 };
 
 Sheet.prototype.updated = function() {//Empty
