@@ -90,6 +90,7 @@ var _showQuestion = function(message, handler, buttons, element) {//Shows questi
         maxElements: buttons.length
     });
     var _keyHandler = function (e) {
+        e.stop(); // Prevent other key handlers
         switch (e.keyCode) {
             case 13:
                 btns.click(buttons[0]);
@@ -1348,6 +1349,7 @@ var PopupMenu = function(config) {//Shows popup menu
 };
 
 PopupMenu.prototype.keyPressed = function(e) {//
+    e.stop(); // Prevent other key handlers
     if (e.keyCode>=49 && e.keyCode<=57) {//1-9
         var index = e.which-49;//0-8
         this.menu.children('.popup_menu_item').eq(index).trigger('click');
