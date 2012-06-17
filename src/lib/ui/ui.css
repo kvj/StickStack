@@ -109,6 +109,7 @@ div {
 
 .input_autocomplete {
     margin-top: 2em;
+    clear: both;
 }
 
 input[type=text], input[type=password], input[type=color] {

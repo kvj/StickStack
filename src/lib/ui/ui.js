@@ -952,6 +952,7 @@ ui.installAutoCompleteSupport = function (config) { // Adds auto complete suppor
     var element = config.element;
     var parent = element.parent();
     var div = $(document.createElement('div')).addClass('input_autocomplete');
+    $(document.createElement('div')).addClass('clear').appendTo(div);
     element.after(div);
     var redrawCandidates = function (result) { // Creates buttons
         div.children('.button_outer').remove();
@@ -1388,7 +1389,7 @@ var AutoForm = function(element, config, formid, values, handler) {//Creates and
         var val = this.conf[id].value || values[id] || '';
         if (this.conf[id].type == 'checkbox') {//Checkbox
             var wr = $('<div/>').addClass('input_wrap').appendTo(this.element);
-            var control = $('<input/>').attr('type', 'checkbox').addClass('form_control').attr('id', this.formid+id).appendTo(wr).attr('checked', (this.conf[id].value || values[id])? true: false);
+            var control = $('<input type="checkbox" '+((this.conf[id].value || values[id])? 'checked': '')+'/>').addClass('form_control').attr('id', this.formid+id).appendTo(wr).val('on');
             var label = $('<label/>').addClass('form_label').attr('for', this.formid+id).text(this.conf[id].label || '').appendTo(wr);
         } else {//Other elements
             var label = $('<label/>').addClass('form_label').attr('for', this.formid+id).text(this.conf[id].label || '').appendTo(this.element);
@@ -1439,6 +1440,7 @@ AutoForm.prototype.saveForm = function(old) {//Saves values
         };
         var value = this.element.find('#'+this.formid+id);
         if (this.conf[id].type == 'checkbox') {//Special case
+            // log('Checked', value.attr('checked'), value.val(), value.attr('selected'), this.formid+id);
             value = value.attr('checked')? true: false;
             result[id] = value;
         } else if (this.conf[id].type == 'password' && this.conf[id].password == 'sha1') {//Special case - sha1 password

@@ -1643,7 +1643,7 @@ DataManager.prototype.loadTags = function(list, handler) {//Loads tags to this
                 var tag_info = {id: tags[j], caption: tags[j]};
                 tag_info.config = this.findTagConfig(tag_info.id);
                 if (controller) {
-                    tag_info.caption = tag_info.config.label || controller.format(tags[j]);
+                    tag_info.caption = (ui.features.fontIcons? tag_info.config.label: '') || controller.format(tags[j]);
                     tag_info.display = controller.display || '';
                 };
                 tag_info.color = tag_info.config.tag_color;
@@ -1713,7 +1713,7 @@ DataManager.prototype.parseText = function(text) {//Parses text and converts to 
                 textStarted = true;
                 var tag = this.adoptTag(words[j].substr(1));
                 var conf = this.findTagConfig(tag);
-                parts.push({type: 'tag', at: chars, tag: {id: tag, caption: conf.label || this.formatTag(tag), color: conf.tag_color}});
+                parts.push({type: 'tag', at: chars, tag: {id: tag, caption: (ui.features.fontIcons? conf.label: '') || this.formatTag(tag), color: conf.tag_color}});
             } else {
                 var skip = false;
                 if (!textStarted && words[j].length == 1) {

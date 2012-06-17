@@ -51,11 +51,6 @@
 .note_after {
 }
 
-.note_menu {
-    float: right;
-    display: none;
-}
-
 .note_text {
     width: 100%;
 }
@@ -104,7 +99,7 @@
 }
 
 .note_tag_selected {
-    -webkit-box-shadow: 0px 1px 1px #888888;
+    -webkit-box-shadow: 1px 1px 2px #888888;
 }
 
 .inline_sheet {
@@ -212,6 +207,10 @@
 
 .disabled {
     opacity: 0.5;
+}
+
+.sheet_menu {
+    clear: both;
 }
 
 .today {

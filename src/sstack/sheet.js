@@ -16,11 +16,13 @@ var _parseTagCaption = function (caption, element) { // Parses tag caption and p
         if (m[1]) { // Prepend text
             addText(m[1]);
         };
-        var number = parseInt(m[2], 16);
-        var span = $(document.createElement('div')).addClass('tag_icon').appendTo(element);
-        span.html('&#x00'+(number+0x21).toString(16)+';');
-        if (m[3]) { // Add shadow
-            span.addClass('tag_icon_shadow');
+        if (ui.features.fontIcons) {
+            var number = parseInt(m[2], 16);
+            var span = $(document.createElement('div')).addClass('tag_icon').appendTo(element);
+            span.html('&#x00'+(number+0x21).toString(16)+';');
+            if (m[3]) { // Add shadow
+                span.addClass('tag_icon_shadow');
+            };            
         };
         caption = m[4];
     };
@@ -124,10 +126,14 @@ var Sheet = function(sheet, element, proxy, menuPlace, panel) {//
         e.stopPropagation();
         return true;
     });
-    this.area.autoGrow(10);
-    var menuDiv = $(document.createElement('div')).addClass('sheet_menu').appendTo(this.root).hide();
+    if (this.area.autoGrow) {
+        this.area.autoGrow(10);
+    } else {
+        this.area.attr('rows', 10);
+    }
+    this.noteMenuDiv = $(document.createElement('div')).addClass('sheet_menu').appendTo(this.root).hide();
     this.menu = new Buttons({
-        root: menuDiv,
+        root: this.noteMenuDiv,
         rows: [0, '2.5em'],
         maxElements: 3,
         safe: true,
@@ -987,7 +993,7 @@ Sheet.prototype.selectNote = function(note) {
     };
     this.selected = note;
     note.div.addClass('note_selected');
-    note.div.after(this.menu.element.show());
+    note.div.after(this.noteMenuDiv.show());
     note.div.focus();
     note.selectedTag = null;
     this.root.find('.note_tag').removeClass('note_tag_selected');
@@ -1009,7 +1015,7 @@ Sheet.prototype.unselectNote = function() {
         this.selected.selectedTag = null;
     };
     this.selected = null;
-    this.menu.element.hide();
+    this.noteMenuDiv.hide();
     this.updated();
 };
 
@@ -1114,9 +1120,6 @@ Sheet.prototype.editNote = function(note, div) {
     this.scrollTo(this.areaPanel);
     this.area.val(note.text || '').focus();
     this.updated();
-    // setTimeout(_.bind(function () {
-    //     this.area.focus();
-    // }, this), 10);
 };
 
 Sheet.prototype.enableTagDrop = function(div, handler, id) {//Called when tag dropped
@@ -1277,7 +1280,6 @@ Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {
             e.stopPropagation();
             return false;
         };
-        // log('Note', note);
         if (this.selected == note && !preventExpand) {
             this.openNote(note, true);
         };
@@ -1289,14 +1291,6 @@ Sheet.prototype.showNote = function(note, parent, lastSelected, preventExpand) {
         e.stopPropagation();
         return false;
     }, this));
-    // div.bind('dragover', {note: note}, _.bind(function(e) {
-    //     if (dd.hasDDTarget(e, tagDDType)) {
-    //         e.preventDefault();
-    //     };
-    //     //if (dd.hasDDTarget(e, noteDDType)) {
-    //         //e.preventDefault();
-    //     //};
-    // }, this));
     this.enableTagDrop(div, _.bind(function(tag, text) {
         this.proxy('addTag', _.bind(function(id, err) {//
             if (id) {
@@ -2205,7 +2199,7 @@ Sheet.prototype.moveNowLine = function() {//Moves now line
 Sheet.prototype.reload = function(beforeID, forceNoSelect) {//Asks for items
     this.areaPanel.hide();
     this.textPanel.hide();
-    this.menu.element.hide();
+    this.noteMenuDiv.hide();
     this.editing = false;
     this.selected = null;
     var tags = this.data.tags || '';
@@ -2237,7 +2231,7 @@ Sheet.prototype.reload = function(beforeID, forceNoSelect) {//Asks for items
 Sheet.prototype.scrollTo = function(element) {
     if (CURRENT_PLATFORM_MOBILE) {
         var offs = element.offset();
-        $(window).scrollTop(offs.top-10);
+        $(window).attr('scrollTop', offs.top-10);
     };
 };
 
@@ -2252,9 +2246,6 @@ Sheet.prototype.startTextEdit = function(id, note, field, value, handler) {//Sho
     this.editField = field;
     this.editValue = value;
     this.updated();
-    setTimeout(_.bind(function () {
-        this.text.focus();
-    }, this), 10);
 };
 
 Sheet.prototype.newNote = function(tags, ignoreAutoTags, place) {//Starts new note
@@ -2267,9 +2258,6 @@ Sheet.prototype.newNote = function(tags, ignoreAutoTags, place) {//Starts new no
     this.area.val('').focus();
     this.editID = null;
     this.updated();
-    setTimeout(_.bind(function () {
-        this.area.focus();
-    }, this), 10);
 };
 
 Sheet.prototype.updated = function() {//Empty

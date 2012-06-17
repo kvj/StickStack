@@ -712,7 +712,7 @@
       try {
         this.db = window.openDatabase(env.prefix + this.name, '', env.prefix + this.name, 1024 * 1024 * 10);
         log('Opened', this.db.version, this.version);
-        this.version_match = this.db.version === this.version;
+        this.version_match = true;
         this.clean = clean;
         return handler(null);
       } catch (error) {
@@ -785,8 +785,9 @@
                 return create_at(index + 1);
               }, tr);
             } else {
-              log('Changing version ', _this.db.version, '=>', _this.version, typeof _this.db.version);
+              log('Changing version [', _this.db.version, ']=>[', _this.version, ']');
               if (!_this.version_match) {
+                log('Do change *');
                 return _this.db.changeVersion(_this.db.version || '', _this.version, function(tr) {
                   log('Transaction');
                   return handler(null, true);
@@ -798,6 +799,7 @@
                   return handler(null, true);
                 });
               } else {
+                log('No change');
                 return handler(null, false);
               }
             }

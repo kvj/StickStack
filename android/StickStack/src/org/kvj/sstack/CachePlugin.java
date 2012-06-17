@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.cordova.api.CordovaInterface;
+import org.apache.cordova.api.PluginResult.Status;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -32,10 +34,8 @@ import android.net.Proxy;
 import android.os.AsyncTask;
 import android.os.Handler;
 
-import com.phonegap.api.PhonegapActivity;
 import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
-import com.phonegap.api.PluginResult.Status;
 
 public class CachePlugin extends Plugin {
 
@@ -54,9 +54,9 @@ public class CachePlugin extends Plugin {
 	}
 
 	@Override
-	public void setContext(PhonegapActivity ctx) {
+	public void setContext(CordovaInterface ctx) {
 		super.setContext(ctx);
-		cacheFolder = ctx.getExternalCacheDir();
+		cacheFolder = ctx.getApplicationContext().getExternalCacheDir();
 		if (null == cacheFolder) {
 			return;
 		}
@@ -81,8 +81,8 @@ public class CachePlugin extends Plugin {
 	}
 
 	private HttpClient createHttpClient() {
-		String proxyHost = Proxy.getHost(ctx);
-		int proxyPort = Proxy.getPort(ctx);
+		String proxyHost = Proxy.getHost(ctx.getApplicationContext());
+		int proxyPort = Proxy.getPort(ctx.getApplicationContext());
 		DefaultHttpClient httpClient = new DefaultHttpClient();
 		HttpParams params = httpClient.getParams();
 		SchemeRegistry schemeRegistry = new SchemeRegistry();

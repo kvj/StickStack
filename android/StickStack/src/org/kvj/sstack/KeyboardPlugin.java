@@ -1,5 +1,8 @@
 package org.kvj.sstack;
 
+import org.apache.cordova.api.CordovaInterface;
+import org.apache.cordova.api.PluginResult;
+import org.apache.cordova.api.PluginResult.Status;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -8,10 +11,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnKeyListener;
 
-import com.phonegap.api.PhonegapActivity;
 import com.phonegap.api.Plugin;
-import com.phonegap.api.PluginResult;
-import com.phonegap.api.PluginResult.Status;
 
 public class KeyboardPlugin extends Plugin {
 
@@ -24,7 +24,7 @@ public class KeyboardPlugin extends Plugin {
 	}
 
 	@Override
-	public void setContext(PhonegapActivity ctx) {
+	public void setContext(CordovaInterface ctx) {
 		super.setContext(ctx);
 		StickStackActivity activity = (StickStackActivity) ctx;
 		activity.getRoot().setOnKeyListener(new OnKeyListener() {
@@ -55,9 +55,11 @@ public class KeyboardPlugin extends Plugin {
 		// + cb);
 		JSONObject obj = new JSONObject();
 		try {
-			obj.put("ctrlKey", event.isCtrlPressed());
-			obj.put("shiftKey", event.isShiftPressed());
-			obj.put("altKey", event.isAltPressed());
+			if (android.os.Build.VERSION.SDK_INT >= 11) {
+				obj.put("ctrlKey", event.isCtrlPressed());
+				obj.put("shiftKey", event.isShiftPressed());
+				obj.put("altKey", event.isAltPressed());
+			}
 			switch (keyCode) {
 			case KeyEvent.KEYCODE_DPAD_UP:
 				sendEvent(obj, 38);

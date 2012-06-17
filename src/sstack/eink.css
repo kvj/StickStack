@@ -1,0 +1,113 @@
+body {
+	background-color: #ffffff !important;
+}
+
+.panel_column, .panel_manager_nav {
+	border-color: transparent;
+}
+
+.button_inner {
+	color: #000000 !important;
+	background-color: #eeeeee;
+}
+
+.panel_manager_nav .button_inner {
+	color: #ffffff !important;
+	background-color: #222222;	
+}
+
+.button_inner:active {
+    background-color: #dddddd;
+}
+
+.popup_menu {
+    opacity: 1;
+}
+
+.popup_menu_item {
+    background-color: #dddddd;
+    border-color: #222222;
+    color: #000000;
+}
+
+.popup_menu_item:active {
+    background-color: #cccccc;
+}
+
+.button_create {
+	background-color: #cccccc;
+}
+
+.button_list {
+	background-color: #cccccc;
+}
+
+.button_remove {
+	background-color: #cccccc;
+}
+
+#error_dialog_background {
+	background-color: transparent;
+}
+
+.panel_title {
+    color: #000000;
+    background-color: #eeeeee;
+}
+
+.form_label {
+	color: #000000;
+}
+
+#question_dialog {
+	background-color: #ffffff;
+	color: #000000;
+}
+
+.note_tag {
+	border-width: 2px;
+}
+
+.calendar_grid {
+	border-color: transparent;
+}
+
+.day, .month, .year, .arrow {
+	background-color: #eeeeee;
+    color: #000000;
+}
+
+.day:active {
+    background-color: #dddddd;    
+}
+
+.navigation {
+    color: #000000;
+}
+
+.day_name {
+    background-color: #dddddd;
+}
+
+.week_name {
+    background-color: #dedede;
+}
+
+.week_day {
+    background-color: #dddddd;
+}
+
+.today {
+    background-color: #cccccc;
+}
+
+.weekend {
+    color: #777777;
+}
+
+
+
+
+
+
+

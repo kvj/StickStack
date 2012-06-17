@@ -14,10 +14,14 @@ yepnope({
             yep: ['lib/air/AIRAliases.js'] //, 'lib/air/AIRIntrospector.js'
         }, {
             test: CURRENT_PLATFORM_MOBILE,
-            yep: ['lib/ui/android.css', 'lib/ui/theme-default-android.css', 'lib/common-web/phonegap-1.4.1.js'],
+            yep: ['lib/ui/android.css', 'lib/ui/theme-default-android.css', 'lib/common-web/cordova-1.8.1.js'],
             nope: ['lib/ui/desktop.css'],
         }, {
             load: ['sstack/sstack.css', 'sstack/datamanager.js', 'sstack/sheet.js']
+        }, {
+            test: ui.features.eink,
+            yep: ['sstack/eink.css'],
+            nope: ['sstack/lcd.css'],
         }, {
             test: CURRENT_PLATFORM_MOBILE,
             yep: ['sstack/sstack-android.css'],
@@ -123,7 +127,7 @@ var run = function() {
     }
     _initUI(db);
     if (CURRENT_PLATFORM_MOBILE) {//Empty layout
-        PhoneGap.onDOMContentLoaded.fire();
+        // PhoneGap.onDOMContentLoaded.fire();
         layout = new Layout({});
         // layout = new Layout({id: 'main'});
     } else {//Simple layout
@@ -136,7 +140,7 @@ var run = function() {
         root: $('#main'),
         navVisible: true,
         navProvider: navProvider,
-        minColWidth: CURRENT_PLATFORM_MOBILE? 450: 300
+        minColWidth: CURRENT_PLATFORM_MOBILE? 550: 300
     });
     if (CURRENT_PLATFORM == PLATFORM_WEB) {
         if (CURRENT_PLATFORM_MOBILE) {
@@ -538,7 +542,9 @@ TopManager.prototype.startManager = function(handler) {//Run sync/creates manage
     };
     if (CURRENT_PLATFORM == PLATFORM_WEB) {
         if (CURRENT_PLATFORM_MOBILE) {
-            storage.cache = new PhoneGapCacheProvider(oauth, 'sstack', 900);
+            if (!CURRENT_PLATFORM_EINK) {
+                storage.cache = new PhoneGapCacheProvider(oauth, 'sstack', 900);
+            };
         } else {
             storage.cache = new HTML5CacheProvider(oauth, 'sstack', manager.minColWidth*2);
         }

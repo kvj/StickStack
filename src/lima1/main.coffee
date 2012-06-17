@@ -510,7 +510,7 @@ class HTML5Provider extends DBProvider
 		try
 			@db = window.openDatabase env.prefix+@name, '', env.prefix+@name, 1024 * 1024 * 10
 			log 'Opened', @db.version, @version
-			@version_match = @db.version is @version
+			@version_match = yes
 			@clean = clean
 			handler null
 		catch error
@@ -570,8 +570,9 @@ class HTML5Provider extends DBProvider
 							create_at index+1
 						, tr
 					else
-						log 'Changing version ', @db.version, '=>', @version, typeof(@db.version)
+						log 'Changing version [', @db.version, ']=>[', @version, ']'
 						if not @version_match
+							log 'Do change *'
 							@db.changeVersion @db.version or '', @version, (tr) =>
 								log 'Transaction'
 								handler null, true
@@ -582,6 +583,7 @@ class HTML5Provider extends DBProvider
 								log 'Changed version'
 								handler null, true
 						else
+							log 'No change'
 							handler null, false
 				drop_at = (index) =>
 					if index < res.length

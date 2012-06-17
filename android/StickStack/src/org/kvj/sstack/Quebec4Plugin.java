@@ -1,5 +1,7 @@
 package org.kvj.sstack;
 
+import org.apache.cordova.api.CordovaInterface;
+import org.apache.cordova.api.PluginResult.Status;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -11,10 +13,8 @@ import android.content.IntentFilter;
 import android.os.Handler;
 import android.util.Log;
 
-import com.phonegap.api.PhonegapActivity;
 import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
-import com.phonegap.api.PluginResult.Status;
 
 public class Quebec4Plugin extends Plugin {
 
@@ -34,7 +34,7 @@ public class Quebec4Plugin extends Plugin {
 	}
 
 	@Override
-	public void setContext(PhonegapActivity ctx) {
+	public void setContext(CordovaInterface ctx) {
 		super.setContext(ctx);
 		ctx.registerReceiver(getTaskReceiver, new IntentFilter(
 				GET_TASK_RESPONSE_ACTION));
@@ -99,7 +99,8 @@ public class Quebec4Plugin extends Plugin {
 		noResult.setKeepCallback(true);
 		if ("list".equals(action)) {
 			startTimeoutTimer(callback);
-			ctx.sendBroadcast(new Intent(GET_TASKS_ACTION));
+			ctx.getApplicationContext().sendBroadcast(
+					new Intent(GET_TASKS_ACTION));
 			return noResult;
 		}
 		if ("get".equals(action)) {
@@ -110,7 +111,7 @@ public class Quebec4Plugin extends Plugin {
 				e.printStackTrace();
 			}
 			startTimeoutTimer(callback);
-			ctx.sendBroadcast(intent);
+			ctx.getApplicationContext().sendBroadcast(intent);
 			return noResult;
 		}
 		if ("done".equals(action)) {
@@ -120,7 +121,7 @@ public class Quebec4Plugin extends Plugin {
 			} catch (JSONException e) {
 				e.printStackTrace();
 			}
-			ctx.sendBroadcast(intent);
+			ctx.getApplicationContext().sendBroadcast(intent);
 			return new PluginResult(Status.OK);
 		}
 		return new PluginResult(Status.INVALID_ACTION);
