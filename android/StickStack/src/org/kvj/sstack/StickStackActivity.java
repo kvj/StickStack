@@ -15,7 +15,7 @@ public class StickStackActivity extends DroidGap {
 		WebView.enablePlatformNotifications();
 		// Log.i(TAG, "onCreate: " + savedInstanceState);
 		// setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-		super.setIntegerProperty("backgroundColor", Color.WHITE);
+		super.setIntegerProperty("backgroundColor", Color.BLACK);
 		super.setBooleanProperty("keepRunning", false);
 		// setStringProperty("loadingDialog", "Stick Stack,Loading...");
 		super.onCreate(savedInstanceState);
