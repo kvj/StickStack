@@ -1,7 +1,8 @@
 {
   "name": "Stick Stack",
   "description": "Super tasks",
-  "version": "99.0.6",
+  "version": "99.0.7",
+  "manifest_version": 2,
   "app": {
     "launch": {
       "local_path": "sstack.html"
@@ -14,7 +15,7 @@
   },
   "permissions": [
     "unlimitedStorage",
-    "http://*/*",
+    "<all_urls>",
     "notifications"
   ]
 }

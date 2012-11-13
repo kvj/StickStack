@@ -210,7 +210,7 @@ class HTML5CacheProvider extends CacheProvider
 				handler 'File error'
 		, (err) =>
 			downloadFile name
-	
+
 	# Uploads file from cache
 	upload: (name, handler) ->
 		if not @cacheDir then return handler 'No filesystem'
@@ -225,7 +225,7 @@ class HTML5CacheProvider extends CacheProvider
 			, (err) =>
 				handler null, -2
 		# getUploadURL = (file) =>
-		# 	@oauth.rest @app, "/rest/file/upload?name=#{name}&", null, (err, data) => 
+		# 	@oauth.rest @app, "/rest/file/upload?name=#{name}&", null, (err, data) =>
 		# 		# log 'getUploadURL done', data
 		# 		if err then return handler 'Error uploading file'
 		# 		doUpload file, data.u
@@ -336,7 +336,7 @@ class AirCacheProvider extends CacheProvider
 		file = @_folder().resolvePath name
 		if file.exists
 			return handler null, file.url
-		
+
 		loader = new air.URLLoader()
 		url = "/rest/file/download?name=#{name}&"
 		if _.endsWith name, '.jpg'
@@ -364,7 +364,7 @@ class AirCacheProvider extends CacheProvider
 		file = @_folder().resolvePath name
 		if not file.exists
 			return handler null, -2
-		@oauth.rest @app, "/rest/file/upload?name=#{name}&", null, (err, data) => 
+		@oauth.rest @app, "/rest/file/upload?name=#{name}&", null, (err, data) =>
 			if err then return handler 'Error uploading file'
 			log 'Uploading:', @oauth.transport.uri, data.u
 			request = new air.URLRequest(data.u)
@@ -485,7 +485,7 @@ class AirDBProvider extends DBProvider
 		try
 		  return arr.readUTF()
 		catch error
-		return def  
+		return def
 
 	is: (name, def) ->
 		arr = air.EncryptedLocalStore.getItem name
@@ -643,7 +643,7 @@ class StorageProvider
 							@schema = JSON.parse data[0].schema
 							@token = data[0].token
 						handler null
-	
+
 	get: (name, def) ->
 		return @db.get name, def
 
@@ -651,10 +651,10 @@ class StorageProvider
 		return @db.set name, value
 
 	_precheck: (stream, handler) ->
-		if not @schema 
+		if not @schema
 			handler 'Not synchronized'
 			return false
-		if not @schema[stream] 
+		if not @schema[stream]
 			handler 'Unsupported stream'
 			return false
 		return true
@@ -663,7 +663,7 @@ class StorageProvider
 		@token = token
 		@db.query 'update schema set token=?', [token], (err) =>
 			if handler then handler err
-	
+
 	sync: (app, oauth, handler, force_clean, progress_handler) ->
 		# log 'Starting sync...', app
 		oauth.token = @token
@@ -775,7 +775,7 @@ class StorageProvider
 						i: item.id
 					}
 					in_from = item.updated
-					out_items++ 
+					out_items++
 				if result.length is 0
 					if reset_schema then do_reset_schema null else receive_out null
 					return
@@ -840,7 +840,7 @@ class StorageProvider
 				@schema = schema
 				reset_schema = yes
 				clean_sync = yes
-				
+
 			get_last_sync null
 		, {
 			check: true
@@ -861,7 +861,7 @@ class StorageProvider
 	set_channel_provider: (@channel) ->
 		@channel.on_update = (message) =>
 			@has_update = yes
-			@on_channel_state.emit 'state', {state: @CHANNEL_DATA} 
+			@on_channel_state.emit 'state', {state: @CHANNEL_DATA}
 		@channel.on_connected = () =>
 			if @has_update
 				@on_channel_state.emit 'state', {state: @CHANNEL_DATA}
@@ -929,7 +929,7 @@ class StorageProvider
 		return @db.query 'insert or replace into t_'+stream+' ('+fields+') values ('+questions+')', values, (err, _data, transaction) =>
 			if err
 				handler err
-			else 
+			else
 				if not options?.internal then @on_change 'create', stream, object.id
 				handler null, object, transaction
 		, options?.transaction
@@ -984,7 +984,7 @@ class StorageProvider
 				if name?.op
 					if name.op is 'not'
 						res = array_to_query fields, name.var ? []
-						if res 
+						if res
 							result.push 'not ('+res+')'
 					else
 						res = array_to_query fields, name.var ? [], name.op
@@ -1034,7 +1034,7 @@ class StorageProvider
 				if ar?.charAt and ar?.charAt(0) is '!'
 					ar = ar.substr 1
 					asc = 'desc'
-				if fields[ar] or 'id' == ar 
+				if fields[ar] or 'id' == ar
 					order.push fields[ar]+' '+asc
 					if ar is 'id' then need_id = no
 		if options?.group # Have group by -> don't need id in order
@@ -1063,7 +1063,7 @@ class StorageProvider
 					try
 						result.push JSON.parse(item.data)
 					catch err
-			handler null, result		
+			handler null, result
 
 class DataManager
 
@@ -1074,7 +1074,7 @@ class DataManager
 		@storage.on_channel_state.on 'state', (evt) =>
 			@on_channel_state evt.state
 
-		
+
 	sync_timeout: 30
 	channel_timeout: 60*15
 	timeout_id: null
@@ -1082,7 +1082,7 @@ class DataManager
 
 	open: (handler) ->
 		@storage.open (err) =>
-			log 'Open result', err 
+			log 'Open result', err
 			if err then return handler err
 			@storage.on_change = () =>
 				@schedule_sync null
